@@ -1,3 +1,6 @@
+-- Build-Axiom.lua (add at top, before your project { … })
+local VulkanURL = "https://sdk.lunarg.com/sdk/download/latest/windows/VulkanSDK.exe"
+
 include "vendor/GLFW/Build-GLFW.lua"
 
 project "Axiom"
@@ -24,8 +27,7 @@ project "Axiom"
     IncludeDir = {}
     IncludeDir["glm"] = "vendor/glm"
     IncludeDir["glfw"] = "vendor/GLFW/include"
-    IncludeDir["vulkan"] = "vendor/VulkanSDK/1.4.313.0/Include"
-    IncludeDir["spdlog"] = "vendor/spdlog"
+    IncludeDir["vulkan"] = "vendor/VulkanSDK/Include"
 
     includedirs {
         "src",
@@ -40,8 +42,7 @@ project "Axiom"
     }
 
     libdirs {
-        --"vendor/glfw-3.4/lib",
-        "vendor/VulkanSDK/1.4.313.0/Lib"
+        "vendor/VulkanSDK/Lib"
     }
 
     links {
