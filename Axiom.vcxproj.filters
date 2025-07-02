@@ -1,77 +1,69 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Axiom">
-      <UniqueIdentifier>{C3D3DA0C-2FE8-02BE-F869-A61D643DFFEE}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Axiom\Core">
-      <UniqueIdentifier>{FBC9ED1F-E781-2F6D-5089-08C93C60CA5D}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Axiom\Event">
-      <UniqueIdentifier>{54DBCE1D-C090-4713-4985-41EAB5393E17}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Platform">
-      <UniqueIdentifier>{2AC788B4-1694-E3BF-3FAD-D1672BD9184E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Platform\Windows">
-      <UniqueIdentifier>{64FBD71A-50F4-F66C-7926-DCF1657ED678}</UniqueIdentifier>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{E9C7FDCE-D52A-8D73-7EB0-C5296AF258F6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Axiom\Axiom.h">
-      <Filter>Axiom</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Core\Application.h">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Core\Assert.h">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Core\Base.h">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Core\EntryPoint.h">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Core\Log.h">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Core\Logger.h">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Core\Window.h">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Event\ApplicationEvent.h">
-      <Filter>Axiom\Event</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Event\Event.h">
-      <Filter>Axiom\Event</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Event\KeyEvent.h">
-      <Filter>Axiom\Event</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Axiom\Event\MouseEvent.h">
-      <Filter>Axiom\Event</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h">
-      <Filter>Platform\Windows</Filter>
+      <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\axpch.h" />
+    <ClInclude Include="src\axpch.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Axiom\Core\Application.cpp">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Axiom\Core\Log.cpp">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Axiom\Core\Logger.cpp">
-      <Filter>Axiom\Core</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">
-      <Filter>Platform\Windows</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\axpch.cpp" />
+    <ClCompile Include="src\axpch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
