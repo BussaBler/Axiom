@@ -13,6 +13,14 @@ namespace Axiom {
 		dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
 	}
 
+	void Application::pushLayer(Layer* layer) {
+		layerStack.pushLayer(layer);
+	}
+
+	void Application::pushOverlay(Layer* overlay) {
+		layerStack.pushOverlay(overlay);
+	}
+
 	bool Application::onWindowClose(WindowCloseEvent& e) {
 		running = false;
 		return true;
@@ -21,6 +29,9 @@ namespace Axiom {
 	void Application::run() {
 		while (running)
 		{
+			for (Layer* layer : layerStack) {
+				layer->onUpdate();
+			}
 			window->onUpdate();
 		}
 	}

@@ -49,6 +49,65 @@ namespace Axiom {
 				wData->eventCallback(e);
 			}
 		);
+
+		glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+				WindowData* wData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+				
+				switch (action) {
+				case GLFW_PRESS: {
+					KeyPressedEvent e(key, 0);
+					wData->eventCallback(e);
+					break;
+				}
+				case GLFW_RELEASE: {
+					KeyReleassedEvent e(key);
+					wData->eventCallback(e);
+					break;
+				}
+				case GLFW_REPEAT: {
+					KeyPressedEvent e(key, 1);
+					wData->eventCallback(e);
+					break;
+				}
+				default:
+					break;
+				}
+			}
+		);
+
+		glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods) {
+				WindowData* wData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+				
+				switch (action) {
+				case GLFW_PRESS: {
+					MouseButtonPressedEvent e(button);
+					wData->eventCallback(e);
+					break;
+				}
+				case GLFW_RELEASE: {
+					MouseButtonReleasedEvent e(button);
+					wData->eventCallback(e);
+					break;
+				}
+				default:
+					break;
+				}
+			}
+		);
+
+		glfwSetScrollCallback(window, [](GLFWwindow* window, double xOffset, double yOffset) {
+				WindowData* wData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+				MouseScrolledEvent e(static_cast<float>(xOffset), static_cast<float>(yOffset));
+				wData->eventCallback(e);
+			}
+		);
+
+		glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xPos, double yPos) {
+				WindowData* wData = reinterpret_cast<WindowData*>(glfwGetWindowUserPointer(window));
+				MouseMovedEvent e(static_cast<float>(xPos), static_cast<float>(yPos));
+				wData->eventCallback(e);
+			}
+		);
 	}
 
 	void WindowsWindow::shutdown() {

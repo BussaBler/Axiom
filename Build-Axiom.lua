@@ -24,7 +24,8 @@ end
 
 local function vulkan_sdk_installed(version)
     local path = VULKAN_SDK_DIR .. "/" .. version
-    return os.rename(path, path) ~= nil
+    local ret = os.rename(path, path) == true
+    return ret
 end
 
 
@@ -97,6 +98,7 @@ local function main()
     VulkanSDKVersion = version
 
     include "vendor/GLFW/Build-GLFW.lua"
+    include "vendor/imgui/Build-ImGui.lua"
 
     project "Axiom"
         kind "StaticLib"
@@ -108,7 +110,7 @@ local function main()
         objdir    ("Bin-Int/" .. OutputDir .. "/%{prj.name}")
 
         pchheader "axpch.h"
-        pchsource "Axiom/src/axpch.cpp"
+        pchsource "src/axpch.cpp"
 
         files {
             "src/**.h",
@@ -123,6 +125,7 @@ local function main()
             glm    = "vendor/glm",
             glfw   = "vendor/GLFW/include",
             vulkan = ("vendor/VulkanSDK/%s/Include"):format(VulkanSDKVersion),
+            imgui  = "vendor/imgui",
         }
 
         includedirs {
@@ -131,20 +134,21 @@ local function main()
             "%{IncludeDir.glm}",
             "%{IncludeDir.glfw}",
             "%{IncludeDir.vulkan}",
+            "%{IncludeDir.imgui}",
         }
 
         defines { "GLFW_INCLUDE_NONE" }
         libdirs { "vendor/VulkanSDK/" .. VulkanSDKVersion .. "/Lib" }
-        links { "GLFW", "vulkan-1" }
+        links { "GLFW", "vulkan-1", "ImGui" }
 
         filter "configurations:Debug"
-            defines     { "DEBUG", "AX_ENABLE_ASSERTS" }
+            defines     { "AX_DEBUG", "AX_ENABLE_ASSERTS" }
             runtime     "Debug"
             symbols     "On"
             links       { "shaderc_combinedd" }
 
         filter "configurations:Release"
-            defines     { "RELEASE" }
+            defines     { "AX_RELEASE" }
             runtime     "Release"
             optimize    "On"
             symbols     "On"

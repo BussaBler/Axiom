@@ -3,6 +3,8 @@
 #include "Core/Log.h"
 #include "Core/Window.h"
 #include "Event/ApplicationEvent.h"
+#include "Event/KeyEvent.h"
+#include "Event/MouseEvent.h"
 #include <GLFW/glfw3.h>
 
 namespace Axiom {

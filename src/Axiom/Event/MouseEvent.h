@@ -43,6 +43,7 @@ namespace Axiom {
 	public:
 		int getMouseButton() const { return button; }
 
+		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryApplicationInput)
 	protected:
 		MouseButtonEvent(int button) : button(button) {}
 
