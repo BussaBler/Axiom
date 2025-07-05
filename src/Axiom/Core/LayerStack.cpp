@@ -2,9 +2,7 @@
 #include "LayerStack.h"
 
 namespace Axiom {
-	LayerStack::LayerStack()
-		: layerInsert(layers.begin()) {
-	}
+	LayerStack::LayerStack(){}
 
 	LayerStack::~LayerStack() {
 		for (Layer* layer : layers) {
@@ -13,7 +11,8 @@ namespace Axiom {
 	}
 
 	void LayerStack::pushLayer(Layer* layer) {
-		layerInsert = layers.emplace(layerInsert, layer);
+		layers.emplace(layers.begin() + layerInsertIndex, layer);
+		layerInsertIndex++;
 		layer->onAttach();
 	}
 
@@ -27,7 +26,7 @@ namespace Axiom {
 		if (it != layers.end()) {
 			layer->onDetach();
 			layers.erase(it);
-			layerInsert--;
+			layerInsertIndex--;
 		}
 	}
 

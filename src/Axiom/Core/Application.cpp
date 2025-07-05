@@ -2,10 +2,16 @@
 #include "Application.h"
 
 namespace Axiom {
+	Application* Application::instance = nullptr;
+
 	Application::Application() {
-		Log::init();
+		AX_CORE_ASSERT(!instance, "Application already exists!");
+		instance = this;
+
 		window = std::unique_ptr<Window>(Window::create());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
+
+		graphicsDevice = std::unique_ptr<GraphicsDevice>(GraphicsDevice::create(window.get(), GraphicsAPI::Vulkan));
 	}
 
 	void Application::onEvent(Event& event) {

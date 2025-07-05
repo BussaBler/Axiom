@@ -25,12 +25,12 @@ namespace Axiom {
 
 		if (!isGLFWInitialized) {
 			int success = glfwInit();
+			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 			AX_CORE_ASSERT(success, "Could not initialize GLFW!");
 			isGLFWInitialized = true;
 		}
 
 		window = glfwCreateWindow(static_cast<int>(data.width), static_cast<int>(data.height), data.title.c_str(), nullptr, nullptr);
-		glfwMakeContextCurrent(window);
 		glfwSetWindowUserPointer(window, &data);
 		setVSync(true);
 
@@ -116,7 +116,6 @@ namespace Axiom {
 
 	void WindowsWindow::onUpdate() {
 		glfwPollEvents();
-		glfwSwapBuffers(window);
 	}
 
 	void WindowsWindow::setVSync(bool enabled) {

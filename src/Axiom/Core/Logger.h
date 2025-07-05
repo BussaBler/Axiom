@@ -1,4 +1,12 @@
 #pragma once
+#include <array>
+#include <chrono>
+#include <filesystem>
+#include <format>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <string>
 
 namespace Axiom {
 	class Logger {

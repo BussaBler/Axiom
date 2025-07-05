@@ -17,7 +17,7 @@ namespace Axiom {
 
 	private:
 		std::vector<Layer*> layers;
-		std::vector<Layer*>::iterator layerInsert;
+		uint32_t layerInsertIndex = 0;
 	};
 }
 
