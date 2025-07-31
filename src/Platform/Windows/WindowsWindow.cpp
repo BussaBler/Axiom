@@ -4,11 +4,7 @@
 namespace Axiom {
 	static bool isGLFWInitialized = false;
 
-	Window* Window::create(const WindowProps& props) {
-		return new WindowsWindow(props);
-	}
-
-	WindowsWindow::WindowsWindow(const WindowProps& props) {
+	WindowsWindow::WindowsWindow(const WindowProps& props) : Window(props) {
 		init(props);
 	}
 
@@ -21,7 +17,7 @@ namespace Axiom {
 		data.width = props.width;
 		data.height = props.height;
 
-		AX_CORE_LOG_INFO("Creating window {0} ({1}, {2})", data.title, data.width, data.height);
+		AX_CORE_LOG_INFO("Creating a Window's window {0} ({1}, {2})", data.title, data.width, data.height);
 
 		if (!isGLFWInitialized) {
 			int success = glfwInit();

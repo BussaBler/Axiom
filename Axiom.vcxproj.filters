@@ -93,5 +93,6 @@
     <ClCompile Include="src\Axiom\Renderer\Shader.cpp" />
     <ClCompile Include="src\Axiom\Renderer\GraphicsDevice.cpp" />
     <ClCompile Include="src\Platform\Vulkan\VulkanDevice.cpp" />
+    <ClCompile Include="src\Axiom\Core\Window.cpp" />
   </ItemGroup>
 </Project>

@@ -1,8 +1,15 @@
 #pragma once
-#include "axpch.h"
 #include "Event/Event.h"
+#include "Log.h"
 
 namespace Axiom {
+	enum class WindowPlatform {
+		None = 0,
+		Windows = 1,
+		Linux = 2,
+		MacOS = 3
+	};
+
 	struct WindowProps {
 		std::string title;
 		uint32_t width;
@@ -16,7 +23,7 @@ namespace Axiom {
 	class Window {
 	public:
 		using EventCallback = std::function<void(Event&)>;
-		Window() = default;
+		Window(const WindowProps& properties) {};
 		virtual ~Window() = default;
 
 		virtual void onUpdate() = 0;
@@ -29,7 +36,7 @@ namespace Axiom {
 
 		virtual void* getNativeWindow() const = 0;
 
-		static Window* create(const WindowProps& props = WindowProps());
+		static Window* create(WindowPlatform windowPlatform, const WindowProps& props = WindowProps());
 	private:
 
 	};

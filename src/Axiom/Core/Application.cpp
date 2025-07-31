@@ -8,7 +8,7 @@ namespace Axiom {
 		AX_CORE_ASSERT(!instance, "Application already exists!");
 		instance = this;
 
-		window = std::unique_ptr<Window>(Window::create());
+		window = std::unique_ptr<Window>(Window::create(WindowPlatform::None, { "Axiom", 1280, 720 }));
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
 		graphicsDevice = std::unique_ptr<GraphicsDevice>(GraphicsDevice::create(window.get(), GraphicsAPI::Vulkan));
