@@ -1,15 +1,14 @@
 #pragma once
 #include "Core/Application.h"
 #include "Core/Input.h"
-#include <GLFW/glfw3.h>
+#include <Windows.h>
 
 namespace Axiom {
 	class WindowsInput : public Input {
 	protected:
-		bool isKeyPressedImpl(int keyCode) override;
-		bool isMouseButtonPressedImpl(int buttonCode) override;
-		float getMouseXImpl() override;
-		float getMouseYImpl() override;
+		bool internalIsKeyPressed(KeyCode keyCode) override;
+		float internalGetMouseX() override;
+		float internalgetMouseY() override;
 	};
 }
 

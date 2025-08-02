@@ -39,7 +39,6 @@ namespace Axiom {
 	// VulkanDevice Implementation
 
     VulkanDevice::VulkanDevice(Window* window) : GraphicsDevice(window, GraphicsAPI::Vulkan) {
-        glfwWindow = static_cast<GLFWwindow*>(window->getNativeWindow());
         createInstance();
         setupDebugMessenger();
         createSurface();
@@ -174,9 +173,6 @@ namespace Axiom {
 	}
 
     void VulkanDevice::createSurface() {
-        if (glfwCreateWindowSurface(instance, glfwWindow, nullptr, &surface) != VK_SUCCESS) {
-            AX_CORE_LOG_ERROR("Failed to create window surface!");
-        }
     }
 
     bool VulkanDevice::isDeviceSuitable(VkPhysicalDevice device) {
@@ -241,13 +237,13 @@ namespace Axiom {
     }
 
     std::vector<const char*> VulkanDevice::getRequiredExtensions() const {
-        uint32_t glfwExtensionsCount = 0;
+        /*uint32_t glfwExtensionsCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
         std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionsCount);
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
-		return extensions;
+        }*/
+	    return std::vector<const char*>();
     }
 
     void VulkanDevice::hasGflwRequiredInstanceExtensions() {

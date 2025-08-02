@@ -4,42 +4,44 @@
 namespace Axiom {
 	Input* Input::instance = new WindowsInput();
 
-	bool WindowsInput::isKeyPressedImpl(int keyCode) {
-		auto& window = Application::get().getWindow();
-		auto* glfwWindow = static_cast<GLFWwindow*>(window.getNativeWindow());
-
-		int state = glfwGetKey(glfwWindow, keyCode); 
-
-		return state == GLFW_PRESS || state == GLFW_REPEAT;
+	bool WindowsInput::internalIsKeyPressed(KeyCode keyCode) {
+		SHORT result = GetAsyncKeyState(keyCodeToWindowsKey(keyCode));
+		if (result & 0x8000) {
+			return true;
+		}
+		return false;
 	}
 
-	bool WindowsInput::isMouseButtonPressedImpl(int buttonCode) {
-		auto& window = Application::get().getWindow();
-		auto* glfwWindow = static_cast<GLFWwindow*>(window.getNativeWindow());
+    float WindowsInput::internalGetMouseX() {
+        POINT pt;
+        HWND hwnd = reinterpret_cast<HWND>(Application::get().getWindow().getNativeWindow());
+        if (!hwnd || !GetCursorPos(&pt))
+            return 0.0f;
 
-		int state = glfwGetMouseButton(glfwWindow, buttonCode);
+        if (!ScreenToClient(hwnd, &pt))
+            return 0.0f;
 
-		return state == GLFW_PRESS;
-	}
+        RECT r;
+        GetClientRect(hwnd, &r);
 
-	float WindowsInput::getMouseXImpl() {
-		auto& window = Application::get().getWindow();
-		auto* glfwWindow = static_cast<GLFWwindow*>(window.getNativeWindow());
+		float x = static_cast<float>(pt.x);
+		return std::clamp(x, static_cast<float>(r.left), static_cast<float>(r.right));
+    }
 
-		double xPos;
-		glfwGetCursorPos(glfwWindow, &xPos, nullptr);
+	float WindowsInput::internalgetMouseY() {
+        POINT pt;
+        HWND hwnd = reinterpret_cast<HWND>(Application::get().getWindow().getNativeWindow());
+        if (!hwnd || !GetCursorPos(&pt))
+            return 0.0f;
 
-		return static_cast<float>(xPos);
-	}
+        if (!ScreenToClient(hwnd, &pt))
+            return 0.0f;
 
-	float WindowsInput::getMouseYImpl() {
-		auto& window = Application::get().getWindow();
-		auto* glfwWindow = static_cast<GLFWwindow*>(window.getNativeWindow());
+        RECT r;
+        GetClientRect(hwnd, &r);
 
-		double yPos;
-		glfwGetCursorPos(glfwWindow, nullptr, &yPos);
-
-		return static_cast<float>(yPos);
+        float y = static_cast<float>(pt.y);
+        return std::clamp(y, static_cast<float>(r.top), static_cast<float>(r.bottom));
 	}
 
 }

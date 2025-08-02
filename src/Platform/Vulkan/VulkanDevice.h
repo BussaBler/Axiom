@@ -1,7 +1,6 @@
 #pragma once
 #include "Renderer/GraphicsDevice.h"
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 #include <vector>
 #include <string>
 
@@ -71,7 +70,6 @@ namespace Axiom {
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-		GLFWwindow* glfwWindow;
 		VkCommandPool commandPool;
 		VkDevice device;
 		VkSurfaceKHR surface;

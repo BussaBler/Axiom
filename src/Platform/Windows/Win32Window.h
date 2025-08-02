@@ -1,34 +1,36 @@
 #pragma once
-#include "Core/Assert.h"
-#include "Core/Log.h"
 #include "Core/Window.h"
+#include "Core/Log.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
-#include "Event/MouseEvent.h"
-#include <GLFW/glfw3.h>
+#include <Windows.h>
 
 namespace Axiom {
-	class WindowsWindow : public Window {
+	class Win32Window : public Window {
 	public:
-		WindowsWindow(const WindowProps& props);
-		~WindowsWindow();
+		Win32Window(const WindowProps& props);
+		~Win32Window();
 
 		void onUpdate() override;
 		uint32_t getWidth() const override { return data.width; }
 		uint32_t getHeight() const override { return data.height; }
-
 		void setEventCallback(const EventCallback& callback) override { data.eventCallback = callback; }
 		void setVSync(bool enabled) override;
-		bool isVSync() const override;
+		bool isVSync() const override { return data.vSync; }
 
 		void* getNativeWindow() const override { return window; }
 
 	private:
-		virtual void init(const WindowProps& props);
-		virtual void shutdown();
+		void init(const WindowProps& props);
+		void shutdown();
+		void processMessages();
+
+		static LRESULT CALLBACK windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	private:
-		GLFWwindow* window;
+		HINSTANCE hInstance;
+		HWND window;
+
 		struct WindowData {
 			std::string title;
 			uint32_t width, height;

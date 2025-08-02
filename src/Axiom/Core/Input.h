@@ -1,18 +1,18 @@
 #pragma once
+#include "Event/KeyCodes.h"
 
 namespace Axiom {
 	class Input {
 	public:
-		static bool isKeyPressed(int keyCode) { instance->isKeyPressedImpl(keyCode); }
-		static bool isMouseButtonPressed(int buttonCode) { return instance->isMouseButtonPressedImpl(buttonCode); }
-		static float getMouseX() { return instance->getMouseXImpl(); }
-		static float getMouseY() { return instance->getMouseYImpl(); }
+		static bool isKeyPressed(KeyCode keyCode) { return instance->internalIsKeyPressed(keyCode); }
+		static float getMouseX() { return instance->internalGetMouseX(); }
+		static float getMouseY() { return instance->internalgetMouseY(); }
+		static int keyCodeToWindowsKey(KeyCode keyCode) { return static_cast<int>(keyCode); }
 
 	protected:
-		virtual bool isKeyPressedImpl(int keyCode) = 0; 
-		virtual bool isMouseButtonPressedImpl(int buttonCode) = 0;
-		virtual float getMouseXImpl() = 0;
-		virtual float getMouseYImpl() = 0;
+		virtual bool internalIsKeyPressed(KeyCode keyCode) = 0;
+		virtual float internalGetMouseX() = 0;
+		virtual float internalgetMouseY() = 0;
 
 	private:
 		static Input* instance;

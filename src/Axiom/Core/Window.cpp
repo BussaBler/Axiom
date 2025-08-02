@@ -1,6 +1,6 @@
 #include "axpch.h"
 #include "Window.h"
-#include "Platform/Windows/WindowsWindow.h"
+#include "Platform/Windows/Win32Window.h"
 
 namespace Axiom {
 	Window* Window::create(WindowPlatform platform, const WindowProps& properties) {
@@ -10,7 +10,7 @@ namespace Axiom {
 				return nullptr;
 				break;
 			case Axiom::WindowPlatform::Windows:
-				return new WindowsWindow(properties);
+				return new Win32Window(properties);
 				break;
 			case Axiom::WindowPlatform::Linux:
 				// return new LinuxWindow(properties);

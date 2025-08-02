@@ -68,6 +68,8 @@ local function install_vulkan_sdk(version)
     assert(download_ok == true, "Error: Failed to download Vulkan SDK installer")
 
     local install_path = VULKAN_SDK_DIR_ABS .. "/" .. version
+    ensure_dir(install_path)
+
     local install_cmd
     if is_windows then
         install_cmd = string.format('.\\%s --root "%s" --accept-licenses --default-answer --confirm-command install com.lunarg.vulkan.debug',
@@ -76,8 +78,8 @@ local function install_vulkan_sdk(version)
         install_cmd = string.format('tar -xJf "%s" -C "%s"', installer_name, install_path)
     end
 
-    local install_ok = os.execute(install_cmd)
-    assert(install_ok == true, "Error: Failed to install Vulkan SDK")
+    local success, exit_type, exit_code = os.execute(install_cmd)
+    assert(success, string.format("Error: Failed to install Vulkan SDK (exit_type=%s, exit_code=%s)", exit_type, exit_code))
 
     os.remove(installer_name)
 
@@ -97,7 +99,6 @@ local function main()
 
     VulkanSDKVersion = version
 
-    include "vendor/GLFW/Build-GLFW.lua"
     include "vendor/imgui/Build-ImGui.lua"
 
     project "Axiom"
@@ -123,7 +124,6 @@ local function main()
 
         IncludeDir = {
             glm    = "vendor/glm",
-            glfw   = "vendor/GLFW/include",
             vulkan = ("vendor/VulkanSDK/%s/Include"):format(VulkanSDKVersion),
             imgui  = "vendor/imgui",
         }
@@ -139,7 +139,7 @@ local function main()
 
         defines { "GLFW_INCLUDE_NONE" }
         libdirs { "vendor/VulkanSDK/" .. VulkanSDKVersion .. "/Lib" }
-        links { "GLFW", "vulkan-1", "ImGui" }
+        links { "vulkan-1", "ImGui" }
 
         filter "configurations:Debug"
             defines     { "AX_DEBUG", "AX_ENABLE_ASSERTS" }
