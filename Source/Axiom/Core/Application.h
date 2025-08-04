@@ -4,13 +4,19 @@
 #include "Input.h"
 #include "LayerStack.h"
 #include "Log.h"
-#include "Window.h"
 #include "Renderer/GraphicsDevice.h"
+#include "Utils/FileSystem.h"
+#include "Window.h"
 
 namespace Axiom {
+	struct ApplicationInfo {
+		std::string name;
+		std::filesystem::path workingDirectory;
+	};
+
 	class Application {
 	public:
-		Application();
+		Application(const ApplicationInfo& appInfo);
 		virtual ~Application() = default;
 
 		void run();
@@ -36,6 +42,6 @@ namespace Axiom {
 		static Application* instance; 
 	};
 
-	Application* createApplication();
+	Application* createApplication(const ApplicationInfo& appInfo);
 }
 

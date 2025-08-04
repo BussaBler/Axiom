@@ -15,6 +15,7 @@
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Axiom</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -56,7 +57,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>axpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;AX_DEBUG;AX_ENABLE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AX_PLATFORM_WINDOWS;GLFW_INCLUDE_NONE;AX_DEBUG;AX_ENABLE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>src;src\Axiom;vendor\glm;.;vendor\VulkanSDK\1.4.321.1\Include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
@@ -78,7 +79,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>axpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>GLFW_INCLUDE_NONE;AX_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AX_PLATFORM_WINDOWS;GLFW_INCLUDE_NONE;AX_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>src;src\Axiom;vendor\glm;.;vendor\VulkanSDK\1.4.321.1\Include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Full</Optimization>
@@ -102,6 +103,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Axiom\Utils\FileSystem.h" />
     <ClInclude Include="src\Axiom\Axiom.h" />
     <ClInclude Include="src\Axiom\Core\Application.h" />
     <ClInclude Include="src\Axiom\Core\Assert.h" />
@@ -131,14 +133,15 @@
     <ClInclude Include="src\axpch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Axiom\Utils\FileSystem.cpp" />
     <ClCompile Include="src\Axiom\Core\Application.cpp" />
     <ClCompile Include="src\Axiom\Core\Layer.cpp" />
     <ClCompile Include="src\Axiom\Core\LayerStack.cpp" />
     <ClCompile Include="src\Axiom\Core\Log.cpp" />
     <ClCompile Include="src\Axiom\Core\Logger.cpp" />
-    <ClCompile Include="src\Axiom\Core\Window.cpp" />
     <ClCompile Include="src\Axiom\ImGui\ImGuiLayer.cpp" />
     <ClCompile Include="src\Axiom\Renderer\GraphicsDevice.cpp" />
+    <ClCompile Include="src\Axiom\Renderer\Pipeline.cpp" />
     <ClCompile Include="src\Axiom\Renderer\Shader.cpp" />
     <ClCompile Include="src\Platform\Vulkan\VulkanDevice.cpp" />
     <ClCompile Include="src\Platform\Vulkan\VulkanPipeline.cpp" />

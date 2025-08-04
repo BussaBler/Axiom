@@ -118,9 +118,41 @@ local function main()
             "src/**.cpp",
         }
 
+        removefiles {
+            "src/Platform/Windows/**",
+            "src/Platform/Linux/**",
+            "src/Platform/MacOS/**",
+        }
+
         vpaths {
             ["Source Files"] = "src/**"
         }
+
+        filter "system:windows"
+            systemversion "latest"
+            defines { "AX_PLATFORM_WINDOWS" }
+            files {
+                "src/Platform/Windows/**.h",
+                "src/Platform/Windows/**.cpp",
+            }
+        
+        filter "system:linux"
+            systemversion "latest"
+            defines { "AX_PLATFORM_LINUX" }
+            files {
+                "src/Platform/Linux/**.h",
+                "src/Platform/Linux/**.cpp",
+            }
+
+        filter "system:macosx"
+            systemversion "latest"
+            defines { "AX_PLATFORM_MACOS" }
+            files {
+                "src/Platform/MacOS/**.h",
+                "src/Platform/MacOS/**.cpp",
+            }
+
+        filter {}
 
         IncludeDir = {
             glm    = "vendor/glm",

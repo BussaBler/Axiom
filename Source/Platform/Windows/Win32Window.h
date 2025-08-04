@@ -19,6 +19,7 @@ namespace Axiom {
 		bool isVSync() const override { return data.vSync; }
 
 		void* getNativeWindow() const override { return window; }
+		void* getNativeDisplay() const override { return hInstance; }
 
 	private:
 		void init(const WindowProps& props);

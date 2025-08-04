@@ -87,6 +87,7 @@
     <ClInclude Include="src\axpch.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Axiom\Utils\FileSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Axiom\Core\Application.cpp">
@@ -102,9 +103,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Axiom\Core\Logger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Axiom\Core\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Axiom\ImGui\ImGuiLayer.cpp">
@@ -131,5 +129,7 @@
     <ClCompile Include="src\axpch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Axiom\Renderer\Pipeline.cpp" />
+    <ClCompile Include="src\Axiom\Utils\FileSystem.cpp" />
   </ItemGroup>
 </Project>

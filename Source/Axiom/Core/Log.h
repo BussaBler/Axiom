@@ -20,7 +20,7 @@ namespace Axiom {
 
 #define AX_CORE_LOG_TRACE(...) Log::getCoreLogger()->trace(__VA_ARGS__)
 
-#ifndef AX_DEBUG
+#ifdef AX_DEBUG
 #define AX_CORE_LOG_DEBUG(...) Log::getCoreLogger()->debug(__VA_ARGS__)
 #else
 #define AX_CORE_LOG_DEBUG(...)

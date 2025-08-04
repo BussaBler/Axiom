@@ -1,6 +1,11 @@
 #pragma once
 #include "Renderer/GraphicsDevice.h"
 #include <vulkan/vulkan.h>
+#ifdef AX_PLATFORM_WINDOWS
+#include "Platform/Windows/Win32Window.h"
+#include <vulkan/vulkan_win32.h>
+#endif // AX_PLATFORM_WINDOWS
+
 #include <vector>
 #include <string>
 
@@ -27,8 +32,6 @@ namespace Axiom {
 	public:
 		VulkanDevice(Window* window);
 		~VulkanDevice();
-
-		Pipeline* createPipeline() override;
 		void submitCommandBuffer() override;
 
 		VkCommandPool getCommandPool() const { return commandPool; }
@@ -57,7 +60,7 @@ namespace Axiom {
 		bool checkValidationLayerSupport();
 		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
 		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-		void hasGflwRequiredInstanceExtensions();
+		void hasRequiredInstanceExtensions();
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 

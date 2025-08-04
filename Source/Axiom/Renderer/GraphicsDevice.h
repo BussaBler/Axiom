@@ -2,7 +2,6 @@
 #include "Core/Log.h"
 #include "Core/Assert.h"
 #include "Core/Window.h"
-#include "Pipeline.h"
 
 namespace Axiom {
 	enum class GraphicsAPI {
@@ -15,13 +14,12 @@ namespace Axiom {
 	public:
 		GraphicsDevice(Window* window, GraphicsAPI api) : window(window), api(api) {}
 		virtual ~GraphicsDevice() = default;
-		static GraphicsDevice* create(Window* window, GraphicsAPI api);
+		static std::unique_ptr<GraphicsDevice> create(Window* window, GraphicsAPI api);
 		GraphicsAPI getAPI() const { return api; }
 
 		GraphicsDevice(const GraphicsDevice&) = delete;
 		GraphicsDevice& operator=(const GraphicsDevice&) = delete;
 
-		virtual Pipeline* createPipeline() = 0;
 		virtual void submitCommandBuffer() = 0;
 
 	protected:

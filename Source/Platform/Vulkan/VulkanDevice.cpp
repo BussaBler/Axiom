@@ -57,11 +57,6 @@ namespace Axiom {
 		vkDestroyInstance(instance, nullptr);
     }
 
-    Pipeline* VulkanDevice::createPipeline() {
-        // TODO
-        return nullptr;
-	}
-
     void VulkanDevice::submitCommandBuffer() {
 
     }
@@ -103,7 +98,7 @@ namespace Axiom {
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
 			AX_CORE_LOG_ERROR("Failed to create Vulkan instance!");
         }
-        hasGflwRequiredInstanceExtensions();
+        hasRequiredInstanceExtensions();
     }
 
     void VulkanDevice::pickPhysicalDevice() {
@@ -173,6 +168,18 @@ namespace Axiom {
 	}
 
     void VulkanDevice::createSurface() {
+#if defined(AX_PLATFORM_WINDOWS)
+		VkWin32SurfaceCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+		createInfo.hinstance = reinterpret_cast<HINSTANCE>(window->getNativeDisplay());
+		createInfo.hwnd = reinterpret_cast<HWND>(window->getNativeWindow());
+
+		AX_CORE_ASSERT(vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) == VK_SUCCESS, "Failed to create window surface!");
+#elif defined(AX_PLATFORM_LINUX)
+
+#elif defined(AX_PLATFORM_MACOS)
+
+#endif
     }
 
     bool VulkanDevice::isDeviceSuitable(VkPhysicalDevice device) {
@@ -237,22 +244,31 @@ namespace Axiom {
     }
 
     std::vector<const char*> VulkanDevice::getRequiredExtensions() const {
-        /*uint32_t glfwExtensionsCount = 0;
-		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionsCount);
+        uint32_t windowExtensionsCount = 2;
+        const char* windowExtensions[2];
+		windowExtensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
+
+#if defined(AX_PLATFORM_WINDOWS)
+        windowExtensions[1] = "VK_KHR_win32_surface";
+#elif defined(AX_PLATFORM_LINUX)
+		windowExtensions[1] = "VK_KHR_xlib_surface";
+#elif defined(AX_PLATFORM_MACOS)
+		windowExtensions[1] = "VK_MVK_macos_surface";
+#endif
+        std::vector<const char*> extensions(windowExtensions, windowExtensions + windowExtensionsCount);
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }*/
-	    return std::vector<const char*>();
+        }
+        return extensions;
     }
 
-    void VulkanDevice::hasGflwRequiredInstanceExtensions() {
+    void VulkanDevice::hasRequiredInstanceExtensions() {
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> extensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-        AX_CORE_LOG_DEBUG("Available extensions:")
+        AX_CORE_LOG_DEBUG("Available extensions:");
         std::unordered_set<std::string> available;
         for (const auto& extension : extensions) {
 			AX_CORE_LOG_DEBUG("\t{0}", extension.extensionName);

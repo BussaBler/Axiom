@@ -46,7 +46,11 @@ namespace Axiom {
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
-	Win32Window::Win32Window(const WindowProps& props) : Window(props) {
+	std::unique_ptr<Window> Window::create(const WindowProps& props) {
+		return std::make_unique<Win32Window>(props);
+	}
+
+	Win32Window::Win32Window(const WindowProps& props) {
 		init(props);
 	}
 

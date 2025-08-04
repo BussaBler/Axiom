@@ -2,8 +2,8 @@
 #include "VulkanPipeline.h"
 
 namespace Axiom {
-	VulkanPipeline::VulkanPipeline(std::vector<std::filesystem::path> shaderStages) {
-		
+	VulkanPipeline::VulkanPipeline(const std::string& name, std::vector<std::filesystem::path>& shaderStages, VulkanDevice& graphicsDevice) 
+		: Pipeline(name), device{ graphicsDevice } {
 	}
 
 	void VulkanPipeline::bind() {

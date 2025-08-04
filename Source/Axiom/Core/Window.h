@@ -3,13 +3,6 @@
 #include "Log.h"
 
 namespace Axiom {
-	enum class WindowPlatform {
-		None = 0,
-		Windows = 1,
-		Linux = 2,
-		MacOS = 3
-	};
-
 	struct WindowProps {
 		std::string title;
 		uint32_t width;
@@ -23,7 +16,7 @@ namespace Axiom {
 	class Window {
 	public:
 		using EventCallback = std::function<void(Event&)>;
-		Window(const WindowProps& properties) {};
+		Window() = default;
 		virtual ~Window() = default;
 
 		virtual void onUpdate() = 0;
@@ -35,8 +28,9 @@ namespace Axiom {
 		virtual bool isVSync() const = 0;
 
 		virtual void* getNativeWindow() const = 0;
+		virtual void* getNativeDisplay() const = 0;
 
-		static Window* create(WindowPlatform windowPlatform, const WindowProps& props = WindowProps());
+		static std::unique_ptr<Window> create(const WindowProps& props);
 	private:
 
 	};

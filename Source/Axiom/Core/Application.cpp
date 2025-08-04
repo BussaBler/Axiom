@@ -4,14 +4,18 @@
 namespace Axiom {
 	Application* Application::instance = nullptr;
 
-	Application::Application() {
+	Application::Application(const ApplicationInfo& appInfo) {
 		AX_CORE_ASSERT(!instance, "Application already exists!");
 		instance = this;
+		
+		FileSystem::setWorkingDirectory(appInfo.workingDirectory);
+		AX_CORE_LOG_INFO("Application started: {0}", appInfo.name);
+		AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
 
-		window = std::unique_ptr<Window>(Window::create(WindowPlatform::Windows, { "Axiom", 1280, 720 }));
+		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
-		//graphicsDevice = std::unique_ptr<GraphicsDevice>(GraphicsDevice::create(window.get(), GraphicsAPI::Vulkan));
+		graphicsDevice = GraphicsDevice::create(window.get(), GraphicsAPI::Vulkan);
 	}
 
 	void Application::onEvent(Event& event) {
