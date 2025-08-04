@@ -111,45 +111,45 @@ local function main()
         objdir    ("Bin-Int/" .. OutputDir .. "/%{prj.name}")
 
         pchheader "axpch.h"
-        pchsource "src/axpch.cpp"
+        pchsource "Source/axpch.cpp"
 
         files {
-            "src/**.h",
-            "src/**.cpp",
+            "Source/**.h",
+            "Source/**.cpp",
         }
 
         removefiles {
-            "src/Platform/Windows/**",
-            "src/Platform/Linux/**",
-            "src/Platform/MacOS/**",
+            "Source/Platform/Windows/**",
+            "Source/Platform/Linux/**",
+            "Source/Platform/MacOS/**",
         }
 
         vpaths {
-            ["Source Files"] = "src/**"
+            ["Source Files"] = "Source/**"
         }
 
         filter "system:windows"
             systemversion "latest"
             defines { "AX_PLATFORM_WINDOWS" }
             files {
-                "src/Platform/Windows/**.h",
-                "src/Platform/Windows/**.cpp",
+                "Source/Platform/Windows/**.h",
+                "Source/Platform/Windows/**.cpp",
             }
         
         filter "system:linux"
             systemversion "latest"
             defines { "AX_PLATFORM_LINUX" }
             files {
-                "src/Platform/Linux/**.h",
-                "src/Platform/Linux/**.cpp",
+                "Source/Platform/Linux/**.h",
+                "Source/Platform/Linux/**.cpp",
             }
 
         filter "system:macosx"
             systemversion "latest"
             defines { "AX_PLATFORM_MACOS" }
             files {
-                "src/Platform/MacOS/**.h",
-                "src/Platform/MacOS/**.cpp",
+                "Source/Platform/MacOS/**.h",
+                "Source/Platform/MacOS/**.cpp",
             }
 
         filter {}
@@ -161,8 +161,8 @@ local function main()
         }
 
         includedirs {
-            "src",
-            "src/Axiom",
+            "Source",
+            "Source/Axiom",
             "%{IncludeDir.glm}",
             "%{IncludeDir.glfw}",
             "%{IncludeDir.vulkan}",
