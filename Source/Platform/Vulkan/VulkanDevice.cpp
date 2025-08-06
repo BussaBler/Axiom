@@ -104,7 +104,7 @@ namespace Axiom {
     void VulkanDevice::pickPhysicalDevice() {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-		AX_CORE_ASSERT(deviceCount > 0, "Failed to find GPUs with Vulkan support!");
+		AX_CORE_ASSERT(deviceCount, "Failed to find GPUs with Vulkan support!");
 
 		AX_CORE_LOG_DEBUG("Device count: {0}", deviceCount);
 		std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -168,6 +168,7 @@ namespace Axiom {
 	}
 
     void VulkanDevice::createSurface() {
+		surface = VK_NULL_HANDLE;
 #if defined(AX_PLATFORM_WINDOWS)
 		VkWin32SurfaceCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
@@ -249,7 +250,7 @@ namespace Axiom {
 		windowExtensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
 
 #if defined(AX_PLATFORM_WINDOWS)
-        windowExtensions[1] = "VK_KHR_win32_surface";
+        windowExtensions[1] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
 #elif defined(AX_PLATFORM_LINUX)
 		windowExtensions[1] = "VK_KHR_xlib_surface";
 #elif defined(AX_PLATFORM_MACOS)

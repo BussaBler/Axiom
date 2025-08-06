@@ -58,7 +58,7 @@
       <PrecompiledHeaderFile>axpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>AX_PLATFORM_WINDOWS;GLFW_INCLUDE_NONE;AX_DEBUG;AX_ENABLE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;src\Axiom;vendor\glm;.;vendor\VulkanSDK\1.4.321.1\Include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Source;Source\Axiom;vendor\glm;.;vendor\VulkanSDK\1.4.321.1\Include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -80,7 +80,7 @@
       <PrecompiledHeaderFile>axpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>AX_PLATFORM_WINDOWS;GLFW_INCLUDE_NONE;AX_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;src\Axiom;vendor\glm;.;vendor\VulkanSDK\1.4.321.1\Include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Source;Source\Axiom;vendor\glm;.;vendor\VulkanSDK\1.4.321.1\Include;vendor\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -103,51 +103,51 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Axiom\Utils\FileSystem.h" />
-    <ClInclude Include="src\Axiom\Axiom.h" />
-    <ClInclude Include="src\Axiom\Core\Application.h" />
-    <ClInclude Include="src\Axiom\Core\Assert.h" />
-    <ClInclude Include="src\Axiom\Core\Base.h" />
-    <ClInclude Include="src\Axiom\Core\EntryPoint.h" />
-    <ClInclude Include="src\Axiom\Core\Input.h" />
-    <ClInclude Include="src\Axiom\Core\KeyCodes.h" />
-    <ClInclude Include="src\Axiom\Core\Layer.h" />
-    <ClInclude Include="src\Axiom\Core\LayerStack.h" />
-    <ClInclude Include="src\Axiom\Core\Log.h" />
-    <ClInclude Include="src\Axiom\Core\Logger.h" />
-    <ClInclude Include="src\Axiom\Core\MouseButtonCodes.h" />
-    <ClInclude Include="src\Axiom\Core\Window.h" />
-    <ClInclude Include="src\Axiom\Event\ApplicationEvent.h" />
-    <ClInclude Include="src\Axiom\Event\Event.h" />
-    <ClInclude Include="src\Axiom\Event\KeyCodes.h" />
-    <ClInclude Include="src\Axiom\Event\KeyEvent.h" />
-    <ClInclude Include="src\Axiom\Event\MouseEvent.h" />
-    <ClInclude Include="src\Axiom\ImGui\ImGuiLayer.h" />
-    <ClInclude Include="src\Axiom\Renderer\GraphicsDevice.h" />
-    <ClInclude Include="src\Axiom\Renderer\Pipeline.h" />
-    <ClInclude Include="src\Axiom\Renderer\Shader.h" />
-    <ClInclude Include="src\Platform\Vulkan\VulkanDevice.h" />
-    <ClInclude Include="src\Platform\Vulkan\VulkanPipeline.h" />
-    <ClInclude Include="src\Platform\Windows\Win32Window.h" />
-    <ClInclude Include="src\Platform\Windows\WindowsInput.h" />
-    <ClInclude Include="src\axpch.h" />
+    <ClInclude Include="Source\Axiom\Axiom.h" />
+    <ClInclude Include="Source\Axiom\Core\Application.h" />
+    <ClInclude Include="Source\Axiom\Core\Assert.h" />
+    <ClInclude Include="Source\Axiom\Core\Base.h" />
+    <ClInclude Include="Source\Axiom\Core\EntryPoint.h" />
+    <ClInclude Include="Source\Axiom\Core\Input.h" />
+    <ClInclude Include="Source\Axiom\Core\KeyCodes.h" />
+    <ClInclude Include="Source\Axiom\Core\Layer.h" />
+    <ClInclude Include="Source\Axiom\Core\LayerStack.h" />
+    <ClInclude Include="Source\Axiom\Core\Log.h" />
+    <ClInclude Include="Source\Axiom\Core\Logger.h" />
+    <ClInclude Include="Source\Axiom\Core\MouseButtonCodes.h" />
+    <ClInclude Include="Source\Axiom\Core\Window.h" />
+    <ClInclude Include="Source\Axiom\Event\ApplicationEvent.h" />
+    <ClInclude Include="Source\Axiom\Event\Event.h" />
+    <ClInclude Include="Source\Axiom\Event\KeyCodes.h" />
+    <ClInclude Include="Source\Axiom\Event\KeyEvent.h" />
+    <ClInclude Include="Source\Axiom\Event\MouseEvent.h" />
+    <ClInclude Include="Source\Axiom\ImGui\ImGuiLayer.h" />
+    <ClInclude Include="Source\Axiom\Renderer\GraphicsDevice.h" />
+    <ClInclude Include="Source\Axiom\Renderer\Pipeline.h" />
+    <ClInclude Include="Source\Axiom\Renderer\Shader.h" />
+    <ClInclude Include="Source\Axiom\Utils\FileSystem.h" />
+    <ClInclude Include="Source\Platform\Vulkan\VulkanDevice.h" />
+    <ClInclude Include="Source\Platform\Vulkan\VulkanPipeline.h" />
+    <ClInclude Include="Source\Platform\Windows\Win32Window.h" />
+    <ClInclude Include="Source\Platform\Windows\WindowsInput.h" />
+    <ClInclude Include="Source\axpch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Axiom\Utils\FileSystem.cpp" />
-    <ClCompile Include="src\Axiom\Core\Application.cpp" />
-    <ClCompile Include="src\Axiom\Core\Layer.cpp" />
-    <ClCompile Include="src\Axiom\Core\LayerStack.cpp" />
-    <ClCompile Include="src\Axiom\Core\Log.cpp" />
-    <ClCompile Include="src\Axiom\Core\Logger.cpp" />
-    <ClCompile Include="src\Axiom\ImGui\ImGuiLayer.cpp" />
-    <ClCompile Include="src\Axiom\Renderer\GraphicsDevice.cpp" />
-    <ClCompile Include="src\Axiom\Renderer\Pipeline.cpp" />
-    <ClCompile Include="src\Axiom\Renderer\Shader.cpp" />
-    <ClCompile Include="src\Platform\Vulkan\VulkanDevice.cpp" />
-    <ClCompile Include="src\Platform\Vulkan\VulkanPipeline.cpp" />
-    <ClCompile Include="src\Platform\Windows\Win32Window.cpp" />
-    <ClCompile Include="src\Platform\Windows\WindowsInput.cpp" />
-    <ClCompile Include="src\axpch.cpp">
+    <ClCompile Include="Source\Axiom\Core\Application.cpp" />
+    <ClCompile Include="Source\Axiom\Core\Layer.cpp" />
+    <ClCompile Include="Source\Axiom\Core\LayerStack.cpp" />
+    <ClCompile Include="Source\Axiom\Core\Log.cpp" />
+    <ClCompile Include="Source\Axiom\Core\Logger.cpp" />
+    <ClCompile Include="Source\Axiom\ImGui\ImGuiLayer.cpp" />
+    <ClCompile Include="Source\Axiom\Renderer\GraphicsDevice.cpp" />
+    <ClCompile Include="Source\Axiom\Renderer\Pipeline.cpp" />
+    <ClCompile Include="Source\Axiom\Renderer\Shader.cpp" />
+    <ClCompile Include="Source\Axiom\Utils\FileSystem.cpp" />
+    <ClCompile Include="Source\Platform\Vulkan\VulkanDevice.cpp" />
+    <ClCompile Include="Source\Platform\Vulkan\VulkanPipeline.cpp" />
+    <ClCompile Include="Source\Platform\Windows\Win32Window.cpp" />
+    <ClCompile Include="Source\Platform\Windows\WindowsInput.cpp" />
+    <ClCompile Include="Source\axpch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>

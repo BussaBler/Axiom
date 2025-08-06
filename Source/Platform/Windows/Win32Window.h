@@ -3,6 +3,8 @@
 #include "Core/Log.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
+#define UNICODE
+#define _UNICODE
 #include <Windows.h>
 
 namespace Axiom {
