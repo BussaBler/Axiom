@@ -1,52 +1,28 @@
 Import('base_env', 'debug_env', 'release_env', 'build_info')
 import os
-from SCons.Script import Dir
-
-# ============================================================================
-# Build Configuration
-# ============================================================================
+from SCons.Script import Dir, Return
 
 platform = build_info['platform']
 architecture = build_info['architecture'] 
 compiler = build_info['compiler']
 config = build_info['config']
 vulkan_sdk = build_info['vulkan_sdk']
+vsproj = build_info['vsproj']
 
-# Select the appropriate environment
 current_env = debug_env if config.lower() == 'debug' else release_env
 config_name = config.capitalize()
 
-# Set output directory for object files
 obj_prefix = f'/Bin-Int/{platform}-{architecture}/{config_name}/'
 current_env['OBJPREFIX'] = obj_prefix
-
-# ============================================================================
-# ImGui Library Build
-# ============================================================================
-
-imgui_src_dir = Dir('../../Axiom/Vendor/ImGui')
-imgui_sources = imgui_src_dir.glob('*.cpp')
-current_env.Append(CPPPATH=[imgui_src_dir])
-imgui_lib = current_env.StaticLibrary('ImGui', imgui_sources)
-
-# ============================================================================
-# Axiom Library Source Files
-# ============================================================================
 
 src_dir = Dir('../../Axiom/Source')
 all_cpp_files = src_dir.glob('Axiom/**/*.cpp')
 
-# Exclude platform-specific files initially
 axiom_sources = [f for f in all_cpp_files if '/Platform/' not in str(f) and '\\Platform\\' not in str(f)]
 
-# Add Vulkan platform files (common across platforms)
 axiom_sources += src_dir.glob('Platform/Vulkan/*.cpp')
 
-# ============================================================================
-# Platform-Specific Configuration
-# ============================================================================
-
-def configure_platform_specific(env, platform_name, compiler_type, vulkan_path):
+def configure_platform_specific(env, platform_name, compiler_type):
     """Configure platform-specific settings"""
     
     # Add C++20 standard
@@ -69,12 +45,8 @@ def configure_platform_specific(env, platform_name, compiler_type, vulkan_path):
         return []
 
 # Add platform-specific sources
-platform_sources = configure_platform_specific(current_env, platform, compiler, vulkan_sdk)
+platform_sources = configure_platform_specific(current_env, platform, compiler)
 axiom_sources += platform_sources
-
-# ============================================================================
-# Include Paths and Libraries
-# ============================================================================
 
 current_env.Append(CPPPATH=[
     '../../Axiom/Source',
@@ -84,7 +56,6 @@ current_env.Append(CPPPATH=[
     '../../Axiom/Vendor/ImGui',
 ])
 
-# Platform and compiler specific library configuration
 if compiler == 'msvc':
     current_env.Append(LIBPATH=[os.path.join(vulkan_sdk, 'Lib')])
     shaderc_lib = 'shaderc_combined' + ('d' if config.lower() == 'debug' else '')
@@ -92,8 +63,29 @@ if compiler == 'msvc':
 else:  # GCC or Clang
     current_env.Append(LIBS=['vulkan-1', 'shaderc_combined'])
 
-# Update object file prefix
 current_env['OBJPREFIX'] = f'../../../Bin-Int/{platform}-{architecture}/{config_name}/'
 
-# Build the Axiom library
 axiom_lib = current_env.StaticLibrary('Axiom', axiom_sources)
+
+axiom_project = None
+if vsproj:
+    axiom_sources = src_dir.glob('Axiom/**/*.cpp')
+    axiom_sources += src_dir.glob('Platform/**/*.cpp')
+    axiom_sources += src_dir.glob('*.cpp')
+    axiom_headers = src_dir.glob('Axiom/**/*.h')
+    axiom_headers += src_dir.glob('Platform/**/*.h')
+    axiom_headers += src_dir.glob('*.h')
+
+    current_env['CPPPATH'] = [Dir(path) for path in current_env['CPPPATH']]
+
+    axiom_project = current_env.MSVSProject(
+        target='../../Axiom/Axiom' + current_env['MSVSPROJECTSUFFIX'],
+        srcs=[str(f) for f in axiom_sources],
+        incs=[str(f) for f in axiom_headers],
+        buildtarget=axiom_lib,
+        variant=[f'{config_name}|x64'],
+        auto_build_solution=0
+    )
+
+
+Return('axiom_lib', 'axiom_project')
