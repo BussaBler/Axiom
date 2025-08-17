@@ -20,7 +20,7 @@ namespace Axiom {
 		int getRepeatCount() const { return repeatCount; }
 		std::string toString() const override {
 			std::stringstream ss;
-			ss << "KeyPressedEvent: " << keycode << " (" << repeatCount << "repeats)";
+			ss << "KeyPressedEvent: " << keycode << " (" << repeatCount << " repeats)";
 			return ss.str();
 		}
 		EVENT_CLASS_TYPE(KeyPressed)

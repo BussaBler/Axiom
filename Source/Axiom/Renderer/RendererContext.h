@@ -1,0 +1,20 @@
+#pragma once
+#include "Core/Window.h"
+
+namespace Axiom {
+	class RendererContext {
+	public:
+		RendererContext() = default;
+		virtual ~RendererContext() = default;
+		virtual void init(Window* window) = 0;
+		virtual void shutdown() = 0;
+		virtual bool beginFrame() = 0;
+		virtual bool endFrame() = 0;
+		virtual void onResize(uint32_t width, uint32_t height) = 0;
+
+		static std::unique_ptr<RendererContext> create();
+
+	protected:
+		Window* window;
+	};
+}

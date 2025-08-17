@@ -10,12 +10,12 @@ namespace Axiom {
 	class Shader {
 	public:
 		Shader(std::filesystem::path filePath);
-		~Shader() = default;
+		virtual ~Shader() = default;
 
-		std::vector<uint32_t> getShaderByteCode();
-		std::string getShaderSourceCode();
+		virtual std::vector<uint32_t> getShaderByteCode() = 0;
+		virtual std::string getShaderSourceCode() = 0;
 
-	private:
+	protected:
 		std::filesystem::path filePath;
 	};
 }

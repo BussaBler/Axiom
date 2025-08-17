@@ -1,13 +1,10 @@
 #pragma once
-#include "Renderer/GraphicsDevice.h"
+#include "Core/Assert.h"
 #include <vulkan/vulkan.h>
 #ifdef AX_PLATFORM_WINDOWS
 #include "Platform/Windows/Win32Window.h"
 #include <vulkan/vulkan_win32.h>
 #endif // AX_PLATFORM_WINDOWS
-
-#include <vector>
-#include <string>
 
 namespace Axiom {
 	struct SwapChainSupportDetails {
@@ -28,14 +25,13 @@ namespace Axiom {
 		}
 	};
 
-	class VulkanDevice : public GraphicsDevice {
+	class VulkanDevice {
 	public:
 		VulkanDevice(Window* window);
 		~VulkanDevice();
-		void submitCommandBuffer() override;
 
-		VkCommandPool getCommandPool() const { return commandPool; }
-		VkDevice getDevice() const { return device; }
+		VkCommandPool getGraphicsCommandPool() const { return graphicsCommandPool; }
+		VkDevice getHandle() const { return handle; }
 		VkSurfaceKHR getSurface() const { return surface; }
 		VkQueue getGraphicsQueue() const { return graphicsQueue; }
 		VkQueue getPresentQueue() const { return presentQueue; }
@@ -45,15 +41,14 @@ namespace Axiom {
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 		QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
 		VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
-
-
+		
 	private:
 		void createInstance();
 		void setupDebugMessenger();
 		void createSurface();
 		void pickPhysicalDevice();
 		void createLogicalDevice();
-		void createCommandPool();
+		void createGraphicsCommandPool();
 
 		bool isDeviceSuitable(VkPhysicalDevice device);
 		std::vector<const char*> getRequiredExtensions() const;
@@ -65,16 +60,12 @@ namespace Axiom {
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 	private:
-#if AX_DEBUG
-		const bool enableValidationLayers = true;
-#else 
-		const bool enableValidationLayers = false;
-#endif // AX_DEBUG
+		Window* window;
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-		VkCommandPool commandPool;
-		VkDevice device;
+		VkCommandPool graphicsCommandPool;
+		VkDevice handle;
 		VkSurfaceKHR surface;
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
@@ -82,6 +73,11 @@ namespace Axiom {
 
 		const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+#if AX_DEBUG
+		const bool enableValidationLayers = true;
+#else 
+		const bool enableValidationLayers = false;
+#endif // AX_DEBUG
 	};
 }
-

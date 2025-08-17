@@ -4,7 +4,7 @@
 #include "Input.h"
 #include "LayerStack.h"
 #include "Log.h"
-#include "Renderer/GraphicsDevice.h"
+#include "Renderer/RendererContext.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
 
@@ -17,7 +17,7 @@ namespace Axiom {
 	class Application {
 	public:
 		Application(const ApplicationInfo& appInfo);
-		virtual ~Application() = default;
+		virtual ~Application();
 
 		void run();
 
@@ -31,10 +31,11 @@ namespace Axiom {
 
 	private:
 		bool onWindowClose(WindowCloseEvent& e);
+		bool onWindowResize(WindowResizeEvent& e);
 
 	private:
 		std::unique_ptr<Window> window;
-		std::unique_ptr<GraphicsDevice> graphicsDevice;
+		std::unique_ptr<RendererContext> rendererContext;
 		bool running = true;
 		LayerStack layerStack;
 

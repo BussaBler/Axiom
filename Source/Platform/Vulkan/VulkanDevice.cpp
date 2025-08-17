@@ -2,20 +2,15 @@
 #include "VulkanDevice.h"
 
 namespace Axiom {
+	// ---------- Debugger Functions ----------
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-		AX_CORE_LOG_ERROR("Vulkan validation layer: {0}", pCallbackData->pMessage);
+        AX_CORE_LOG_ERROR("Vulkan validation layer: {0}", pCallbackData->pMessage);
 
         return VK_FALSE;
     }
 
-    static VkResult createDebugUtilsMessengerEXT(
-        VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-        const VkAllocationCallbacks* pAllocator,
-        VkDebugUtilsMessengerEXT* pDebugMessenger) {
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-            instance,
-            "vkCreateDebugUtilsMessengerEXT");
+    static VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
         if (func != nullptr) {
             return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
         }
@@ -24,63 +19,53 @@ namespace Axiom {
         }
     }
 
-    static void destroyDebugUtilsMessengerEXT(
-        VkInstance instance,
-        VkDebugUtilsMessengerEXT debugMessenger,
-        const VkAllocationCallbacks* pAllocator) {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-            instance,
-            "vkDestroyDebugUtilsMessengerEXT");
+    static void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,"vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr) {
             func(instance, debugMessenger, pAllocator);
         }
     }
 
-	// VulkanDevice Implementation
-
-    VulkanDevice::VulkanDevice(Window* window) : GraphicsDevice(window, GraphicsAPI::Vulkan) {
+	// ---------- Vulkan Device Implementation ----------
+    VulkanDevice::VulkanDevice(Window* window) : window(window) {
         createInstance();
         setupDebugMessenger();
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
-        createCommandPool();
-	}
-
-    VulkanDevice::~VulkanDevice() {
-		vkDestroyCommandPool(device, commandPool, nullptr);
-		vkDestroyDevice(device, nullptr);
-        if (enableValidationLayers) {
-            destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-		}
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-		vkDestroyInstance(instance, nullptr);
+        createGraphicsCommandPool();
     }
 
-    void VulkanDevice::submitCommandBuffer() {
-
+    VulkanDevice::~VulkanDevice() {
+        vkDestroyCommandPool(handle, graphicsCommandPool, nullptr);
+        vkDestroyDevice(handle, nullptr);
+        if (enableValidationLayers) {
+            destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+        }
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroyInstance(instance, nullptr);
     }
 
     void VulkanDevice::createInstance() {
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             AX_CORE_LOG_ERROR("Validation layers requested, but not available!");
-		}
+        }
 
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Axiom Application";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "Axiom Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_4;
+        appInfo.pEngineName = "Axiom Engine";
+        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+        appInfo.apiVersion = VK_API_VERSION_1_4;
 
-		VkInstanceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pApplicationInfo = &appInfo;
+        VkInstanceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        createInfo.pApplicationInfo = &appInfo;
 
-		auto extensions = getRequiredExtensions();
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-		createInfo.ppEnabledExtensionNames = extensions.data();
+        auto extensions = getRequiredExtensions();
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+        createInfo.ppEnabledExtensionNames = extensions.data();
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
         if (enableValidationLayers) {
@@ -96,19 +81,19 @@ namespace Axiom {
         }
 
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-			AX_CORE_LOG_ERROR("Failed to create Vulkan instance!");
+            AX_CORE_LOG_ERROR("Failed to create Vulkan instance!");
         }
         hasRequiredInstanceExtensions();
     }
 
     void VulkanDevice::pickPhysicalDevice() {
-		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-		AX_CORE_ASSERT(deviceCount, "Failed to find GPUs with Vulkan support!");
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        AX_CORE_ASSERT(deviceCount, "Failed to find GPUs with Vulkan support!");
 
-		AX_CORE_LOG_DEBUG("Device count: {0}", deviceCount);
-		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+        AX_CORE_LOG_DEBUG("Device count: {0}", deviceCount);
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
         for (const auto& device : devices) {
             if (isDeviceSuitable(device)) {
@@ -118,28 +103,28 @@ namespace Axiom {
         }
 
         if (physicalDevice == VK_NULL_HANDLE) {
-			AX_CORE_LOG_ERROR("Failed to pick a suitable device!");
+            AX_CORE_LOG_ERROR("Failed to pick a suitable device!");
         }
     }
 
     void VulkanDevice::createLogicalDevice() {
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily, indices.computeFamily };
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily, indices.computeFamily };
 
-		float queuePriority = 1.0f;
+        float queuePriority = 1.0f;
         for (uint32_t queueFamily : uniqueQueueFamilies) {
-			VkDeviceQueueCreateInfo queueCreateInfo{};
-			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			queueCreateInfo.queueFamilyIndex = queueFamily;
-			queueCreateInfo.queueCount = 1;
-			queueCreateInfo.pQueuePriorities = &queuePriority;
-			queueCreateInfos.push_back(queueCreateInfo);
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+            queueCreateInfos.push_back(queueCreateInfo);
         }
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
+        VkPhysicalDeviceFeatures deviceFeatures{};
+        deviceFeatures.samplerAnisotropy = VK_TRUE;
 
         VkDeviceCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -151,31 +136,31 @@ namespace Axiom {
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-		AX_CORE_ASSERT(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) == VK_SUCCESS, "Failed to create logical device!");
-    
-		vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
-		vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
-		vkGetDeviceQueue(device, indices.computeFamily, 0, &computeQueue);
+        AX_CORE_ASSERT(vkCreateDevice(physicalDevice, &createInfo, nullptr, &handle) == VK_SUCCESS, "Failed to create logical device!");
+
+        vkGetDeviceQueue(handle, indices.graphicsFamily, 0, &graphicsQueue);
+        vkGetDeviceQueue(handle, indices.presentFamily, 0, &presentQueue);
+        vkGetDeviceQueue(handle, indices.computeFamily, 0, &computeQueue);
     }
 
-    void VulkanDevice::createCommandPool() {
+    void VulkanDevice::createGraphicsCommandPool() {
         QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        AX_CORE_ASSERT(vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) == VK_SUCCESS, "Failed to create command pool!");
-	}
+        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        AX_CORE_ASSERT(vkCreateCommandPool(handle, &poolInfo, nullptr, &graphicsCommandPool) == VK_SUCCESS, "Failed to create graphics command pool!");
+    }
 
     void VulkanDevice::createSurface() {
-		surface = VK_NULL_HANDLE;
+        surface = VK_NULL_HANDLE;
 #if defined(AX_PLATFORM_WINDOWS)
-		VkWin32SurfaceCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createInfo.hinstance = reinterpret_cast<HINSTANCE>(window->getNativeDisplay());
-		createInfo.hwnd = reinterpret_cast<HWND>(window->getNativeWindow());
+        VkWin32SurfaceCreateInfoKHR createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        createInfo.hinstance = reinterpret_cast<HINSTANCE>(window->getNativeDisplay());
+        createInfo.hwnd = reinterpret_cast<HWND>(window->getNativeWindow());
 
-		AX_CORE_ASSERT(vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) == VK_SUCCESS, "Failed to create window surface!");
+        AX_CORE_ASSERT(vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) == VK_SUCCESS, "Failed to create window surface!");
 #elif defined(AX_PLATFORM_LINUX)
 
 #elif defined(AX_PLATFORM_MACOS)
@@ -184,10 +169,10 @@ namespace Axiom {
     }
 
     bool VulkanDevice::isDeviceSuitable(VkPhysicalDevice device) {
-		QueueFamilyIndices indices = findQueueFamilies(device);
-		bool extensionsSupported = checkDeviceExtensionSupport(device);
+        QueueFamilyIndices indices = findQueueFamilies(device);
+        bool extensionsSupported = checkDeviceExtensionSupport(device);
 
-		bool swapChainAdequate = false;
+        bool swapChainAdequate = false;
         if (extensionsSupported) {
             SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
             swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
@@ -217,7 +202,7 @@ namespace Axiom {
         if (createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
             AX_CORE_LOG_ERROR("Failed to set up debug messenger!");
         }
-	}
+    }
 
     bool VulkanDevice::checkValidationLayerSupport() {
         uint32_t layerCount;
@@ -247,14 +232,14 @@ namespace Axiom {
     std::vector<const char*> VulkanDevice::getRequiredExtensions() const {
         uint32_t windowExtensionsCount = 2;
         const char* windowExtensions[2];
-		windowExtensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
+        windowExtensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
 
 #if defined(AX_PLATFORM_WINDOWS)
         windowExtensions[1] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
 #elif defined(AX_PLATFORM_LINUX)
-		windowExtensions[1] = "VK_KHR_xlib_surface";
+        windowExtensions[1] = "VK_KHR_xlib_surface";
 #elif defined(AX_PLATFORM_MACOS)
-		windowExtensions[1] = "VK_MVK_macos_surface";
+        windowExtensions[1] = "VK_MVK_macos_surface";
 #endif
         std::vector<const char*> extensions(windowExtensions, windowExtensions + windowExtensionsCount);
         if (enableValidationLayers) {
@@ -272,19 +257,19 @@ namespace Axiom {
         AX_CORE_LOG_DEBUG("Available extensions:");
         std::unordered_set<std::string> available;
         for (const auto& extension : extensions) {
-			AX_CORE_LOG_DEBUG("\t{0}", extension.extensionName);
+            AX_CORE_LOG_DEBUG("\t{0}", extension.extensionName);
             available.insert(extension.extensionName);
         }
 
-		AX_CORE_LOG_DEBUG("Required extensions:");
+        AX_CORE_LOG_DEBUG("Required extensions:");
         auto requiredExtensions = getRequiredExtensions();
         for (const auto& required : requiredExtensions) {
-			AX_CORE_LOG_DEBUG("\t{0}", required);
+            AX_CORE_LOG_DEBUG("\t{0}", required);
             if (available.find(required) == available.end()) {
-				AX_CORE_LOG_ERROR("Required extension {0} not found!", required);
+                AX_CORE_LOG_ERROR("Required extension {0} not found!", required);
             }
         }
-	}
+    }
 
     bool VulkanDevice::checkDeviceExtensionSupport(VkPhysicalDevice device) {
         uint32_t extensionCount;
@@ -306,7 +291,7 @@ namespace Axiom {
         return requiredExtensions.empty();
     }
 
-    QueueFamilyIndices VulkanDevice::findQueueFamilies(VkPhysicalDevice device) const  {
+    QueueFamilyIndices VulkanDevice::findQueueFamilies(VkPhysicalDevice device) const {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
@@ -330,7 +315,7 @@ namespace Axiom {
             if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
                 indices.computeFamily = i;
                 indices.computeFamilyHasValue = true;
-			}
+            }
             if (indices.isComplete()) {
                 break;
             }
@@ -341,7 +326,7 @@ namespace Axiom {
         return indices;
     }
 
-    SwapChainSupportDetails VulkanDevice::querySwapChainSupport(VkPhysicalDevice device) const  {
+    SwapChainSupportDetails VulkanDevice::querySwapChainSupport(VkPhysicalDevice device) const {
         SwapChainSupportDetails details;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
@@ -367,7 +352,7 @@ namespace Axiom {
         return details;
     }
 
-    VkFormat VulkanDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const  {
+    VkFormat VulkanDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const {
         for (VkFormat format : candidates) {
             VkFormatProperties props;
             vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -380,7 +365,7 @@ namespace Axiom {
                 return format;
             }
         }
-        throw std::runtime_error("failed to find supported format!");
+        AX_CORE_LOG_ERROR("Failed to find supported format!");
     }
 
     uint32_t VulkanDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const {
@@ -393,6 +378,6 @@ namespace Axiom {
             }
         }
 
-        throw std::runtime_error("failed to find suitable memory type!");
+		AX_CORE_LOG_ERROR("Failed to find suitable memory type!");
     }
- }
+}

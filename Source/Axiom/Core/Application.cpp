@@ -14,14 +14,19 @@ namespace Axiom {
 
 		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
+		rendererContext = RendererContext::create();
+		rendererContext->init(window.get());
+	}
 
-		graphicsDevice = GraphicsDevice::create(window.get(), GraphicsAPI::Vulkan);
+	Application::~Application() {
+		rendererContext->shutdown();
 	}
 
 	void Application::onEvent(Event& event) {
 		EventDispatcher dispatcher(event);
 		AX_CORE_LOG_TRACE("Event: {0}", event.toString());
 		dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
+		dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
 	}
 
 	void Application::pushLayer(Layer* layer) {
@@ -37,12 +42,22 @@ namespace Axiom {
 		return true;
 	}
 
+	bool Application::onWindowResize(WindowResizeEvent& e) {
+		if (e.getWidth() == 0 || e.getHeight() == 0) {
+			return false;
+		}
+		rendererContext->onResize(e.getWidth(), e.getHeight());
+		return true;
+	}
+
 	void Application::run() {
 		while (running)
 		{
+			auto result = rendererContext->beginFrame();
 			for (Layer* layer : layerStack) {
 				layer->onUpdate();
 			}
+			if(result) rendererContext->endFrame();
 			window->onUpdate();
 		}
 	}
