@@ -12,6 +12,19 @@ namespace Axiom {
 		createFramebuffer();
 		createCommandBuffers();
 		createSyncObjects();
+		createShaders();
+		createBuffers();
+		// Temp
+		float f = 10.0f;
+		std::vector<Vertex> vertices(4, {});
+		vertices[0].postion = { -0.5f * f, -0.5f * f, 0.0f };
+		vertices[1].postion = { 0.5f * f, 0.5f * f, 0.0f };
+		vertices[2].postion = { -0.5f * f, 0.5f * f, 0.0f };
+		vertices[3].postion = { 0.5f * f, -0.5f * f, 0.0f };
+		std::vector<uint32_t> indices = { 0, 1, 2, 0, 3, 1 };
+
+		uploadData(device->getGraphicsCommandPool(), nullptr, device->getGraphicsQueue(), *objectVertexBuffer, vertices.data(), sizeof(Vertex) * vertices.size());
+		uploadData(device->getGraphicsCommandPool(), nullptr, device->getGraphicsQueue(), *objectIndexBuffer, indices.data(), sizeof(uint32_t) * indices.size());
 	}
 
 	void VulkanContext::shutdown() {
@@ -66,6 +79,30 @@ namespace Axiom {
 		mainRenderPass->begin(*graphicsCommandBuffers[imageIndex], framebuffers[imageIndex]->getHandle());
 
 		return true;
+	}
+
+	void VulkanContext::updateGlobalState(Math::Mat4 projection, Math::Mat4 view, Math::Vec3 viewPos, Math::Vec4 ambientColor, int mode) {
+		objectShader->use(*graphicsCommandBuffers[imageIndex]);
+
+		GlobalUniformObject ubo{};
+		ubo.projection = projection;
+		ubo.view = view;
+		objectShader->updateGlobalUniformBuffer(ubo);
+
+		objectShader->updateGlobalUniformBufferState(*graphicsCommandBuffers[imageIndex], imageIndex);
+	}
+
+	void VulkanContext::updateObjectState(Math::Mat4 model) {
+		objectShader->updatePushConstants(*graphicsCommandBuffers[imageIndex], model);
+
+		// Temp
+		objectShader->use(*graphicsCommandBuffers[imageIndex]);
+		std::array<VkDeviceSize, 1> offsets = { 0 };
+		std::array<VkBuffer, 1> buffers = { objectVertexBuffer->getHandle() };
+		vkCmdBindVertexBuffers(graphicsCommandBuffers[imageIndex]->getHandle(), 0, 1, buffers.data(), offsets.data());
+		vkCmdBindIndexBuffer(graphicsCommandBuffers[imageIndex]->getHandle(), objectIndexBuffer->getHandle(), 0, VK_INDEX_TYPE_UINT32);
+
+		vkCmdDrawIndexed(graphicsCommandBuffers[imageIndex]->getHandle(), 6, 1, 0, 0, 0);
 	}
 
 	bool VulkanContext::endFrame() {
@@ -183,5 +220,31 @@ namespace Axiom {
 		for (size_t i = 0; i < VulkanSwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
 			inFlightFences[i] = std::make_unique<VulkanFence>(*device, true);
 		}
+	}
+
+	void VulkanContext::createShaders() {
+		AX_CORE_LOG_INFO("Creating Vulkan builtin shaders");
+		objectShader = std::make_unique<VulkanObjectShader>(*device);
+		objectShader->createPipeline(*mainRenderPass, framebufferWidth, framebufferHeight);
+	}
+
+	void VulkanContext::createBuffers() {
+		AX_CORE_LOG_INFO("Creating Vulkan buffers");
+		VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		uint64_t vertexBufferSize = sizeof(Vertex) * 1024 * 1024;
+		objectVertexBuffer = std::make_unique<VulkanBuffer>(*device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, vertexBufferSize, memoryFlags, true);
+		geometryVertexOffset = 0;
+
+		uint64_t indexBufferSize = sizeof(uint32_t) * 1024 * 1024;
+		objectIndexBuffer = std::make_unique<VulkanBuffer>(*device, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, indexBufferSize, memoryFlags, true);
+		geometryIndexOffset = 0;
+	}
+
+	void VulkanContext::uploadData(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer& buffer, void* data, uint64_t size, uint64_t offset) {
+		VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		VulkanBuffer stagingBuffer(*device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size, flags, true);
+		stagingBuffer.copyFrom(data, size, 0, offset);
+		stagingBuffer.copyTo(buffer.getHandle(), pool, fence, queue, size, 0, offset);
 	}
 }

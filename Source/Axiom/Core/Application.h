@@ -4,7 +4,9 @@
 #include "Input.h"
 #include "LayerStack.h"
 #include "Log.h"
+#include "Math/AxMath.h"
 #include "Renderer/RendererContext.h"
+#include "Renderer/RendererSystem.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
 
@@ -35,12 +37,11 @@ namespace Axiom {
 
 	private:
 		std::unique_ptr<Window> window;
-		std::unique_ptr<RendererContext> rendererContext;
 		bool running = true;
 		LayerStack layerStack;
 
 	private:
-		static Application* instance; 
+		static Application* instance;
 	};
 
 	Application* createApplication(const ApplicationInfo& appInfo);

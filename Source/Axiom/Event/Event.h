@@ -33,6 +33,7 @@ namespace Axiom {
 		virtual int getCategoryFlags() const = 0;
 		virtual std::string toString() const { return getName(); }
 
+		bool isHandled() const { return handled; }
 		bool isInCategory(EventCategory category) const {
 			return getCategoryFlags() & category;
 		}

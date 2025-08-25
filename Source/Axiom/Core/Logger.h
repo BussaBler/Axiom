@@ -1,12 +1,5 @@
 #pragma once
-#include <array>
-#include <chrono>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <iostream>
-#include <mutex>
-#include <string>
+#include "axpch.h"
 
 namespace Axiom {
 	class Logger {
@@ -31,7 +24,7 @@ namespace Axiom {
 		void setInitialString(const std::string& initial) { mInitialString = initial; }
 		const std::string& getInitialString() const { return mInitialString; }
 
-		bool outputToFile(const std::filesystem::path& path = "log.txt") {
+		bool outputToFile(const std::filesystem::path& path = "Logs/log.txt") {
 			std::scoped_lock lock(mLogLock);
 			mFilePath = path;
 			return enableFileOutput();

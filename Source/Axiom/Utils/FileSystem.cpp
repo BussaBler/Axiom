@@ -15,6 +15,17 @@ namespace Axiom {
 		return buf;
 	}
 
+	std::string FileSystem::readFileStr(const std::filesystem::path& filePath) {
+		std::ifstream in{ filePath, std::ios::in | std::ios::binary | std::ios::ate };
+		if (!in) AX_CORE_LOG_ERROR("Could not open the file: {0}", filePath.string());
+
+		const auto size = in.tellg();
+		std::string buf(size, '\0');
+		in.seekg(0, std::ios::beg);
+		in.read(buf.data(), size);
+		return buf;
+	}
+
 	void FileSystem::writeFile(const std::filesystem::path& filePath, std::vector<uint8_t>& data) {
 		std::ofstream out{ filePath, std::ios::binary };
 		if (!out) AX_CORE_LOG_ERROR("Could not write the file: {0}", filePath.string());
@@ -40,7 +51,7 @@ namespace Axiom {
 
 	void FileSystem::setWorkingDirectory(const std::filesystem::path& folderPath) {
 		if (std::filesystem::exists(folderPath) && std::filesystem::is_directory(folderPath)) {
-			workingDirectory = folderPath;
+			workingDirectory = std::filesystem::absolute(folderPath);
 			std::filesystem::current_path(workingDirectory);
 		}
 		else {

@@ -21,6 +21,7 @@ all_cpp_files = src_dir.glob('Axiom/**/*.cpp')
 axiom_sources = [f for f in all_cpp_files if '/Platform/' not in str(f) and '\\Platform\\' not in str(f)]
 
 axiom_sources += src_dir.glob('Platform/Vulkan/*.cpp')
+axiom_sources += src_dir.glob('Platform/Vulkan/Shader/*.cpp')
 
 def configure_platform_specific(env, platform_name, compiler_type):
     """Configure platform-specific settings"""
@@ -71,9 +72,11 @@ axiom_project = None
 if vsproj:
     axiom_sources = src_dir.glob('Axiom/**/*.cpp')
     axiom_sources += src_dir.glob('Platform/**/*.cpp')
+    axiom_sources += src_dir.glob('Platform/**/**/*.cpp')
     axiom_sources += src_dir.glob('*.cpp')
     axiom_headers = src_dir.glob('Axiom/**/*.h')
     axiom_headers += src_dir.glob('Platform/**/*.h')
+    axiom_headers += src_dir.glob('Platform/**/**/*.h')
     axiom_headers += src_dir.glob('*.h')
 
     current_env['CPPPATH'] = [Dir(path) for path in current_env['CPPPATH']]

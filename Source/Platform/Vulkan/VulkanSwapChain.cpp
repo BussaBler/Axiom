@@ -72,43 +72,48 @@ namespace Axiom {
 			imageCount = supports.capabilities.maxImageCount;
 		}
 
-		VkSwapchainCreateInfoKHR createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = device.getSurface();
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = swapChainImageFormat.format;
-		createInfo.imageColorSpace = swapChainImageFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		VkSwapchainCreateInfoKHR swapChainCreateInfo{};
+		swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		swapChainCreateInfo.surface = device.getSurface();
+		swapChainCreateInfo.minImageCount = imageCount;
+		swapChainCreateInfo.imageFormat = swapChainImageFormat.format;
+		swapChainCreateInfo.imageColorSpace = swapChainImageFormat.colorSpace;
+		swapChainCreateInfo.imageExtent = extent;
+		swapChainCreateInfo.imageArrayLayers = 1;
+		swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 		const auto queueFamilyIndices = device.findPhysicalQueueFamilies();
 		if (queueFamilyIndices.graphicsFamily != queueFamilyIndices.presentFamily) {
 			uint32_t queueFamilyIndicesArray[] = { queueFamilyIndices.graphicsFamily, queueFamilyIndices.presentFamily };
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndicesArray;
+			swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			swapChainCreateInfo.queueFamilyIndexCount = 2;
+			swapChainCreateInfo.pQueueFamilyIndices = queueFamilyIndicesArray;
 		} else {
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0;
-			createInfo.pQueueFamilyIndices = nullptr;
+			swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			swapChainCreateInfo.queueFamilyIndexCount = 0;
+			swapChainCreateInfo.pQueueFamilyIndices = nullptr;
 		}
 
-		createInfo.preTransform = supports.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentMode;
-		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		swapChainCreateInfo.preTransform = supports.capabilities.currentTransform;
+		swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		swapChainCreateInfo.presentMode = presentMode;
+		swapChainCreateInfo.clipped = VK_TRUE;
+		swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+		swapChainCreateInfo.pNext = nullptr;
 
-		AX_CORE_ASSERT(vkCreateSwapchainKHR(device.getHandle(), &createInfo, nullptr, &handle) == VK_SUCCESS, "Failed to create swap chain");
-	
+		AX_CORE_ASSERT(vkCreateSwapchainKHR(device.getHandle(), &swapChainCreateInfo, nullptr, &handle) == VK_SUCCESS, "Failed to create swap chain");
+
 		uint32_t swapChainImagesCount = 0;
 		vkGetSwapchainImagesKHR(device.getHandle(), handle, &swapChainImagesCount, nullptr);
 		swapChainImages.resize(swapChainImagesCount);
 		swapChainImageViews.resize(swapChainImagesCount);
 		vkGetSwapchainImagesKHR(device.getHandle(), handle, &swapChainImagesCount, swapChainImages.data());
 		for (uint32_t i = 0; i < swapChainImagesCount; i++) {
-			VkImageViewCreateInfo viewInfo = {};
+			VkImageViewUsageCreateInfo usageInfo{};
+			usageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+			usageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			usageInfo.pNext = nullptr;
+			VkImageViewCreateInfo viewInfo{};
 			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			viewInfo.image = swapChainImages[i];
 			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -118,6 +123,7 @@ namespace Axiom {
 			viewInfo.subresourceRange.levelCount = 1;
 			viewInfo.subresourceRange.baseArrayLayer = 0;
 			viewInfo.subresourceRange.layerCount = 1;
+			viewInfo.pNext = &usageInfo;
 			AX_CORE_ASSERT(vkCreateImageView(device.getHandle(), &viewInfo, nullptr, &swapChainImageViews[i]) == VK_SUCCESS, "Failed to create image views");
 		}
 

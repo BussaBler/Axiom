@@ -14,19 +14,25 @@ namespace Axiom {
 
 		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
-		rendererContext = RendererContext::create();
-		rendererContext->init(window.get());
+		RendererSystem::init(window.get());
 	}
 
 	Application::~Application() {
-		rendererContext->shutdown();
+		RendererSystem::shutdown();
 	}
 
 	void Application::onEvent(Event& event) {
 		EventDispatcher dispatcher(event);
-		AX_CORE_LOG_TRACE("Event: {0}", event.toString());
+		//AX_CORE_LOG_TRACE("Event: {0}", event.toString());
 		dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
 		dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
+
+		for (Layer* layer : layerStack) {
+			if (event.isHandled()) {
+				break;
+			}
+			layer->onEvent(event);
+		}
 	}
 
 	void Application::pushLayer(Layer* layer) {
@@ -46,18 +52,17 @@ namespace Axiom {
 		if (e.getWidth() == 0 || e.getHeight() == 0) {
 			return false;
 		}
-		rendererContext->onResize(e.getWidth(), e.getHeight());
+		RendererSystem::onResize(e.getWidth(), e.getHeight());
 		return true;
 	}
 
 	void Application::run() {
 		while (running)
 		{
-			auto result = rendererContext->beginFrame();
 			for (Layer* layer : layerStack) {
 				layer->onUpdate();
 			}
-			if(result) rendererContext->endFrame();
+			RendererSystem::drawFrame();
 			window->onUpdate();
 		}
 	}

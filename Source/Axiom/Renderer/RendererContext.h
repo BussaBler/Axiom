@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Window.h"
+#include "Math/AxMath.h"
 
 namespace Axiom {
 	class RendererContext {
@@ -9,6 +10,8 @@ namespace Axiom {
 		virtual void init(Window* window) = 0;
 		virtual void shutdown() = 0;
 		virtual bool beginFrame() = 0;
+		virtual void updateGlobalState(Math::Mat4 projection, Math::Mat4 view, Math::Vec3 viewPos, Math::Vec4 ambientColor, int mode) = 0;
+		virtual void updateObjectState(Math::Mat4 model) = 0;
 		virtual bool endFrame() = 0;
 		virtual void onResize(uint32_t width, uint32_t height) = 0;
 
