@@ -41,6 +41,13 @@ namespace Math {
 			}
 			return result;
 		}
+		Vec<T, N> operator-() const {
+			Vec<T, N> result;
+			for (size_t i = 0; i < N; ++i) {
+				result.data[i] = -data[i];
+			}
+			return result;
+		}
 		Vec<T, N> operator*(const T& scalar) const {
 			Vec<T, N> result;
 			for (size_t i = 0; i < N; ++i) {

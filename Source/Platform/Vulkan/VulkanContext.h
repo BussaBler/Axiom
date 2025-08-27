@@ -9,6 +9,7 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanRenderPass.h"
 #include "VulkanSwapChain.h"
+#include "VulkanTexture.h"
 
 namespace Axiom {
 	class VulkanContext : public RendererContext {
@@ -17,11 +18,12 @@ namespace Axiom {
 		virtual ~VulkanContext() = default;
 		void init(Window* window) override;
 		void shutdown() override;
-		bool beginFrame() override;
+		bool beginFrame(float deltaTime) override;
 		void updateGlobalState(Math::Mat4 projection, Math::Mat4 view, Math::Vec3 viewPos, Math::Vec4 ambientColor, int mode) override;
-		void updateObjectState(Math::Mat4 model) override;
+		void updateObjectState(const GeometryRenderData& data) override;
 		bool endFrame() override;
 		void onResize(uint32_t width, uint32_t height) override;
+		std::shared_ptr<Texture> createTexture(uint32_t width, uint32_t height, uint8_t channels, std::vector<uint8_t> data) override;
 
 	private:
 		void createDevice();
@@ -59,6 +61,7 @@ namespace Axiom {
 		uint64_t lastFramebufferGen = 0;
 		uint32_t framebufferWidth = 0;
 		uint32_t framebufferHeight = 0;
+		float frameDeltaTime = 0.0f;
 	};
 }
 

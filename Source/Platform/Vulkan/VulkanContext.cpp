@@ -17,14 +17,20 @@ namespace Axiom {
 		// Temp
 		float f = 10.0f;
 		std::vector<Vertex> vertices(4, {});
-		vertices[0].postion = { -0.5f * f, -0.5f * f, 0.0f };
-		vertices[1].postion = { 0.5f * f, 0.5f * f, 0.0f };
-		vertices[2].postion = { -0.5f * f, 0.5f * f, 0.0f };
-		vertices[3].postion = { 0.5f * f, -0.5f * f, 0.0f };
+		vertices[0].position = { -0.5f * f, -0.5f * f, 0.0f };
+		vertices[0].texCoord = { 0.0f, 0.0f };
+		vertices[1].position = { 0.5f * f, 0.5f * f, 0.0f };
+		vertices[1].texCoord = { 1.0f, 1.0f };
+		vertices[2].position = { -0.5f * f, 0.5f * f, 0.0f };
+		vertices[2].texCoord = { 0.0f, 1.0f };
+		vertices[3].position = { 0.5f * f, -0.5f * f, 0.0f };
+		vertices[3].texCoord = { 1.0f, 0.0f };
 		std::vector<uint32_t> indices = { 0, 1, 2, 0, 3, 1 };
 
 		uploadData(device->getGraphicsCommandPool(), nullptr, device->getGraphicsQueue(), *objectVertexBuffer, vertices.data(), sizeof(Vertex) * vertices.size());
 		uploadData(device->getGraphicsCommandPool(), nullptr, device->getGraphicsQueue(), *objectIndexBuffer, indices.data(), sizeof(uint32_t) * indices.size());
+	
+		uint32_t objectId = objectShader->acquireResources();
 	}
 
 	void VulkanContext::shutdown() {
@@ -36,7 +42,8 @@ namespace Axiom {
 		}
 	}
 
-	bool VulkanContext::beginFrame() {
+	bool VulkanContext::beginFrame(float deltaTime) {
+		frameDeltaTime = deltaTime;
 		if (recreatingSwapChain) {
 			VkResult result = vkDeviceWaitIdle(device->getHandle());
 			if (result != VK_SUCCESS) {
@@ -84,16 +91,14 @@ namespace Axiom {
 	void VulkanContext::updateGlobalState(Math::Mat4 projection, Math::Mat4 view, Math::Vec3 viewPos, Math::Vec4 ambientColor, int mode) {
 		objectShader->use(*graphicsCommandBuffers[imageIndex]);
 
-		GlobalUniformObject ubo{};
-		ubo.projection = projection;
-		ubo.view = view;
+		GlobalUniformObject ubo(projection, view, Math::Mat4::identity(), Math::Mat4::identity());
 		objectShader->updateGlobalUniformBuffer(ubo);
 
-		objectShader->updateGlobalUniformBufferState(*graphicsCommandBuffers[imageIndex], imageIndex);
+		objectShader->updateGlobalUniformBufferState(*graphicsCommandBuffers[imageIndex], imageIndex, frameDeltaTime);
 	}
 
-	void VulkanContext::updateObjectState(Math::Mat4 model) {
-		objectShader->updatePushConstants(*graphicsCommandBuffers[imageIndex], model);
+	void VulkanContext::updateObjectState(const GeometryRenderData& data) {
+		objectShader->updateObjectUniformBufferState(*graphicsCommandBuffers[imageIndex], imageIndex, data);
 
 		// Temp
 		objectShader->use(*graphicsCommandBuffers[imageIndex]);
@@ -150,6 +155,10 @@ namespace Axiom {
 		framebufferGen++;
 	}
 
+	std::shared_ptr<Texture> VulkanContext::createTexture(uint32_t width, uint32_t height, uint8_t channels, std::vector<uint8_t> data) {
+		return std::make_shared<VulkanTexture>(*device, width, height, channels, data);
+	}
+
 	void VulkanContext::createDevice() {
 		AX_CORE_LOG_INFO("Creating Vulkan device");
 		device = std::make_unique<VulkanDevice>(window);
@@ -194,7 +203,7 @@ namespace Axiom {
 		for (uint32_t i = 0; i < swapchain->getImageCount(); i++) {
 			std::vector<VkImageView> attachments = {
 				views[i],
-				swapchain->getDepthImage().getImageView()
+				swapchain->getDepthImage()->getImageView()
 			};
 			framebuffers[i] = std::make_unique<VulkanFramebuffer>(*device, *mainRenderPass, attachments, framebufferWidth, framebufferHeight);
 		}

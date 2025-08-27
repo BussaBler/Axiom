@@ -149,11 +149,11 @@ namespace Axiom {
 		depthImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		depthImageInfo.flags = 0;
 
-        depthImage.create(device, depthImageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+        depthImage = std::make_unique<VulkanImage>(device, depthImageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 	}
 
 	void VulkanSwapChain::destroySwapChain() {
-		depthImage.destroy(device);
+		depthImage.reset();
 		for (auto imageView : swapChainImageViews) {
 			vkDestroyImageView(device.getHandle(), imageView, nullptr);
 		}

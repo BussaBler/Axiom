@@ -16,6 +16,7 @@ namespace Axiom {
 		// what will be a main camera
 		static Math::Mat4 projectionMatrix;
 		static Math::Mat4 viewMatrix;
+		static std::shared_ptr<Texture> debugTexture;
 	};
 }
 

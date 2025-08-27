@@ -8,7 +8,8 @@ namespace Axiom {
 		~Vertex() = default;
 
 	public:
-		Math::Vec3 postion;
+		Math::Vec3 position;
+		Math::Vec2 texCoord;
 	};
 }
 

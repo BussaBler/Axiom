@@ -18,7 +18,7 @@ namespace Axiom {
 		VkSurfaceFormatKHR getImageFormat() const { return swapChainImageFormat; }
 		uint32_t getImageCount() const { return swapChainImages.size(); }
 		const std::vector<VkImageView> getImageViews() const { return swapChainImageViews; }
-		VulkanImage getDepthImage() const { return depthImage; }
+		VulkanImage* getDepthImage() { return depthImage.get(); }
 
 		void acquireNextImageIndex(uint32_t& imageIndex, VkSemaphore semaphore, VkFence fence, VkExtent2D extent);
 		void presentImage(VkQueue graphicsQueue, VkQueue presentQueue, VkSemaphore renderSemaphore, uint32_t imageIndex, uint32_t& currentFrame, VkExtent2D extent);
@@ -33,7 +33,7 @@ namespace Axiom {
 		VkSurfaceFormatKHR swapChainImageFormat;
 		VkExtent2D swapChainExtent;
 
-		VulkanImage depthImage;
+		std::unique_ptr<VulkanImage> depthImage;
 		std::vector<VkImage> swapChainImages;
 		std::vector<VkImageView> swapChainImageViews;
 	};

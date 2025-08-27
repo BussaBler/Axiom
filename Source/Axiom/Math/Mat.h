@@ -240,6 +240,21 @@ namespace Math {
 		static Mat<float, 4> rotateZ(float radians) {
 			return rotate(Vec3(0.0f, 0.0f, 1.0f), radians);
 		}
+		Vec3 getForward() const requires (N >= 4) {
+			return normalize(Vec3(-data[2][0], -data[2][1], -data[2][2]));
+		}
+		Vec3 getRight() const requires (N >= 4) {
+			return normalize(Vec3(data[0][0], data[0][1], data[0][2]));
+		}
+		Vec3 getUp() const requires (N >= 4) {
+			return normalize(Vec3(data[1][0], data[1][1], data[1][2]));
+		}
+		Vec3 getBackward() const requires (N >= 4) {
+			return -getForward();
+		}
+		Vec3 getLeft() const requires (N >= 4) {
+			return -getRight();
+		}
 
 	protected:
 		std::array<Vec<T, N>, N> data{};
