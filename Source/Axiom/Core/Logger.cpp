@@ -2,9 +2,7 @@
 #include "Logger.h"
 
 namespace Axiom {
-	Logger::Logger() : mPriority(Logger::Priority::Debug), mInitialString("") {
-
-	}
+	Logger::Logger() : mPriority(Logger::Priority::Debug), mInitialString("") {}
 
 	bool Logger::enableFileOutput() {
 		mFile.open(mFilePath, std::ios::app);

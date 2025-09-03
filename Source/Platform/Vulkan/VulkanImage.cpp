@@ -2,38 +2,34 @@
 #include "VulkanImage.h"
 
 namespace Axiom {
-	VulkanImage::VulkanImage(VulkanDevice& vkDevice, const VkImageCreateInfo& createInfo, VkMemoryPropertyFlags memoryFlags, VkImageAspectFlagBits aspectFlags) 
-		: device(vkDevice), width(createInfo.extent.width), height(createInfo.extent.height) {
-		AX_CORE_ASSERT(vkCreateImage(device.getHandle(), &createInfo, nullptr, &image) == VK_SUCCESS, "Failed to create Vulkan image");
+	VulkanImage::VulkanImage(VulkanDevice& vkDevice, const ImageCreateInfo& createInfo)
+		: device(vkDevice), width(createInfo.vkImageCreateInfo.extent.width), height(createInfo.vkImageCreateInfo.extent.height) {
+		handle.emplace<VkImage>(VK_NULL_HANDLE);
+		AX_CORE_ASSERT(vkCreateImage(device.getHandle<VkDevice>(), &createInfo.vkImageCreateInfo, nullptr, std::any_cast<VkImage>(&handle)) == VK_SUCCESS, "Failed to create Vulkan image");
 		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(device.getHandle(), image, &memRequirements);
+		vkGetImageMemoryRequirements(device.getHandle<VkDevice>(), getHandle<VkImage>(), &memRequirements);
 		
 		VkMemoryAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = device.findMemoryType(memRequirements.memoryTypeBits, memoryFlags);
-		AX_CORE_ASSERT(vkAllocateMemory(device.getHandle(), &allocInfo, nullptr, &imageMemory) == VK_SUCCESS, "Failed to allocate Vulkan image memory");
+		allocInfo.memoryTypeIndex = device.findMemoryType(memRequirements.memoryTypeBits, createInfo.memoryFlags);
+		AX_CORE_ASSERT(vkAllocateMemory(device.getHandle<VkDevice>(), &allocInfo, nullptr, &imageMemory) == VK_SUCCESS, "Failed to allocate Vulkan image memory");
 		
-		vkBindImageMemory(device.getHandle(), image, imageMemory, 0);
-		createImageView(device, createInfo.format, aspectFlags);
+		vkBindImageMemory(device.getHandle<VkDevice>(), getHandle<VkImage>(), imageMemory, 0);
 	}
 
 	VulkanImage::~VulkanImage() {
-		if (imageView != VK_NULL_HANDLE) {
-			vkDestroyImageView(device.getHandle(), imageView, nullptr);
-			imageView = VK_NULL_HANDLE;
-		}
-		if (image != VK_NULL_HANDLE) {
-			vkDestroyImage(device.getHandle(), image, nullptr);
-			image = VK_NULL_HANDLE;
+		if (handle.has_value()) {
+			vkDestroyImage(device.getHandle<VkDevice>(), getHandle<VkImage>(), nullptr);
+			handle.reset();
 		}
 		if (imageMemory != VK_NULL_HANDLE) {
-			vkFreeMemory(device.getHandle(), imageMemory, nullptr);
+			vkFreeMemory(device.getHandle<VkDevice>(), imageMemory, nullptr);
 			imageMemory = VK_NULL_HANDLE;
 		}
 	}
 
-	void VulkanImage::transitionImageLayout(VulkanCommandBuffer commandBuffer, VkQueue queue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+	void VulkanImage::transitionImageLayout(CommandBuffer& commandBuffer, Queue& queue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
 		uint32_t graphicsFamily = device.findPhysicalQueueFamilies().graphicsFamily;
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -41,7 +37,7 @@ namespace Axiom {
 		barrier.newLayout = newLayout;
 		barrier.srcQueueFamilyIndex = graphicsFamily;
 		barrier.dstQueueFamilyIndex = graphicsFamily;
-		barrier.image = image;
+		barrier.image = getHandle<VkImage>();
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
@@ -66,10 +62,10 @@ namespace Axiom {
 		else {
 			AX_CORE_LOG_ERROR("Unsupported layout transition!");
 		}
-		vkCmdPipelineBarrier(commandBuffer.getHandle(), sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		vkCmdPipelineBarrier(commandBuffer.getHandle<VkCommandBuffer>(), sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 	}
 
-	void VulkanImage::copyFromBuffer(VulkanCommandBuffer commandBuffer, VkBuffer buffer) const {
+	void VulkanImage::copyFromBuffer(CommandBuffer& commandBuffer, Buffer& buffer) const {
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
 		region.bufferRowLength = 0;
@@ -80,20 +76,6 @@ namespace Axiom {
 		region.imageSubresource.layerCount = 1;
 		region.imageExtent = { width, height, 1 };
 
-		vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-	}
-
-	void VulkanImage::createImageView(VulkanDevice& device, VkFormat format, VkImageAspectFlagBits aspectFlags) {
-		VkImageViewCreateInfo viewInfo = {};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = format;
-		viewInfo.subresourceRange.aspectMask = aspectFlags;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
-		AX_CORE_ASSERT(vkCreateImageView(device.getHandle(), &viewInfo, nullptr, &imageView) == VK_SUCCESS, "Failed to create Vulkan image view");
+		vkCmdCopyBufferToImage(commandBuffer.getHandle<VkCommandBuffer>(), buffer.getHandle<VkBuffer>(), getHandle<VkImage>(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	}
 }

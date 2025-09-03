@@ -5,8 +5,7 @@
 #include "LayerStack.h"
 #include "Log.h"
 #include "Math/AxMath.h"
-#include "Renderer/RendererContext.h"
-#include "Renderer/RendererSystem.h"
+#include "Renderer/System/RendererSystem.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
 

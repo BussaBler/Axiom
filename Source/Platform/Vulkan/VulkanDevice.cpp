@@ -27,22 +27,23 @@ namespace Axiom {
     }
 
 	// ---------- Vulkan Device Implementation ----------
-    VulkanDevice::VulkanDevice(Window* window) : window(window) {
+    VulkanDevice::VulkanDevice(Window* window) : Device(window) {
         createInstance();
         setupDebugMessenger();
         createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
-        createGraphicsCommandPool();
+		graphicsCommandPool = CommandPool::create(*this, findQueueFamilies(physicalDevice).graphicsFamily);
     }
 
     VulkanDevice::~VulkanDevice() {
-        vkDestroyCommandPool(handle, graphicsCommandPool, nullptr);
-        vkDestroyDevice(handle, nullptr);
+		vkDeviceWaitIdle(getHandle<VkDevice>());
+		vkDestroySurfaceKHR(instance, surface, nullptr);
+		graphicsCommandPool.reset();
+        vkDestroyDevice(getHandle<VkDevice>(), nullptr);
         if (enableValidationLayers) {
             destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
-        vkDestroySurfaceKHR(instance, surface, nullptr);
         vkDestroyInstance(instance, nullptr);
     }
 
@@ -136,20 +137,12 @@ namespace Axiom {
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-        AX_CORE_ASSERT(vkCreateDevice(physicalDevice, &createInfo, nullptr, &handle) == VK_SUCCESS, "Failed to create logical device!");
+        handle.emplace<VkDevice>(VK_NULL_HANDLE);
+        AX_CORE_ASSERT(vkCreateDevice(physicalDevice, &createInfo, nullptr, std::any_cast<VkDevice>(&handle)) == VK_SUCCESS, "Failed to create logical device!");
 
-        vkGetDeviceQueue(handle, indices.graphicsFamily, 0, &graphicsQueue);
-        vkGetDeviceQueue(handle, indices.presentFamily, 0, &presentQueue);
-        vkGetDeviceQueue(handle, indices.computeFamily, 0, &computeQueue);
-    }
-
-    void VulkanDevice::createGraphicsCommandPool() {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        AX_CORE_ASSERT(vkCreateCommandPool(handle, &poolInfo, nullptr, &graphicsCommandPool) == VK_SUCCESS, "Failed to create graphics command pool!");
+		graphicsQueue = Queue::create(*this, indices.graphicsFamily);
+		presentQueue = Queue::create(*this, indices.presentFamily);
+		computeQueue = Queue::create(*this, indices.computeFamily);
     }
 
     void VulkanDevice::createSurface() {

@@ -1,29 +1,28 @@
 #pragma once
+#include "Axiom/Renderer/Core/Image.h"
 #include "Core/Assert.h"
-#include "VulkanDevice.h"
+#include "Renderer/Core/Buffer.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanDevice.h"
 
 namespace Axiom {
-	class VulkanImage {
+	struct ImageCreateInfo {
+		VkImageCreateInfo vkImageCreateInfo;
+		VkMemoryPropertyFlags memoryFlags;
+		VkImageAspectFlagBits aspectFlags;
+	};
+
+	class VulkanImage : public Image {
 	public:
-		VulkanImage(VulkanDevice& vkDevice, const VkImageCreateInfo& createInfo, VkMemoryPropertyFlags memoryFlags, VkImageAspectFlagBits aspectFlags);
+		VulkanImage(VulkanDevice& vkDevice, const ImageCreateInfo& createInfo);
 		~VulkanImage();
 
-		void transitionImageLayout(VulkanCommandBuffer commandBuffer, VkQueue queue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-		void copyFromBuffer(VulkanCommandBuffer commandBuffer, VkBuffer buffer) const;
-
-		VkImage getImage() const { return image; }
-		VkDeviceMemory getImageMemory() const { return imageMemory; }
-		VkImageView getImageView() const { return imageView; }
-
-	private:
-		void createImageView(VulkanDevice& device, VkFormat format, VkImageAspectFlagBits aspectFlags);
+		void transitionImageLayout(CommandBuffer& commandBuffer, Queue& queue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		void copyFromBuffer(CommandBuffer& commandBuffer, Buffer& buffer) const;
 
 	private:
 		VulkanDevice& device;
-		VkImage image;
 		VkDeviceMemory imageMemory;
-		VkImageView imageView;
 		uint32_t width, height;
 	};
 }

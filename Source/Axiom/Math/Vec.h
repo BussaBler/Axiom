@@ -12,6 +12,15 @@ namespace Math {
 		}
 		template <typename... Scalars, typename = std::enable_if_t< (sizeof...(Scalars) == N) && (std::conjunction_v<std::is_convertible<Scalars, T>...>)>>
 		Vec(Scalars... s) : data{ { static_cast<T>(s)... } } {}
+		// Constructs from a string of the form "x,y,z,..."
+		Vec(std::string str) {
+			std::stringstream ss(str);
+			char comma;
+			for (size_t i = 0; i < N; ++i) {
+				ss >> data[i];
+				if (i < N - 1) ss >> comma;
+			}
+		}
 
 		static Vec<T, N> zero() {
 			return Vec<T, N>();
@@ -123,6 +132,7 @@ namespace Math {
 	using Vec4 = Vec<float, 4>;
 	using iVec2 = Vec<int, 2>;
 	using iVec3 = Vec<int, 3>;
+	using uVec2 = Vec<uint32_t, 2>;
 
 	template <typename T, size_t N>
 	inline T dot(const Vec<T, N>& a, const Vec<T, N>& b) {

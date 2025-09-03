@@ -1,7 +1,7 @@
 #include "VulkanPipeline.h"
 
 namespace Axiom {
-	VulkanPipeline::VulkanPipeline(VulkanDevice& vkDevice, VulkanRenderPass& vkRenderPass, const PipelineConfigInfo& configInfo)
+	VulkanPipeline::VulkanPipeline(VulkanDevice& vkDevice, RenderPass& vkRenderPass, const PipelineConfigInfo& configInfo)
 		: device(vkDevice) {
 		VkPipelineViewportStateCreateInfo viewportState{};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -92,7 +92,7 @@ namespace Axiom {
 		pipelineLayoutInfo.pushConstantRangeCount = configInfo.pushConstantsRange.size();
 		pipelineLayoutInfo.pPushConstantRanges = configInfo.pushConstantsRange.data();
 
-		AX_CORE_ASSERT(vkCreatePipelineLayout(device.getHandle(), &pipelineLayoutInfo, nullptr, &layout) == VK_SUCCESS, "Failed to create pipeline layout");
+		AX_CORE_ASSERT(vkCreatePipelineLayout(device.getHandle<VkDevice>(), &pipelineLayoutInfo, nullptr, &layout) == VK_SUCCESS, "Failed to create pipeline layout");
 	
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -107,21 +107,35 @@ namespace Axiom {
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = layout;
-		pipelineInfo.renderPass = vkRenderPass.getHandle();
+		pipelineInfo.renderPass = vkRenderPass.getHandle<VkRenderPass>();
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
-
-		VkResult result = vkCreateGraphicsPipelines(device.getHandle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle);
+		handle.emplace<VkPipeline>(VK_NULL_HANDLE);
+		VkResult result = vkCreateGraphicsPipelines(device.getHandle<VkDevice>(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, std::any_cast<VkPipeline>(&handle));
 		AX_CORE_ASSERT(result == VK_SUCCESS, "Failed to create graphics pipeline: {}", static_cast<int>(result));
 	}
 
 	VulkanPipeline::~VulkanPipeline() {
-		vkDestroyPipeline(device.getHandle(), handle, nullptr);
-		vkDestroyPipelineLayout(device.getHandle(), layout, nullptr);
+		vkDestroyPipeline(device.getHandle<VkDevice>(), getHandle<VkPipeline>(), nullptr);
+		vkDestroyPipelineLayout(device.getHandle<VkDevice>(), layout, nullptr);
 	}
 
-	void VulkanPipeline::bind(VulkanCommandBuffer& commandBuffer, VkPipelineBindPoint bindPoint) {
-		vkCmdBindPipeline(commandBuffer.getHandle(), bindPoint, handle);
+	void VulkanPipeline::bind(CommandBuffer& commandBuffer, PipelineBindPoint bindPoint) {
+		VkPipelineBindPoint vkBindPoint; 
+		switch (bindPoint)
+		{
+			case Axiom::PipelineBindPoint::GRAPHICS:
+				vkBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+				break;
+			case Axiom::PipelineBindPoint::COMPUTE:
+				vkBindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+				break;
+			default:
+				vkBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+				AX_CORE_LOG_ERROR("Invalid pipeline bind point. Using graphics");
+				break;
+		}
+		vkCmdBindPipeline(commandBuffer.getHandle<VkCommandBuffer>(), vkBindPoint, getHandle<VkPipeline>());
 	}
 }

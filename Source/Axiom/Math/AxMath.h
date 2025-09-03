@@ -32,11 +32,14 @@ namespace Math {
 
 	bool axIsPowerOfTwo(uint64_t value);
 	// Returns a random float in the range [0.0, 1.0)
-	float axRandom(float seed = 0.0f);
+	float axRandom();
+	float axRandom(float seed);
 	// Returns a random float in the range [min, max]
-	float axRandom(float min, float max, float seed = 0.0f);
+	float axRandom(float min, float max);
+	float axRandom(float min, float max, float seed);
 	// Returns a random integer in the range [min, max]
-	int axRandomInt(int min, int max, float seed = 0.0f);
+	int axRandomInt(int min, int max);
+	int axRandomInt(int min, int max, float seed);
 
 }
 

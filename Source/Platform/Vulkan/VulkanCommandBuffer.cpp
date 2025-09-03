@@ -2,44 +2,45 @@
 #include "VulkanCommandBuffer.h"
 
 namespace Axiom {
-	VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& vkDevice) : device(vkDevice), handle(VK_NULL_HANDLE), state(VulkanCommandBufferState::NOT_ALLOCATED) {
+	VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& vkDevice) : device(vkDevice), state(VulkanCommandBufferState::NOT_ALLOCATED) {
 		  
 	}
 
-	void VulkanCommandBuffer::allocate(VkCommandPool commandPool, VkCommandBufferLevel level) {
+	void VulkanCommandBuffer::allocate(CommandPool& commandPool, bool primary) {
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
-		allocInfo.level = level;
+		allocInfo.commandPool = commandPool.getHandle<VkCommandPool>();
+		allocInfo.level = primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 		allocInfo.commandBufferCount = 1;
 		allocInfo.pNext = nullptr;
 
 		state = VulkanCommandBufferState::READY;
-		if (vkAllocateCommandBuffers(device.getHandle(), &allocInfo, &handle) != VK_SUCCESS) {
+		handle.emplace<VkCommandBuffer>(VK_NULL_HANDLE);
+		if (vkAllocateCommandBuffers(device.getHandle<VkDevice>(), &allocInfo, std::any_cast<VkCommandBuffer>(&handle)) != VK_SUCCESS) {
 			AX_CORE_LOG_ERROR("Failed to allocate command buffer");
 			state = VulkanCommandBufferState::NOT_ALLOCATED;
 		}
 	}
 
-	void VulkanCommandBuffer::free(VkCommandPool commandPool) {
-		if (handle != VK_NULL_HANDLE) {
-			vkFreeCommandBuffers(device.getHandle(), commandPool, 1, &handle);
+	void VulkanCommandBuffer::free(CommandPool& commandPool) {
+		if (getHandle<VkCommandBuffer>() != VK_NULL_HANDLE) {
+			vkFreeCommandBuffers(device.getHandle<VkDevice>(), commandPool.getHandle<VkCommandPool>(), 1, std::any_cast<VkCommandBuffer>(&handle));
 			handle = VK_NULL_HANDLE;
 			state = VulkanCommandBufferState::NOT_ALLOCATED;
 		}
 	}
 
-	void VulkanCommandBuffer::begin(VkCommandBufferUsageFlags usageFlags) {
+	void VulkanCommandBuffer::begin(uint32_t usageFlags) {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = usageFlags;
 
-		vkBeginCommandBuffer(handle, &beginInfo);
+		vkBeginCommandBuffer(getHandle<VkCommandBuffer>(), &beginInfo);
 		state = VulkanCommandBufferState::RECORDING;
 	}
 
 	void VulkanCommandBuffer::end() {
-		vkEndCommandBuffer(handle);
+		vkEndCommandBuffer(getHandle<VkCommandBuffer>());
 		state = VulkanCommandBufferState::RECORDING_ENDED;
 	}
 
@@ -51,20 +52,20 @@ namespace Axiom {
 		state = VulkanCommandBufferState::READY;
 	}
 
-	void VulkanCommandBuffer::allocateAndBeginSingleUse(VkCommandPool commandPool, VkCommandBufferLevel level) {
-		allocate(commandPool, level);
+	void VulkanCommandBuffer::allocateAndBeginSingleUse(CommandPool& commandPool, bool primary) {
+		allocate(commandPool, primary);
 		begin();
 	}
 
-	void VulkanCommandBuffer::endAndFreeSingleUse(VkCommandPool commandPool, VkQueue queue) {
+	void VulkanCommandBuffer::endAndFreeSingleUse(CommandPool& commandPool, Queue& queue) {
 		end();
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &handle;
+		submitInfo.pCommandBuffers = std::any_cast<VkCommandBuffer>(&handle);
 
-		AX_CORE_ASSERT(vkQueueSubmit(queue, 1, &submitInfo, nullptr) == VK_SUCCESS, "Failed to submit Vulkan command buffer");
-		vkQueueWaitIdle(queue);
+		AX_CORE_ASSERT(vkQueueSubmit(queue.getHandle<VkQueue>(), 1, &submitInfo, nullptr) == VK_SUCCESS, "Failed to submit Vulkan command buffer");
+		vkQueueWaitIdle(queue.getHandle<VkQueue>());
 
 		free(commandPool);
 	}

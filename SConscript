@@ -17,6 +17,8 @@ current_env['OBJPREFIX'] = obj_prefix
 
 src_dir = Dir('../../Axiom/Source')
 all_cpp_files = src_dir.glob('Axiom/**/*.cpp')
+all_cpp_files += src_dir.glob('Axiom/Renderer/**/*.cpp')
+all_cpp_files += src_dir.glob('Axiom/Renderer/Data/**/*.cpp')
 
 axiom_sources = [f for f in all_cpp_files if '/Platform/' not in str(f) and '\\Platform\\' not in str(f)]
 
@@ -55,6 +57,7 @@ current_env.Append(CPPPATH=[
     '../../Axiom/Vendor/glm',
     os.path.join(vulkan_sdk, 'Include'),
     '../../Axiom/Vendor/ImGui',
+    '../../Axiom/Vendor/stb',
 ])
 
 if compiler == 'msvc':
@@ -71,10 +74,15 @@ axiom_lib = current_env.StaticLibrary('Axiom', axiom_sources)
 axiom_project = None
 if vsproj:
     axiom_sources = src_dir.glob('Axiom/**/*.cpp')
+    axiom_sources += src_dir.glob('Axiom/**/**/*.cpp')
+    axiom_sources += src_dir.glob('Axiom/**/**/**/*.cpp')
     axiom_sources += src_dir.glob('Platform/**/*.cpp')
     axiom_sources += src_dir.glob('Platform/**/**/*.cpp')
     axiom_sources += src_dir.glob('*.cpp')
+
     axiom_headers = src_dir.glob('Axiom/**/*.h')
+    axiom_headers += src_dir.glob('Axiom/**/**/*.h')
+    axiom_headers += src_dir.glob('Axiom/**/**/**/*.h')
     axiom_headers += src_dir.glob('Platform/**/*.h')
     axiom_headers += src_dir.glob('Platform/**/**/*.h')
     axiom_headers += src_dir.glob('*.h')

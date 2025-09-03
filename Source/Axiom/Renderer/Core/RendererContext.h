@@ -1,8 +1,10 @@
 #pragma once
 #include "Core/Window.h"
+#include "Device.h"
+#include "Renderer/System/TextureSystem.h"
+#include "Renderer/Data/Geometry/GeometryRenderData.h"
 #include "Math/AxMath.h"
-#include "Texture.h"
-#include "GeometryRenderData.h"
+#include "MaterialShader.h"
 
 namespace Axiom {
 	class RendererContext {
@@ -16,11 +18,15 @@ namespace Axiom {
 		virtual void updateObjectState(const GeometryRenderData& data) = 0;
 		virtual bool endFrame() = 0;
 		virtual void onResize(uint32_t width, uint32_t height) = 0;
-		virtual std::shared_ptr<Texture> createTexture(uint32_t width, uint32_t height, uint8_t channels, std::vector<uint8_t> data) = 0;
+		
+		Device& getDevice() { return *device; }
+		MaterialShader& getMaterialShader() { return *materialShader; }
 
 		static std::unique_ptr<RendererContext> create();
 
 	protected:
 		Window* window;
+		std::unique_ptr<Device> device;
+		std::unique_ptr<MaterialShader> materialShader;
 	};
 }

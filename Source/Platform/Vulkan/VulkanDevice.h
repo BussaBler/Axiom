@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Assert.h"
+#include "Renderer/Core/Device.h"
 #include <vulkan/vulkan.h>
 #ifdef AX_PLATFORM_WINDOWS
 #include "Platform/Windows/Win32Window.h"
@@ -25,18 +26,12 @@ namespace Axiom {
 		}
 	};
 
-	class VulkanDevice {
+	class VulkanDevice : public Device {
 	public:
 		VulkanDevice(Window* window);
 		~VulkanDevice();
 
-		VkCommandPool getGraphicsCommandPool() const { return graphicsCommandPool; }
-		VkDevice getHandle() const { return handle; }
 		VkSurfaceKHR getSurface() const { return surface; }
-		VkQueue getGraphicsQueue() const { return graphicsQueue; }
-		VkQueue getPresentQueue() const { return presentQueue; }
-		VkQueue getComputeQueue() const { return computeQueue; }
-
 		SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 		QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
@@ -48,7 +43,6 @@ namespace Axiom {
 		void createSurface();
 		void pickPhysicalDevice();
 		void createLogicalDevice();
-		void createGraphicsCommandPool();
 
 		bool isDeviceSuitable(VkPhysicalDevice device);
 		std::vector<const char*> getRequiredExtensions() const;
@@ -60,16 +54,10 @@ namespace Axiom {
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 	private:
-		Window* window;
 		VkInstance instance;
 		VkDebugUtilsMessengerEXT debugMessenger;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-		VkCommandPool graphicsCommandPool;
-		VkDevice handle;
 		VkSurfaceKHR surface;
-		VkQueue graphicsQueue;
-		VkQueue presentQueue;
-		VkQueue computeQueue;
 
 		const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 		const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };

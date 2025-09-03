@@ -1,21 +1,18 @@
 #pragma once
 #include "VulkanDevice.h"
+#include "Axiom/Renderer/Core/Fence.h"
 
 namespace Axiom {
-	class VulkanFence {
+	class VulkanFence : public Fence {
 	public:
 		VulkanFence(VulkanDevice& device, bool signaled = false);
 		~VulkanFence();
 
-		VkFence getHandle() const { return handle; }
-
-		void wait(uint64_t timeout);
-		void reset();
+		void wait(uint64_t timeout) override;
+		void reset() override;
 
 	private:
 		VulkanDevice& device;
-		VkFence handle = VK_NULL_HANDLE;
-		bool signaled = false;
 	};
 }
 

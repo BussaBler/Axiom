@@ -1,4 +1,5 @@
 #pragma once
+#include "Renderer/Core/CommandBuffer.h"
 #include "VulkanDevice.h"
 
 namespace Axiom {
@@ -11,29 +12,25 @@ namespace Axiom {
 		NOT_ALLOCATED
 	};
 
-	class VulkanCommandBuffer {
+	class VulkanCommandBuffer : public CommandBuffer {
 	public:
 		VulkanCommandBuffer(VulkanDevice& vkDevice);
 		~VulkanCommandBuffer() = default;
 
-		void allocate(VkCommandPool commandPool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		void free(VkCommandPool commandPool);
-		void begin(VkCommandBufferUsageFlags usageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-		void end();
-		void updateSubmitted();
-		void reset();
-		// Convenience method to allocate and begin recording in one step
-		void allocateAndBeginSingleUse(VkCommandPool commandPool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		// Ends recording, submits and waits for the queue to become idle, and frees the command buffer
-		void endAndFreeSingleUse(VkCommandPool commandPool, VkQueue queue);
+		void allocate(CommandPool& commandPool, bool primary = true) override;
+		void free(CommandPool& commandPool) override;
+		void begin(uint32_t usageFlags = 0) override;
+		void end() override;
+		void updateSubmitted() override;
+		void reset() override;
+		void allocateAndBeginSingleUse(CommandPool& commandPool, bool primary = true) override;
+		void endAndFreeSingleUse(CommandPool& commandPool, Queue& queue) override;
 
-		VkCommandBuffer getHandle() const { return handle; }
 		void setState(VulkanCommandBufferState inState) { state = inState; }
 		VulkanCommandBufferState getState() const { return state; }
 
 	private:
 		VulkanDevice& device;
-		VkCommandBuffer handle;
 		VulkanCommandBufferState state;
 	};
 }

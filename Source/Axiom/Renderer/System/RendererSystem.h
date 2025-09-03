@@ -1,6 +1,8 @@
 #pragma once
 #include "Core/Window.h"
-#include "RendererContext.h"
+#include "Renderer/Core/RendererContext.h"
+#include "TextureSystem.h"
+#include "MaterialSystem.h"
 
 namespace Axiom {
 	class RendererSystem {
@@ -16,7 +18,8 @@ namespace Axiom {
 		// what will be a main camera
 		static Math::Mat4 projectionMatrix;
 		static Math::Mat4 viewMatrix;
-		static std::shared_ptr<Texture> debugTexture;
+		// Temp
+		static std::shared_ptr<Material> testMaterial;
 	};
 }
 

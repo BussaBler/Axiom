@@ -2,14 +2,14 @@
 #include "VulkanRenderPass.h"
 
 namespace Axiom {
-	VulkanRenderPass::VulkanRenderPass(VulkanDevice& vkDevice, VulkanSwapChain* vkSwapChain, float x, float y, float w, float h, float r, float g, float b, float a, float depth, uint32_t stencil)
-		: device(vkDevice), x(x), y(y), w(w), h(h), r(r), g(g), b(b), a(a), depth(depth), stencil(stencil), state(VulkanRenderPassState::READY) {
+	VulkanRenderPass::VulkanRenderPass(VulkanDevice& vkDevice, SwapChain& vkSwapChain, Math::Vec2 offset, Math::Vec2 extent, Math::Vec4 clearColor, float depth, uint32_t stencil)
+		: device(vkDevice), offset(offset), clearColor(clearColor), depth(depth), stencil(stencil), state(VulkanRenderPassState::READY) {
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
 		std::array<VkAttachmentDescription, 2> attachments{};
 		// Color attachment
-		attachments[0].format = vkSwapChain->getImageFormat().format;
+		attachments[0].format = static_cast<VulkanSwapChain&>(vkSwapChain).getImageFormat().format;
 		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -76,37 +76,38 @@ namespace Axiom {
 		renderPassInfo.pDependencies = &dependency;
 		renderPassInfo.pNext = nullptr;
 		renderPassInfo.flags = 0;
-
-		AX_CORE_ASSERT(vkCreateRenderPass(vkDevice.getHandle(), &renderPassInfo, nullptr, &handle) == VK_SUCCESS, "Failed to create Vulkan render pass");
+		handle.emplace<VkRenderPass>(VK_NULL_HANDLE);
+		AX_CORE_ASSERT(vkCreateRenderPass(device.getHandle<VkDevice>(), &renderPassInfo, nullptr, std::any_cast<VkRenderPass>(&handle)) == VK_SUCCESS, "Failed to create Vulkan render pass");
 	}
 
 	VulkanRenderPass::~VulkanRenderPass() {
-		vkDestroyRenderPass(device.getHandle(), handle, nullptr);
+		vkDeviceWaitIdle(device.getHandle<VkDevice>());
+		vkDestroyRenderPass(device.getHandle<VkDevice>(), getHandle<VkRenderPass>(), nullptr);
 	}
 
-	void VulkanRenderPass::begin(VulkanCommandBuffer commandBuffer, VkFramebuffer framebuffer) const {
+	void VulkanRenderPass::begin(CommandBuffer& commandBuffer, Framebuffer& framebuffer) const {
 		VkRenderPassBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		beginInfo.renderPass = handle;
-		beginInfo.framebuffer = framebuffer;
-		beginInfo.renderArea.offset.x = x;
-		beginInfo.renderArea.offset.y = y;
-		beginInfo.renderArea.extent.width = w;
-		beginInfo.renderArea.extent.height = h;
+		beginInfo.renderPass = getHandle<VkRenderPass>();
+		beginInfo.framebuffer = framebuffer.getHandle<VkFramebuffer>();
+		beginInfo.renderArea.offset.x = offset.x();
+		beginInfo.renderArea.offset.y = offset.y();
+		beginInfo.renderArea.extent.width = extent.x();
+		beginInfo.renderArea.extent.height = extent.y();
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { r, g, b, a };
+		clearValues[0].color = { clearColor.r(), clearColor.g(), clearColor.b(), clearColor.a() };
 		clearValues[1].depthStencil = { depth, stencil };
 
 		beginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		beginInfo.pClearValues = clearValues.data();
 
-		vkCmdBeginRenderPass(commandBuffer.getHandle(), &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		commandBuffer.setState(VulkanCommandBufferState::IN_RENDER_PASS);
+		vkCmdBeginRenderPass(commandBuffer.getHandle<VkCommandBuffer>(), &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		static_cast<VulkanCommandBuffer&>(commandBuffer).setState(VulkanCommandBufferState::IN_RENDER_PASS);
 	}
 
-	void VulkanRenderPass::end(VulkanCommandBuffer commandBuffer) const {
-		vkCmdEndRenderPass(commandBuffer.getHandle());
-		commandBuffer.setState(VulkanCommandBufferState::RECORDING_ENDED);
+	void VulkanRenderPass::end(CommandBuffer& commandBuffer) const {
+		vkCmdEndRenderPass(commandBuffer.getHandle<VkCommandBuffer>());
+		static_cast<VulkanCommandBuffer&>(commandBuffer).setState(VulkanCommandBufferState::RECORDING_ENDED);
 	}
 }

@@ -1,19 +1,15 @@
 #pragma once
 #include "VulkanRenderPass.h"
+#include "Renderer/Core/Framebuffer.h"
 
 namespace Axiom {
-	class VulkanFramebuffer {
+	class VulkanFramebuffer : public Framebuffer {
 	public:
-		VulkanFramebuffer(VulkanDevice& device, VulkanRenderPass& renderPass, std::vector<VkImageView>& imageView, uint32_t width, uint32_t height);
-		~VulkanFramebuffer();
-
-		VkFramebuffer getHandle() const { return handle; }
+		VulkanFramebuffer(VulkanDevice& device, RenderPass& renderPass, std::vector<ImageView>& imageViews, uint32_t width, uint32_t height);
+		~VulkanFramebuffer() override;
 
 	private:
 		VulkanDevice& device;
-		VulkanRenderPass& renderPass;
-		VkFramebuffer handle = VK_NULL_HANDLE;
-		std::vector<VkImageView> attachments;
 	};
 }
 

@@ -1,7 +1,8 @@
 #pragma once
 #include "VulkanDevice.h"
 #include "VulkanRenderPass.h"
-#include "Renderer/Vertex.h"
+#include "Renderer/Data/Geometry/Vertex.h"
+#include "Renderer/Core/Pipeline.h"
 
 namespace Axiom {
 	struct PipelineConfigInfo {
@@ -14,16 +15,14 @@ namespace Axiom {
 		bool isWireframe = false;
 	};
 
-	class VulkanPipeline {
+	class VulkanPipeline : public Pipeline {
 	public:
-		VulkanPipeline(VulkanDevice& device, VulkanRenderPass& renderPass, const PipelineConfigInfo& configInfo);
-		virtual ~VulkanPipeline();
-		virtual void bind(VulkanCommandBuffer& commandBuffer, VkPipelineBindPoint bindPoint);
+		VulkanPipeline(VulkanDevice& device, RenderPass& renderPass, const PipelineConfigInfo& configInfo);
+		~VulkanPipeline();
+		void bind(CommandBuffer& commandBuffer, PipelineBindPoint bindPoint) override;
 
-		VkPipeline getHandle() const { return handle; }
 		VkPipelineLayout getLayout() const { return layout; }
 	private:
-		VkPipeline handle;
 		VkPipelineLayout layout;
 		VulkanDevice& device;
 	};

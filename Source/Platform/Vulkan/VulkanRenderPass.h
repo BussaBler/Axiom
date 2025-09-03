@@ -2,6 +2,7 @@
 #include "VulkanDevice.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapChain.h"
+#include "Renderer/Core/RenderPass.h"
 
 namespace Axiom {
 	enum class VulkanRenderPassState {
@@ -13,24 +14,23 @@ namespace Axiom {
 		NOT_ALLOCATED
 	};
 
-	class VulkanRenderPass {
+	class VulkanRenderPass : public RenderPass {
 	public:
-		VulkanRenderPass(VulkanDevice& vkDevice, VulkanSwapChain* vkSwapChain, float x, float y, float w, float h, float r, float g, float b, float a, float depth, uint32_t stencil);
-		~VulkanRenderPass();
+		VulkanRenderPass(VulkanDevice& vkDevice, SwapChain& vkSwapChain, Math::Vec2 offset, Math::Vec2 extent, Math::Vec4 clearColor, float depth, uint32_t stencil);
+		~VulkanRenderPass() override;
 
-		void begin(VulkanCommandBuffer commandBuffer, VkFramebuffer framebuffer) const;
-		void end(VulkanCommandBuffer commandBuffer) const;
+		void begin(CommandBuffer& commandBuffer, Framebuffer& framebuffer) const override;
+		void end(CommandBuffer& commandBuffer) const override;
 
-		VkRenderPass getHandle() const { return handle; }
 		VulkanRenderPassState getState() const { return state; }
-		void setWidth(float width) { w = width; }
-		void setHeight(float height) { h = height; }
+
+		void setExtent(Math::Vec2 newExtent) { extent = newExtent; }
 		
 	private:
 		VulkanDevice& device;
-		VkRenderPass handle;
-		float x, y, w, h;
-		float r, g, b, a;
+		Math::Vec2 offset;
+		Math::Vec2 extent;
+		Math::Vec4 clearColor;
 		float depth;
 		uint32_t stencil;
 

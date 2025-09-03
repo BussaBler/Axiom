@@ -4,25 +4,32 @@
 #include "VulkanDevice.h"
 
 namespace Axiom {
-	VulkanSwapChain::VulkanSwapChain(VulkanDevice& device, VkExtent2D extent) : device(device) {
-		createSwapChain(extent);
+	VulkanSwapChain::VulkanSwapChain(VulkanDevice& device, Math::uVec2 extent) : device(device) {
+		createSwapChain({ extent.x(), extent.y() });
 	}
 
 	VulkanSwapChain::~VulkanSwapChain() {
 		destroySwapChain();
 	}
 
-	void VulkanSwapChain::recreate(VkExtent2D extent) {
-		if (extent.width == 0 || extent.height == 0) {
+	void VulkanSwapChain::recreate(Math::uVec2 extent) {
+		if (extent.x() == 0 || extent.y() == 0) {
 			AX_CORE_LOG_WARN("Attempted to recreate swap chain with zero extent");
 			return;
 		}
 		destroySwapChain();
-		createSwapChain(extent);
+		createSwapChain({ extent.x(), extent.y() });
 	}
 
-	void VulkanSwapChain::acquireNextImageIndex(uint32_t& imageIndex, VkSemaphore semaphore, VkFence fence, VkExtent2D extent) {
-		VkResult result = vkAcquireNextImageKHR(device.getHandle(), handle, UINT64_MAX, semaphore, fence, &imageIndex);
+	void VulkanSwapChain::acquireNextImageIndex(uint32_t& imageIndex, const Semaphore& semaphore, Fence* fence, Math::uVec2 extent) {
+		VkResult result;
+		if (fence) {
+			result = vkAcquireNextImageKHR(device.getHandle<VkDevice>(), getHandle<VkSwapchainKHR>(), UINT64_MAX, semaphore.getHandle<VkSemaphore>(), fence->getHandle<VkFence>(), &imageIndex);
+		}
+		else {
+			result = vkAcquireNextImageKHR(device.getHandle<VkDevice>(), getHandle<VkSwapchainKHR>(), UINT64_MAX, semaphore.getHandle<VkSemaphore>(), VK_NULL_HANDLE, &imageIndex);
+		}
+		
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreate(extent);
 		}
@@ -31,17 +38,17 @@ namespace Axiom {
 		}
 	}
 
-	void VulkanSwapChain::presentImage(VkQueue graphicsQueue, VkQueue presentQueue, VkSemaphore renderSemaphore, uint32_t imageIndex, uint32_t& currentFrame, VkExtent2D extent) {
+	void VulkanSwapChain::presentImage(const Queue& graphicsQueue, const Queue& presentQueue, const Semaphore& renderSemaphore, uint32_t imageIndex, uint32_t& currentFrame, Math::uVec2 extent) {
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &renderSemaphore;
+		presentInfo.pWaitSemaphores = renderSemaphore.getHandlePtr<VkSemaphore>();
 		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &handle;
+		presentInfo.pSwapchains = std::any_cast<VkSwapchainKHR>(&handle);
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
 
-		VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
+		VkResult result = vkQueuePresentKHR(presentQueue.getHandle<VkQueue>(), &presentInfo);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
 			recreate(extent);
 		} else if (result != VK_SUCCESS) {
@@ -101,30 +108,23 @@ namespace Axiom {
 		swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 		swapChainCreateInfo.pNext = nullptr;
 
-		AX_CORE_ASSERT(vkCreateSwapchainKHR(device.getHandle(), &swapChainCreateInfo, nullptr, &handle) == VK_SUCCESS, "Failed to create swap chain");
+		handle.emplace<VkSwapchainKHR>(VK_NULL_HANDLE);
+		AX_CORE_ASSERT(vkCreateSwapchainKHR(device.getHandle<VkDevice>(), &swapChainCreateInfo, nullptr, std::any_cast<VkSwapchainKHR>(&handle)) == VK_SUCCESS, "Failed to create swap chain");
 
 		uint32_t swapChainImagesCount = 0;
-		vkGetSwapchainImagesKHR(device.getHandle(), handle, &swapChainImagesCount, nullptr);
+		vkGetSwapchainImagesKHR(device.getHandle<VkDevice>(), getHandle<VkSwapchainKHR>(), &swapChainImagesCount, nullptr);
 		swapChainImages.resize(swapChainImagesCount);
 		swapChainImageViews.resize(swapChainImagesCount);
-		vkGetSwapchainImagesKHR(device.getHandle(), handle, &swapChainImagesCount, swapChainImages.data());
+		vkGetSwapchainImagesKHR(device.getHandle<VkDevice>(), getHandle<VkSwapchainKHR>(), &swapChainImagesCount, swapChainImages.data());
 		for (uint32_t i = 0; i < swapChainImagesCount; i++) {
 			VkImageViewUsageCreateInfo usageInfo{};
 			usageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
 			usageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 			usageInfo.pNext = nullptr;
-			VkImageViewCreateInfo viewInfo{};
-			viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			viewInfo.image = swapChainImages[i];
-			viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			ImageViewCreateInfo viewInfo{};
 			viewInfo.format = swapChainImageFormat.format;
-			viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			viewInfo.subresourceRange.baseMipLevel = 0;
-			viewInfo.subresourceRange.levelCount = 1;
-			viewInfo.subresourceRange.baseArrayLayer = 0;
-			viewInfo.subresourceRange.layerCount = 1;
-			viewInfo.pNext = &usageInfo;
-			AX_CORE_ASSERT(vkCreateImageView(device.getHandle(), &viewInfo, nullptr, &swapChainImageViews[i]) == VK_SUCCESS, "Failed to create image views");
+			viewInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+			swapChainImageViews[i] = std::make_unique<VulkanImageView>(device, swapChainImages[i], viewInfo);
 		}
 
 		VkFormat depthFormat = device.findSupportedFormat(
@@ -133,30 +133,36 @@ namespace Axiom {
 			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 		);
 
-		VkImageCreateInfo depthImageInfo = {};
-		depthImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		depthImageInfo.imageType = VK_IMAGE_TYPE_2D;
-		depthImageInfo.extent.width = extent.width;
-		depthImageInfo.extent.height = extent.height;
-		depthImageInfo.extent.depth = 1;
-		depthImageInfo.mipLevels = 1;
-		depthImageInfo.arrayLayers = 1;
-		depthImageInfo.format = depthFormat;
-		depthImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		depthImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthImageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		depthImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		depthImageInfo.flags = 0;
+		ImageCreateInfo depthImageInfo = {};
+		depthImageInfo.vkImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		depthImageInfo.vkImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		depthImageInfo.vkImageCreateInfo.extent.width = extent.width;
+		depthImageInfo.vkImageCreateInfo.extent.height = extent.height;
+		depthImageInfo.vkImageCreateInfo.extent.depth = 1;
+		depthImageInfo.vkImageCreateInfo.mipLevels = 1;
+		depthImageInfo.vkImageCreateInfo.arrayLayers = 1;
+		depthImageInfo.vkImageCreateInfo.format = depthFormat;
+		depthImageInfo.vkImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		depthImageInfo.vkImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthImageInfo.vkImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		depthImageInfo.vkImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthImageInfo.vkImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		depthImageInfo.vkImageCreateInfo.flags = 0;
+		depthImageInfo.memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		depthImageInfo.aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-        depthImage = std::make_unique<VulkanImage>(device, depthImageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+        depthImage = std::make_unique<VulkanImage>(device, depthImageInfo);
+		ImageViewCreateInfo depthViewInfo{};
+		depthViewInfo.format = depthFormat;
+		depthViewInfo.aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
+		depthImageView = std::make_unique<VulkanImageView>(device, *depthImage, depthViewInfo);
 	}
 
 	void VulkanSwapChain::destroySwapChain() {
 		depthImage.reset();
-		for (auto imageView : swapChainImageViews) {
-			vkDestroyImageView(device.getHandle(), imageView, nullptr);
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+			swapChainImageViews[i].reset();	
 		}
-		vkDestroySwapchainKHR(device.getHandle(), handle, nullptr);
+		vkDestroySwapchainKHR(device.getHandle<VkDevice>(), getHandle<VkSwapchainKHR>(), nullptr);
 	}
 }

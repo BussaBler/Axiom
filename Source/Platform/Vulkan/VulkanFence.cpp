@@ -3,17 +3,19 @@
 
 namespace Axiom {
 	VulkanFence::VulkanFence(VulkanDevice& device, bool signaled)
-		: device(device), signaled(signaled) {
+		: Fence(signaled), device(device) {
 		VkFenceCreateInfo fenceInfo = {};
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
-		AX_CORE_ASSERT(vkCreateFence(device.getHandle(), &fenceInfo, nullptr, &handle) == VK_SUCCESS, "Failed to create Vulkan fence");
+		handle.emplace<VkFence>(VK_NULL_HANDLE);
+		AX_CORE_ASSERT(vkCreateFence(device.getHandle<VkDevice>(), &fenceInfo, nullptr, std::any_cast<VkFence>(&handle)) == VK_SUCCESS, "Failed to create Vulkan fence");
 	}
 
 	VulkanFence::~VulkanFence() {
-		if (handle != VK_NULL_HANDLE) {
-			vkDestroyFence(device.getHandle(), handle, nullptr);
-			handle = VK_NULL_HANDLE;
+		vkDeviceWaitIdle(device.getHandle<VkDevice>());
+		if (handle.has_value()) {
+			vkDestroyFence(device.getHandle<VkDevice>(), getHandle<VkFence>(), nullptr);
+			handle.reset();
 		}
 	}
 
@@ -21,7 +23,7 @@ namespace Axiom {
 		if (signaled) {
 			return;
 		}
-		auto result = vkWaitForFences(device.getHandle(), 1, &handle, VK_TRUE, timeout);
+		auto result = vkWaitForFences(device.getHandle<VkDevice>(), 1, getHandlePtr<VkFence>(), VK_TRUE, timeout);
 		switch (result) {
 			case VK_SUCCESS:
 				signaled = true;
@@ -45,7 +47,7 @@ namespace Axiom {
 	}
 
 	void VulkanFence::reset() {
-		AX_CORE_ASSERT(vkResetFences(device.getHandle(), 1, &handle) == VK_SUCCESS, "Failed to reset Vulkan fence");
+		AX_CORE_ASSERT(vkResetFences(device.getHandle<VkDevice>(), 1, getHandlePtr<VkFence>()) == VK_SUCCESS, "Failed to reset Vulkan fence");
 		signaled = false;
 	}
 }
