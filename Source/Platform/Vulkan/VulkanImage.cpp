@@ -1,81 +1,80 @@
 #include "axpch.h"
 #include "VulkanImage.h"
+#include "VulkanDevice.h"
+#include "VulkanImageView.h"
 
 namespace Axiom {
-	VulkanImage::VulkanImage(VulkanDevice& vkDevice, const ImageCreateInfo& createInfo)
-		: device(vkDevice), width(createInfo.vkImageCreateInfo.extent.width), height(createInfo.vkImageCreateInfo.extent.height) {
-		handle.emplace<VkImage>(VK_NULL_HANDLE);
-		AX_CORE_ASSERT(vkCreateImage(device.getHandle<VkDevice>(), &createInfo.vkImageCreateInfo, nullptr, std::any_cast<VkImage>(&handle)) == VK_SUCCESS, "Failed to create Vulkan image");
-		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(device.getHandle<VkDevice>(), getHandle<VkImage>(), &memRequirements);
-		
-		VkMemoryAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = device.findMemoryType(memRequirements.memoryTypeBits, createInfo.memoryFlags);
-		AX_CORE_ASSERT(vkAllocateMemory(device.getHandle<VkDevice>(), &allocInfo, nullptr, &imageMemory) == VK_SUCCESS, "Failed to allocate Vulkan image memory");
-		
-		vkBindImageMemory(device.getHandle<VkDevice>(), getHandle<VkImage>(), imageMemory, 0);
+	VulkanImage::VulkanImage(VulkanDevice& vkDevice, VkImage vkImage, VkImageLayout vkCurrentLayout)
+		: VulkanResource(vkDevice), image(vkImage), currentLayout(vkCurrentLayout), format(VK_FORMAT_UNDEFINED) {
+		id = generateId();
 	}
 
 	VulkanImage::~VulkanImage() {
-		if (handle.has_value()) {
-			vkDestroyImage(device.getHandle<VkDevice>(), getHandle<VkImage>(), nullptr);
-			handle.reset();
-		}
-		if (imageMemory != VK_NULL_HANDLE) {
-			vkFreeMemory(device.getHandle<VkDevice>(), imageMemory, nullptr);
-			imageMemory = VK_NULL_HANDLE;
+		if (image && shouldClean) {
+			vkDestroyImage(device.getHandle(), image, nullptr);
+			image = VK_NULL_HANDLE;
 		}
 	}
 
-	void VulkanImage::transitionImageLayout(CommandBuffer& commandBuffer, Queue& queue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-		uint32_t graphicsFamily = device.findPhysicalQueueFamilies().graphicsFamily;
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = oldLayout;
-		barrier.newLayout = newLayout;
-		barrier.srcQueueFamilyIndex = graphicsFamily;
-		barrier.dstQueueFamilyIndex = graphicsFamily;
-		barrier.image = getHandle<VkImage>();
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+	void VulkanImage::map(void** mappedMemory, uint32_t size, uint32_t offset) {
 
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
-
-		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		} 
-		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		}
-		else {
-			AX_CORE_LOG_ERROR("Unsupported layout transition!");
-		}
-		vkCmdPipelineBarrier(commandBuffer.getHandle<VkCommandBuffer>(), sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 	}
 
-	void VulkanImage::copyFromBuffer(CommandBuffer& commandBuffer, Buffer& buffer) const {
-		VkBufferImageCopy region{};
-		region.bufferOffset = 0;
-		region.bufferRowLength = 0;
-		region.bufferImageHeight = 0;
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
-		region.imageExtent = { width, height, 1 };
+	ResourceView& VulkanImage::getView(const ResourceViewCreateInfo& resourceViewCreateInfo) {
+		if (resourceView) {
+			return *resourceView;
+		}
+		std::unique_ptr<VulkanImageView> imageView = std::make_unique<VulkanImageView>(device, *this);
+		imageView->init(resourceViewCreateInfo);
+		resourceView = std::move(imageView);
+		return *resourceView;
+	}
 
-		vkCmdCopyBufferToImage(commandBuffer.getHandle<VkCommandBuffer>(), buffer.getHandle<VkBuffer>(), getHandle<VkImage>(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	void VulkanImage::init(const ResourceCreateInfo& resourceCreateInfo) {
+		format = getVkFormat(resourceCreateInfo.format);
+		VkImageCreateInfo imageCreateInfo{};
+		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCreateInfo.arrayLayers = 1;
+		imageCreateInfo.extent = { resourceCreateInfo.width, resourceCreateInfo.height, 1 };
+		imageCreateInfo.format = getVkFormat(resourceCreateInfo.format);
+		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D; // TODO: make this configurable
+		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageCreateInfo.mipLevels = 1; // TODO: make this configurable
+		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL; // TODO: make this configurable
+		imageCreateInfo.usage = getVkImageUsageFlags(resourceCreateInfo.usage);
+		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		AX_CORE_ASSERT(vkCreateImage(device.getHandle(), &imageCreateInfo, nullptr, &image) == VK_SUCCESS, "Failed to create image!");
+
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(device.getHandle(), image, &memoryRequirements);
+		memorySize = memoryRequirements.size;
+		VkMemoryAllocateInfo allocateInfo{};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = device.getAdapter().findMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT); // TODO: make this configurable
+		AX_CORE_ASSERT(vkAllocateMemory(device.getHandle(), &allocateInfo, nullptr, &memory) == VK_SUCCESS, "Failed to allocate image memory!");
+	
+		vkBindImageMemory(device.getHandle(), image, memory, 0);
+		shouldClean = true;
+	}
+
+	VkImageUsageFlags VulkanImage::getVkImageUsageFlags(ResourceUsage usage) {
+		VkImageUsageFlags flags{};
+		if (usage & RenderTarget) {
+			flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		}
+		if (usage & ShaderResource) {
+			flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+		}
+		if (usage & TransferDst) {
+			flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		}
+		if (usage & TransferSrc) {
+			flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		}
+		if (usage & DepthStencil) {
+			flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		}
+		return flags;
 	}
 }

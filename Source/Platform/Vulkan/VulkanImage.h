@@ -1,29 +1,27 @@
 #pragma once
-#include "Axiom/Renderer/Core/Image.h"
-#include "Core/Assert.h"
-#include "Renderer/Core/Buffer.h"
-#include "VulkanCommandBuffer.h"
-#include "VulkanDevice.h"
+#include "VulkanResource.h"
 
 namespace Axiom {
-	struct ImageCreateInfo {
-		VkImageCreateInfo vkImageCreateInfo;
-		VkMemoryPropertyFlags memoryFlags;
-		VkImageAspectFlagBits aspectFlags;
-	};
-
-	class VulkanImage : public Image {
+	class VulkanImage : public VulkanResource {
 	public:
-		VulkanImage(VulkanDevice& vkDevice, const ImageCreateInfo& createInfo);
-		~VulkanImage();
+		VulkanImage(VulkanDevice& vkDevice, VkImage vkImage, VkImageLayout vkCurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED);
+		~VulkanImage() override;
 
-		void transitionImageLayout(CommandBuffer& commandBuffer, Queue& queue, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-		void copyFromBuffer(CommandBuffer& commandBuffer, Buffer& buffer) const;
+		void map(void** mappedMemory, uint32_t size, uint32_t offset) override;
+		ResourceView& getView(const ResourceViewCreateInfo& resourceViewCreateInfo) override;
+
+		void init(const ResourceCreateInfo& resourceCreateInfo);
+
+		VkImage getHandle() const { return image; }
+		VkImageLayout getCurrentLayout() const { return currentLayout; }
+
+		static VkImageUsageFlags getVkImageUsageFlags(ResourceUsage usage);
 
 	private:
-		VulkanDevice& device;
-		VkDeviceMemory imageMemory;
-		uint32_t width, height;
+		VkImage image;
+		VkImageLayout currentLayout;
+		VkFormat format;
+		bool shouldClean = false;
 	};
 }
 

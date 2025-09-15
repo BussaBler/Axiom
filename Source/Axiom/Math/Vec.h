@@ -22,6 +22,16 @@ namespace Math {
 			}
 		}
 
+		bool operator==(const Vec<T, N>& other) const {
+			bool isNear = true;
+			for (size_t i = 0; i < N; i++) {
+				if (axAbs(data[i] - other.data[i]) >= AX_EPSILON) {
+					isNear = false;
+				}
+			}
+			return isNear;
+		}
+
 		static Vec<T, N> zero() {
 			return Vec<T, N>();
 		}

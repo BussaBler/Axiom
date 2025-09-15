@@ -5,7 +5,7 @@
 #include "LayerStack.h"
 #include "Log.h"
 #include "Math/AxMath.h"
-#include "Renderer/System/RendererSystem.h"
+#include "Renderer/Renderer.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
 
@@ -36,6 +36,7 @@ namespace Axiom {
 
 	private:
 		std::unique_ptr<Window> window;
+		std::unique_ptr<Renderer> renderer;
 		bool running = true;
 		LayerStack layerStack;
 

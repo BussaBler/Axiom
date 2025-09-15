@@ -1,71 +1,38 @@
 #pragma once
 #include "Core/Assert.h"
-#include "Renderer/Core/Device.h"
-#include <vulkan/vulkan.h>
-#ifdef AX_PLATFORM_WINDOWS
-#include "Platform/Windows/Win32Window.h"
-#include <vulkan/vulkan_win32.h>
-#endif // AX_PLATFORM_WINDOWS
+#include "Renderer/Device.h"
+#include "VulkanAdapter.h"
+#include "VulkanQueue.h"
 
 namespace Axiom {
-	struct SwapChainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
+    class VulkanDevice : public Device {
+    public:
+		VulkanDevice(VulkanAdapter& vkAdapter) : device(VK_NULL_HANDLE), adapter(vkAdapter) {}
+		~VulkanDevice() override;
 
-	struct QueueFamilyIndices {
-		uint32_t graphicsFamily;
-		uint32_t presentFamily;
-		uint32_t computeFamily;
-		bool graphicsFamilyHasValue = false;
-		bool presentFamilyHasValue = false;
-		bool computeFamilyHasValue = false;
-		bool isComplete() const {
-			return graphicsFamilyHasValue && presentFamilyHasValue && computeFamilyHasValue;
+		void init(const DeviceCreateInfo& deviceCreateInfo) override;
+		std::unique_ptr<Context> createContext() override;
+		std::unique_ptr<Swapchain> createSwapchain(SwapchainCreateInfo& swapchainCreateInfo) override;
+		std::unique_ptr<RenderPassCache> createRenderPassCache(Swapchain& swapchain) override;
+
+		VkDevice getHandle() const { return device; }
+		VulkanAdapter& getAdapter() const { return adapter; }
+		VulkanQueue* getQueue(VkQueueFlags flags) {
+			auto it = queues.find(flags);
+			if (it != queues.end()) {
+				return it->second.get();
+			}
+			AX_CORE_LOG_ERROR("Requested Vulkan Queue not found!");
+			return nullptr;
 		}
-	};
-
-	class VulkanDevice : public Device {
-	public:
-		VulkanDevice(Window* window);
-		~VulkanDevice();
-
-		VkSurfaceKHR getSurface() const { return surface; }
-		SwapChainSupportDetails getSwapChainSupport() { return querySwapChainSupport(physicalDevice); }
-		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
-		QueueFamilyIndices findPhysicalQueueFamilies() { return findQueueFamilies(physicalDevice); }
-		VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
-		
 	private:
-		void createInstance();
-		void setupDebugMessenger();
-		void createSurface();
-		void pickPhysicalDevice();
-		void createLogicalDevice();
+		std::unique_ptr<VulkanQueue> createQueue(VkQueueFlags flags);
 
-		bool isDeviceSuitable(VkPhysicalDevice device);
-		std::vector<const char*> getRequiredExtensions() const;
-		bool checkValidationLayerSupport();
-		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
-		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-		void hasRequiredInstanceExtensions();
-		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
-
-	private:
-		VkInstance instance;
-		VkDebugUtilsMessengerEXT debugMessenger;
-		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-		VkSurfaceKHR surface;
-
-		const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-		const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
-#if AX_DEBUG
-		const bool enableValidationLayers = true;
-#else 
-		const bool enableValidationLayers = false;
-#endif // AX_DEBUG
-	};
+    private:
+		VkDevice device;
+		VulkanAdapter& adapter;
+		std::vector<QueueFamily> queueFamilies;
+		std::map<VkQueueFlags, std::unique_ptr<VulkanQueue>> queues;
+    };
 }
+

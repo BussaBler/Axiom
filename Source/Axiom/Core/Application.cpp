@@ -14,11 +14,12 @@ namespace Axiom {
 
 		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
-		RendererSystem::init(window.get());
+		renderer = std::make_unique<Renderer>();
+		renderer->init(window->getNativeWindow());
 	}
 
 	Application::~Application() {
-		RendererSystem::shutdown();
+		renderer->shutdown();
 	}
 
 	void Application::onEvent(Event& event) {
@@ -52,7 +53,7 @@ namespace Axiom {
 		if (e.getWidth() == 0 || e.getHeight() == 0) {
 			return false;
 		}
-		RendererSystem::onResize(e.getWidth(), e.getHeight());
+		renderer->resize(e.getWidth(), e.getHeight());
 		return true;
 	}
 
@@ -62,7 +63,8 @@ namespace Axiom {
 			for (Layer* layer : layerStack) {
 				layer->onUpdate();
 			}
-			RendererSystem::drawFrame();
+			renderer->draw();
+			renderer->present();
 			window->onUpdate();
 		}
 	}

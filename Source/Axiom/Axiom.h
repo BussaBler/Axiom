@@ -6,4 +6,3 @@
 #include "Core/Log.h"
 #include "Core/MouseButtonCodes.h"
 #include "Math/AxMath.h"
-#include "Renderer/System/RendererSystem.h"

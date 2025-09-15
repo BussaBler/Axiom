@@ -1,7 +1,4 @@
 #pragma once
-// TODO: implement SIMD versions of these types and improve the overall implementation
-#include "Vec.h"
-#include "Mat.h"
 
 namespace Math {
 	// ------- Axiom Math Constants -------
@@ -16,7 +13,7 @@ namespace Math {
 	constexpr float AX_SQRT3 = 1.73205080756887729352f; // sqrt(3)
 
 	constexpr float AX_INFINITY = std::numeric_limits<float>::infinity();
-	constexpr float AX_EPSILON = 1e-7f;
+	constexpr float AX_EPSILON = 1e-6f;
 
 	// ------- Axiom Math functions -------
 	float axSin(float radians);
@@ -29,6 +26,7 @@ namespace Math {
 	float axPow(float base, float exponent);
 	float axAbs(float value);
 	float toRadians(float degrees);
+	float axClamp(float value, float min, float max);
 
 	bool axIsPowerOfTwo(uint64_t value);
 	// Returns a random float in the range [0.0, 1.0)
@@ -40,8 +38,11 @@ namespace Math {
 	// Returns a random integer in the range [min, max]
 	int axRandomInt(int min, int max);
 	int axRandomInt(int min, int max, float seed);
-
 }
+
+// TODO: implement SIMD versions of these types and improve the overall implementation
+#include "Vec.h"
+#include "Mat.h"
 
 // ------- Axiom Math Type Formatters -------
 template <typename T, size_t N, typename CharT>

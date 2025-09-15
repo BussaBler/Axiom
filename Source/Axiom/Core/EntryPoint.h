@@ -8,4 +8,9 @@ int main(int argc, char** argv) {
 	auto app = Axiom::createApplication({"Axiom Application", "../.."});
 	app->run();
 	delete app;
+#ifdef AX_DEBUG
+	std::cerr << "Press ENTER to exit..." << std::endl;
+	std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+#endif // AX_DEBUG
+
 }

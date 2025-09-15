@@ -1,40 +1,41 @@
 #pragma once
-#include "VulkanDevice.h" 
+#include "Renderer/Swapchain.h"
+#include "VulkanContext.h"
 #include "VulkanImage.h"
-#include "VulkanImageView.h"
-#include "Renderer/Core/SwapChain.h"
+#include <vulkan/vulkan.h>
 
 namespace Axiom {
-	class VulkanSwapChain : public SwapChain {
+	class VulkanDevice;
+	class VulkanQueue;
+
+	class VulkanSwapchain : public Swapchain {
 	public:
-		static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+		VulkanSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, VulkanDevice& vkDevice, VulkanQueue& presentQueue);
+		~VulkanSwapchain() override;
 
-		VulkanSwapChain(VulkanDevice& device, Math::uVec2 extent);
-		~VulkanSwapChain();
+		void build();
 
-		void recreate(Math::uVec2 extent) override;
-		void acquireNextImageIndex(uint32_t& imageIndex, const Semaphore& semaphore, Fence* fence, Math::uVec2 extent) override;
-		void presentImage(const Queue& graphicsQueue, const Queue& presentQueue, const Semaphore& renderSemaphore, uint32_t imageIndex, uint32_t& currentFrame, Math::uVec2 extent) override;
+		void rebuild(const SwapchainCreateInfo& swapchainCreateInfo) override;
+		void present(Context& context) override;
+		void prepare(Context& context) override;
 
-		VkSurfaceFormatKHR getImageFormat() const { return swapChainImageFormat; }
-		uint32_t getImageCount() const { return swapChainImages.size(); }
-		const std::vector<std::unique_ptr<VulkanImageView>>& getImageViews() const { return swapChainImageViews; }
-		VulkanImage* getDepthImage() { return depthImage.get(); }
-		VulkanImageView& getDepthImageView() { return *depthImageView; }
-
-	private:
-		void createSwapChain(VkExtent2D extent);
-		void destroySwapChain();
+		VkSwapchainKHR getHandle() const { return swapchain; }
+		VkFormat getImageFormat() const { return swapChainImageFormat; }
+		uint32_t getImageCount() const { return static_cast<uint32_t>(frames.size()); }
+		VulkanImage& getImage(uint32_t index) { return *frameImages[index]; }
+		VulkanImage& getDepthImage() { return *depthImage; }
+		uint32_t getCurrentImageIndex() const { return currentImageIndex; }
 
 	private:
 		VulkanDevice& device;
-		VkSurfaceFormatKHR swapChainImageFormat;
-		VkExtent2D swapChainExtent;
-
+		VulkanQueue& presentQueue;
+		VkSwapchainKHR swapchain;
+		VkSurfaceKHR surface;
+		VkFormat swapChainImageFormat;
+		std::vector<VkImage> frames;
+		std::vector<std::unique_ptr<VulkanImage>> frameImages;
+		uint32_t currentImageIndex = 0;
 		std::unique_ptr<VulkanImage> depthImage;
-		std::unique_ptr<VulkanImageView> depthImageView;
-		std::vector<VkImage> swapChainImages;
-		std::vector<std::unique_ptr<VulkanImageView>> swapChainImageViews;
 	};
 }
 

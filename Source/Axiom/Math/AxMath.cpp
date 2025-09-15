@@ -32,6 +32,9 @@ namespace Math {
 	float toRadians(float degrees) {
 		return degrees * AX_DEG_TO_RAD;
 	}
+	float axClamp(float value, float min, float max) {
+		return std::fmax(min, std::fmin(max, value));
+	}
 
 	bool axIsPowerOfTwo(uint64_t value) {
 		return (value != 0 && (value & (value - 1)) == 0);

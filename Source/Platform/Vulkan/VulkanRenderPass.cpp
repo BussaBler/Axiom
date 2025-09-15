@@ -1,15 +1,29 @@
 #include "axpch.h"
 #include "VulkanRenderPass.h"
+#include "VulkanSwapchain.h"
+#include "VulkanDevice.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanImageView.h"
 
 namespace Axiom {
-	VulkanRenderPass::VulkanRenderPass(VulkanDevice& vkDevice, SwapChain& vkSwapChain, Math::Vec2 offset, Math::Vec2 extent, Math::Vec4 clearColor, float depth, uint32_t stencil)
-		: device(vkDevice), offset(offset), clearColor(clearColor), depth(depth), stencil(stencil), state(VulkanRenderPassState::READY) {
-		VkSubpassDescription subpass = {};
+	VulkanRenderPass::~VulkanRenderPass() {
+		vkDeviceWaitIdle(device.getHandle());
+		AX_CORE_LOG_INFO("Destroying Vulkan Render Pass...");
+		if (renderPass != VK_NULL_HANDLE) {
+			vkDestroyRenderPass(device.getHandle(), renderPass, nullptr);
+			renderPass = VK_NULL_HANDLE;
+		}
+		destroyFramebuffers();
+	}
+
+	void VulkanRenderPass::init(Swapchain& swapchain) {
+		AX_CORE_LOG_INFO("Initializing Vulkan Render Pass...");
+		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-		std::array<VkAttachmentDescription, 2> attachments{};
+		std::array<VkAttachmentDescription, 2> attachments{};// TODO: Makes this configurable
 		// Color attachment
-		attachments[0].format = static_cast<VulkanSwapChain&>(vkSwapChain).getImageFormat().format;
+		attachments[0].format = static_cast<VulkanSwapchain&>(swapchain).getImageFormat();
 		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -17,7 +31,6 @@ namespace Axiom {
 		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		attachments[0].flags = 0;
 
 		VkAttachmentReference colorAttachmentReference{};
 		colorAttachmentReference.attachment = 0;
@@ -27,11 +40,7 @@ namespace Axiom {
 		subpass.pColorAttachments = &colorAttachmentReference;
 
 		// Depth attachment
-		attachments[1].format = device.findSupportedFormat(
-			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT },
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-		);
+		attachments[1].format = device.getAdapter().getDepthFormat();
 		attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
 		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -46,25 +55,13 @@ namespace Axiom {
 
 		subpass.pDepthStencilAttachment = &depthAttachmentReference;
 
-		// Input attachments (input from shaders)
-		subpass.inputAttachmentCount = 0;
-		subpass.pInputAttachments = nullptr;
-
-		// Resolve attachments (for multisampling)
-		subpass.pResolveAttachments = nullptr;
-
-		// Preserve attachments
-		subpass.preserveAttachmentCount = 0;
-		subpass.pPreserveAttachments = nullptr;
-
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
 		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependency.srcAccessMask = 0;
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-		dependency.dependencyFlags = 0;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -74,40 +71,67 @@ namespace Axiom {
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
-		renderPassInfo.pNext = nullptr;
-		renderPassInfo.flags = 0;
-		handle.emplace<VkRenderPass>(VK_NULL_HANDLE);
-		AX_CORE_ASSERT(vkCreateRenderPass(device.getHandle<VkDevice>(), &renderPassInfo, nullptr, std::any_cast<VkRenderPass>(&handle)) == VK_SUCCESS, "Failed to create Vulkan render pass");
+		AX_CORE_ASSERT(vkCreateRenderPass(device.getHandle(), &renderPassInfo, nullptr, &renderPass) == VK_SUCCESS, "Failed to create Vulkan draw pass");
+		createFramebuffers(static_cast<VulkanSwapchain&>(swapchain));
 	}
 
-	VulkanRenderPass::~VulkanRenderPass() {
-		vkDeviceWaitIdle(device.getHandle<VkDevice>());
-		vkDestroyRenderPass(device.getHandle<VkDevice>(), getHandle<VkRenderPass>(), nullptr);
-	}
-
-	void VulkanRenderPass::begin(CommandBuffer& commandBuffer, Framebuffer& framebuffer) const {
-		VkRenderPassBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		beginInfo.renderPass = getHandle<VkRenderPass>();
-		beginInfo.framebuffer = framebuffer.getHandle<VkFramebuffer>();
-		beginInfo.renderArea.offset.x = offset.x();
-		beginInfo.renderArea.offset.y = offset.y();
-		beginInfo.renderArea.extent.width = extent.x();
-		beginInfo.renderArea.extent.height = extent.y();
+	void VulkanRenderPass::begin(VulkanCommandBuffer& commandBuffer, VulkanRenderPassBeginInfo beginInfo, uint32_t framebufferIndex) const {
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = renderPass;
+		renderPassInfo.framebuffer = framebuffers[framebufferIndex];
+		renderPassInfo.renderArea.offset = { beginInfo.offset.x(), beginInfo.offset.y() };
+		renderPassInfo.renderArea.extent = { beginInfo.extent.x(), beginInfo.extent.y() };
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { clearColor.r(), clearColor.g(), clearColor.b(), clearColor.a() };
-		clearValues[1].depthStencil = { depth, stencil };
+		clearValues[0].color = { { createInfo.clearColor.x(), createInfo.clearColor.y(), createInfo.clearColor.z(), createInfo.clearColor.w() } };
+		clearValues[1].depthStencil = { createInfo.clearDepth, createInfo.clearStencil };
 
-		beginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		beginInfo.pClearValues = clearValues.data();
+		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassInfo.pClearValues = clearValues.data();
 
-		vkCmdBeginRenderPass(commandBuffer.getHandle<VkCommandBuffer>(), &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		static_cast<VulkanCommandBuffer&>(commandBuffer).setState(VulkanCommandBufferState::IN_RENDER_PASS);
+		vkCmdBeginRenderPass(commandBuffer.getHandle(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		commandBuffer.setState(CommandBufferState::IN_RENDER_PASS);
 	}
 
-	void VulkanRenderPass::end(CommandBuffer& commandBuffer) const {
-		vkCmdEndRenderPass(commandBuffer.getHandle<VkCommandBuffer>());
-		static_cast<VulkanCommandBuffer&>(commandBuffer).setState(VulkanCommandBufferState::RECORDING_ENDED);
+	void VulkanRenderPass::end(VulkanCommandBuffer& commandBuffer) const {
+		vkCmdEndRenderPass(commandBuffer.getHandle());
+		commandBuffer.setState(CommandBufferState::RECORDING);
+	}
+
+	void VulkanRenderPass::recreateFramebuffers(Swapchain& swapchain) {
+		destroyFramebuffers();
+		createFramebuffers(static_cast<VulkanSwapchain&>(swapchain));
+	}
+	
+	void VulkanRenderPass::createFramebuffers(VulkanSwapchain& swapchain) {
+		framebuffers.resize(swapchain.getImageCount());
+		for (uint32_t i = 0; i < swapchain.getImageCount(); i++) {
+			VulkanImageView& imageView = static_cast<VulkanImageView&>(swapchain.getImage(i).getView({}));
+			VulkanImageView& depthImageView = static_cast<VulkanImageView&>(swapchain.getDepthImage().getView({}));
+			std::array<VkImageView, 2> attachments = {
+				imageView.getHandle(),
+				depthImageView.getHandle()
+			};
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = renderPass;
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebufferInfo.pAttachments = attachments.data();
+			framebufferInfo.width = swapchain.getSwapchainCreateInfo().width;
+			framebufferInfo.height = swapchain.getSwapchainCreateInfo().height;
+			framebufferInfo.layers = 1;
+			AX_CORE_ASSERT(vkCreateFramebuffer(device.getHandle(), &framebufferInfo, nullptr, &framebuffers[i]) == VK_SUCCESS, "Failed to create Vulkan framebuffer");
+		}
+	}
+
+	void VulkanRenderPass::destroyFramebuffers() {
+		for (auto framebuffer : framebuffers) {
+			if (framebuffer != VK_NULL_HANDLE) {
+				vkDestroyFramebuffer(device.getHandle(), framebuffer, nullptr);
+			}
+		}
+		framebuffers.clear();
 	}
 }

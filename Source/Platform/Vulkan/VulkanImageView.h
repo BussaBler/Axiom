@@ -1,21 +1,23 @@
 #pragma once
-#include "Renderer/Core/ImageView.h"
-#include "VulkanDevice.h"
+#include "VulkanView.h"
+#include "VulkanImage.h"
+#include <vulkan/vulkan.h>
 
 namespace Axiom {
-	struct ImageViewCreateInfo {
-		VkFormat format;
-		VkImageAspectFlagBits aspectFlags;
-	};
-
-	class VulkanImageView : public ImageView {
+	class VulkanImageView : public VulkanView {
 	public:
-		VulkanImageView(VulkanDevice& vkDevice, Image& vkImage, const ImageViewCreateInfo& createInfo);
-		VulkanImageView(VulkanDevice& vkDevice, VkImage vkImage, const ImageViewCreateInfo& createInfo);
+		VulkanImageView(VulkanDevice& vkDevice, VulkanImage& vkImage) : VulkanView(vkDevice), image(vkImage), imageView(VK_NULL_HANDLE) {}
 		~VulkanImageView() override;
 
+		void init(const ResourceViewCreateInfo& resourceViewCreateInfo);
+
+		VkImageView getHandle() const { return imageView; }
+
+		static VkImageAspectFlags getVkImageAspectFlags(uint32_t format);
+
 	private:
-		VulkanDevice& device;
+		VulkanImage& image;
+		VkImageView imageView;
 	};
 }
 

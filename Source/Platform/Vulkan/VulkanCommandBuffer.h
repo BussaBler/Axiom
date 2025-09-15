@@ -1,37 +1,32 @@
 #pragma once
-#include "Renderer/Core/CommandBuffer.h"
-#include "VulkanDevice.h"
+#include "Core/Log.h"
+#include "Renderer/CommandBuffer.h"
+#include <vulkan/vulkan.h>
 
 namespace Axiom {
-	enum class VulkanCommandBufferState {
-		READY,
-		RECORDING,
-		IN_RENDER_PASS,
-		RECORDING_ENDED,
-		SUBMITTED,
-		NOT_ALLOCATED
-	};
+	class VulkanDevice;
+	class VulkanQueue;
 
 	class VulkanCommandBuffer : public CommandBuffer {
 	public:
-		VulkanCommandBuffer(VulkanDevice& vkDevice);
-		~VulkanCommandBuffer() = default;
+		VulkanCommandBuffer(VulkanDevice& vkDevice) : device(vkDevice), commandBuffer(VK_NULL_HANDLE) {}
+		~VulkanCommandBuffer() override;
 
-		void allocate(CommandPool& commandPool, bool primary = true) override;
-		void free(CommandPool& commandPool) override;
-		void begin(uint32_t usageFlags = 0) override;
+		void begin(bool isSingleUse, bool isRenderPassCont, bool isSimultaneous) override;
 		void end() override;
-		void updateSubmitted() override;
 		void reset() override;
-		void allocateAndBeginSingleUse(CommandPool& commandPool, bool primary = true) override;
-		void endAndFreeSingleUse(CommandPool& commandPool, Queue& queue) override;
 
-		void setState(VulkanCommandBufferState inState) { state = inState; }
-		VulkanCommandBufferState getState() const { return state; }
+		void allocate(VkCommandPool commandPool, bool isPrimary = true);
+		void free(VkCommandPool commandPool);
+
+		void allocateAndBeginSingleUse(VkCommandPool commandPool, bool isPrimary = true);
+
+		VkCommandBuffer getHandle() const { return commandBuffer; }
+		VkCommandBuffer* getHandlePtr() { return &commandBuffer; }
 
 	private:
 		VulkanDevice& device;
-		VulkanCommandBufferState state;
+		VkCommandBuffer commandBuffer;
 	};
 }
 

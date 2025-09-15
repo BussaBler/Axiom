@@ -1,246 +1,108 @@
 #include "axpch.h"
 #include "VulkanContext.h"
+#include "VulkanDevice.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanQueue.h"
+#include "VulkanFramebuffer.h"
 
 namespace Axiom {
-	void VulkanContext::init(Window* window) {
-		this->window = window;
-		framebufferWidth = window->getWidth();
-		framebufferHeight = window->getHeight();
-		createDevice();
-		createSwapChain();
-		createRenderPass();
-		createFramebuffer();
-		createCommandBuffers();
-		createSyncObjects();
-		createShaders();
-		createBuffers();
-		// Temp
-		float f = 10.0f;
-		std::vector<Vertex> vertices(4, {});
-		vertices[0].position = { -0.5f * f, -0.5f * f, 0.0f };
-		vertices[0].texCoord = { 0.0f, 0.0f };
-		vertices[1].position = { 0.5f * f, 0.5f * f, 0.0f };
-		vertices[1].texCoord = { 1.0f, 1.0f };
-		vertices[2].position = { -0.5f * f, 0.5f * f, 0.0f };
-		vertices[2].texCoord = { 0.0f, 1.0f };
-		vertices[3].position = { 0.5f * f, -0.5f * f, 0.0f };
-		vertices[3].texCoord = { 1.0f, 0.0f };
-		std::vector<uint32_t> indices = { 0, 1, 2, 0, 3, 1 };
+	VulkanContext::VulkanContext(VulkanDevice& vkDevice, VulkanQueue& vkQueue) : device(vkDevice), queue(vkQueue) {
 
-		uploadData(vkDevice->getGraphicsCommandPool(), nullptr, vkDevice->getGraphicsQueue(), *objectVertexBuffer, vertices.data(), sizeof(Vertex) * vertices.size());
-		uploadData(vkDevice->getGraphicsCommandPool(), nullptr, vkDevice->getGraphicsQueue(), *objectIndexBuffer, indices.data(), sizeof(uint32_t) * indices.size());
 	}
 
-	void VulkanContext::shutdown() {
-		AX_CORE_LOG_INFO("Shutting down Vulkan context");
+	VulkanContext::~VulkanContext() {
+		AX_CORE_LOG_INFO("Destroying Vulkan Context...");
+		vkDeviceWaitIdle(device.getHandle());
+		for (const auto& frame : frameResources) {
+			vkDestroySemaphore(device.getHandle(), frame.imageAvailableSemaphore, nullptr);
+			vkDestroySemaphore(device.getHandle(), frame.renderFinishedSemaphore, nullptr);
+			vkDestroyFence(device.getHandle(), frame.inFlightFence, nullptr);
+		}
+		for (const auto& cmdBuffer : mainCommandBuffers) {
+			cmdBuffer->free(queue.getCommandPool());
+		}
 	}
 
-	bool VulkanContext::beginFrame(float deltaTime) {
-		frameDeltaTime = deltaTime;
-		if (recreatingSwapChain) {
-			VkResult result = vkDeviceWaitIdle(vkDevice->getHandle<VkDevice>());
-			if (result != VK_SUCCESS) {
-				AX_CORE_LOG_ERROR("Failed to wait for vkDevice idle (1): {}", static_cast<int>(result));
-			}
-			return false;
-		}
-		if (framebufferGen != lastFramebufferGen) {
-			AX_CORE_LOG_INFO("Recreating Vulkan swap chain due to framebuffer generation change");
-			VkResult result = vkDeviceWaitIdle(vkDevice->getHandle<VkDevice>());
-			if (result != VK_SUCCESS) {
-				AX_CORE_LOG_ERROR("Failed to wait for vkDevice idle (2): {}", static_cast<int>(result));
-			}
-			recreateSwapChain();
-			return false;
-		}
+	void VulkanContext::init(uint32_t frameCount) {
+		AX_CORE_LOG_INFO("Initializing Vulkan Context with {} frames", frameCount);
+		createFrameResources(frameCount);
+		createMainCommandBuffer();
+	}
 
-		inFlightFences[currentFrame]->wait(UINT64_MAX);
-		swapchain->acquireNextImageIndex(imageIndex, *imageAvailableSemaphores[currentFrame], nullptr, { framebufferWidth, framebufferHeight });
-		graphicsCommandBuffers[imageIndex]->reset();
-		graphicsCommandBuffers[imageIndex]->begin(0);
+	void VulkanContext::submitCommandBuffer(VulkanCommandBuffer& commandBuffer) {
+		std::array<VkSemaphore, 1> waitSemaphores = { frameResources[currentFrameIndex].imageAvailableSemaphore };
+		std::array<VkSemaphore, 1> signalSemaphores = { frameResources[currentImageIndex].renderFinishedSemaphore };
+		std::array<VkPipelineStageFlags, 1> waitStages = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
+		submitInfo.pWaitSemaphores = waitSemaphores.data();
+		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
+		submitInfo.pSignalSemaphores = signalSemaphores.data();
+		submitInfo.pWaitDstStageMask = waitStages.data();
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = commandBuffer.getHandlePtr();
+
+		vkQueueSubmit(queue.getHandle(), 1, &submitInfo, frameResources[currentFrameIndex].inFlightFence);
+	}
+
+	void VulkanContext::begin() {
+		incrementFrameIndex();
+		VulkanContextFrame& currentFrame = frameResources[currentFrameIndex];
+		vkWaitForFences(device.getHandle(), 1, &currentFrame.inFlightFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(device.getHandle(), 1, &currentFrame.inFlightFence);
+
+		mainCommandBuffers[currentFrameIndex]->reset();
+		mainCommandBuffers[currentFrameIndex]->begin(false, false, false);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
-		viewport.y = static_cast<float>(framebufferHeight);
-		viewport.width = static_cast<float>(framebufferWidth);
-		viewport.height = -static_cast<float>(framebufferHeight);
+		viewport.y = 720.0f;
+		viewport.width = 1280.0f;
+		viewport.height = -720.0f;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(mainCommandBuffers[currentFrameIndex]->getHandle(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
-		scissor.extent = { framebufferWidth, framebufferHeight };
-
-		vkCmdSetViewport(graphicsCommandBuffers[imageIndex]->getHandle<VkCommandBuffer>(), 0, 1, &viewport);
-		vkCmdSetScissor(graphicsCommandBuffers[imageIndex]->getHandle<VkCommandBuffer>(), 0, 1, &scissor);
-
-		mainRenderPass->setExtent({ (float)framebufferWidth, (float)framebufferHeight });
-		mainRenderPass->begin(*graphicsCommandBuffers[imageIndex], *framebuffers[imageIndex]);
-
-		return true;
+		scissor.extent = { 1280, 720 };
+		vkCmdSetScissor(mainCommandBuffers[currentFrameIndex]->getHandle(), 0, 1, &scissor);
 	}
 
-	void VulkanContext::updateGlobalState(Math::Mat4 projection, Math::Mat4 view, Math::Vec3 viewPos, Math::Vec4 ambientColor, int mode) {
-		materialShader->use(*graphicsCommandBuffers[imageIndex]);
-
-		GlobalUniformObject ubo(projection, view, Math::Mat4::identity(), Math::Mat4::identity());
-		materialShader->updateGlobalUniformBuffer(ubo);
-
-		materialShader->updateGlobalUniformBufferState(*graphicsCommandBuffers[imageIndex], imageIndex, frameDeltaTime);
+	void VulkanContext::end() {
+		mainCommandBuffers[currentFrameIndex]->end();
+		submitCommandBuffer(*mainCommandBuffers[currentFrameIndex]);
 	}
 
-	void VulkanContext::updateObjectState(const GeometryRenderData& data) {
-		materialShader->updateObjectUniformBufferState(*graphicsCommandBuffers[imageIndex], imageIndex, data);
-
-		// Temp
-		materialShader->use(*graphicsCommandBuffers[imageIndex]);
-		std::array<VkDeviceSize, 1> offsets = { 0 };
-		std::array<VkBuffer, 1> buffers = { objectVertexBuffer->getHandle<VkBuffer>() };
-		vkCmdBindVertexBuffers(graphicsCommandBuffers[imageIndex]->getHandle<VkCommandBuffer>(), 0, 1, buffers.data(), offsets.data());
-		vkCmdBindIndexBuffer(graphicsCommandBuffers[imageIndex]->getHandle<VkCommandBuffer>(), objectIndexBuffer->getHandle<VkBuffer>(), 0, VK_INDEX_TYPE_UINT32);
-
-		vkCmdDrawIndexed(graphicsCommandBuffers[imageIndex]->getHandle<VkCommandBuffer>(), 6, 1, 0, 0, 0);
+	CommandBuffer& VulkanContext::getMainCommandBuffer() {
+		return *mainCommandBuffers[currentFrameIndex];
 	}
 
-	bool VulkanContext::endFrame() {
-		mainRenderPass->end(*graphicsCommandBuffers[imageIndex]);
-		graphicsCommandBuffers[imageIndex]->end();
+	void VulkanContext::createFrameResources(uint32_t frameCount) {
+		frameResources.resize(frameCount);
+		for (uint32_t i = 0; i < frameCount; i++) {
+			VulkanContextFrame frame{};
 
-		if (imagesInFlightFences[imageIndex]) {
-			imagesInFlightFences[imageIndex]->wait(UINT64_MAX);
-		}
-
-		imagesInFlightFences[imageIndex] = inFlightFences[currentFrame].get();
-		inFlightFences[currentFrame]->reset();
-
-		VkCommandBuffer commandBuffer = graphicsCommandBuffers[imageIndex]->getHandle<VkCommandBuffer>();
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = queueCompleteSemaphores[imageIndex]->getHandlePtr<VkSemaphore>();
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = imageAvailableSemaphores[currentFrame]->getHandlePtr<VkSemaphore>();
-		
-		std::array<VkPipelineStageFlags, 1> pipelineStages{};
-		pipelineStages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-		submitInfo.pWaitDstStageMask = pipelineStages.data();
-		VkResult result = vkQueueSubmit(vkDevice->getGraphicsQueue().getHandle<VkQueue>(), 1, &submitInfo, inFlightFences[currentFrame]->getHandle<VkFence>());
-		if (result != VK_SUCCESS) {
-			AX_CORE_LOG_ERROR("Failed to submit draw command buffer: {}", static_cast<int>(result));
-		}
-
-		graphicsCommandBuffers[imageIndex]->updateSubmitted();
-
-		swapchain->presentImage(vkDevice->getGraphicsQueue(), vkDevice->getPresentQueue(), *queueCompleteSemaphores[imageIndex], imageIndex, currentFrame, { framebufferWidth, framebufferHeight });
-		
-		return true;
-	}
-
-	void VulkanContext::onResize(uint32_t width, uint32_t height) {
-		if (width == 0 || height == 0) return;
-		AX_CORE_LOG_INFO("Resizing Vulkan swap chain to {}x{}", width, height);
-		framebufferWidth = width;
-		framebufferHeight = height;
-		framebufferGen++;
-	}
-
-	void VulkanContext::createDevice() {
-		AX_CORE_LOG_INFO("Creating Vulkan device");
-		device = Device::create(window);
-		vkDevice = static_cast<VulkanDevice*>(device.get());
-	}
-
-	void VulkanContext::createSwapChain() {
-		Math::uVec2 extent = { framebufferWidth, framebufferHeight };
-		AX_CORE_LOG_INFO("Creating Vulkan swap chain with extent: {}x{}", extent.x(), extent.y());
-		swapchain = std::make_unique<VulkanSwapChain>(*vkDevice, extent);
-	}
-
-	void VulkanContext::recreateSwapChain() {
-		if (recreatingSwapChain) return;
-		recreatingSwapChain = true;
-		AX_CORE_LOG_INFO("Recreating Vulkan swap chain");
-		swapchain->recreate({ framebufferWidth, framebufferHeight });
-		createFramebuffer();
-		createCommandBuffers();
-		recreatingSwapChain = false;
-		lastFramebufferGen = framebufferGen;
-	}
-
-	void VulkanContext::createRenderPass() {
-		AX_CORE_LOG_INFO("Creating Vulkan main render pass");
-		mainRenderPass = std::make_unique<VulkanRenderPass>(*vkDevice, *swapchain,
-			Math::Vec2(0.0f, 0.0f), Math::Vec2(framebufferWidth, framebufferHeight), Math::Vec4(0.0f, 0.0f, 0.2f, 1.0f), 1.0f, 0);
-	}
-
-	void VulkanContext::createCommandBuffers() {
-		AX_CORE_LOG_INFO("Creating Vulkan command buffers");
-		graphicsCommandBuffers.resize(swapchain->getImageCount());
-		for (size_t i = 0; i < graphicsCommandBuffers.size(); i++) {
-			graphicsCommandBuffers[i] = std::make_unique<VulkanCommandBuffer>(*vkDevice);
-			graphicsCommandBuffers[i]->allocate(vkDevice->getGraphicsCommandPool());
+			VkSemaphoreCreateInfo semaphoreInfo{};
+			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+			semaphoreInfo.flags = 0;
+			AX_CORE_ASSERT(vkCreateSemaphore(device.getHandle(), &semaphoreInfo, nullptr, &frame.imageAvailableSemaphore) == VK_SUCCESS, "Failed to create semaphore!");
+			AX_CORE_ASSERT(vkCreateSemaphore(device.getHandle(), &semaphoreInfo, nullptr, &frame.renderFinishedSemaphore) == VK_SUCCESS, "Failed to create semaphore!");
+			
+			VkFenceCreateInfo fenceInfo{};
+			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+			AX_CORE_ASSERT(vkCreateFence(device.getHandle(), &fenceInfo, nullptr, &frame.inFlightFence) == VK_SUCCESS, "Failed to create fence!");
+			frameResources[i] = frame;
 		}
 	}
 
-	void VulkanContext::createFramebuffer() {
-		AX_CORE_LOG_INFO("Creating Vulkan framebuffers");
-		auto& views = swapchain->getImageViews();
-		framebuffers.resize(swapchain->getImageCount());
-		for (uint32_t i = 0; i < swapchain->getImageCount(); i++) {
-			std::vector<ImageView> attachments = {
-				*views[i],
-				swapchain->getDepthImageView()
-			};
-			framebuffers[i] = std::make_unique<VulkanFramebuffer>(*vkDevice, *mainRenderPass, attachments, framebufferWidth, framebufferHeight);
+	void VulkanContext::createMainCommandBuffer() {
+		for (int i = 0; i < frameResources.size(); i++) {
+			mainCommandBuffers.push_back(std::make_unique<VulkanCommandBuffer>(device));
+			mainCommandBuffers[i]->allocate(device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getCommandPool());
 		}
-	}
-
-	void VulkanContext::createSyncObjects() {
-		AX_CORE_LOG_INFO("Creating Vulkan synchronization objects");
-		imageAvailableSemaphores.resize(swapchain->getImageCount());
-		queueCompleteSemaphores.resize(swapchain->getImageCount());
-		inFlightFences.resize(VulkanSwapChain::MAX_FRAMES_IN_FLIGHT);
-		imagesInFlightFences.resize(swapchain->getImageCount());
-
-		VkSemaphoreCreateInfo semaphoreInfo = {};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-		for (size_t i = 0; i < swapchain->getImageCount(); i++) {
-			imageAvailableSemaphores[i] = Semaphore::create(*vkDevice);
-			queueCompleteSemaphores[i] = Semaphore::create(*vkDevice);
-			imagesInFlightFences[i] = nullptr;
-		}
-		for (size_t i = 0; i < VulkanSwapChain::MAX_FRAMES_IN_FLIGHT; i++) {
-			inFlightFences[i] = std::make_unique<VulkanFence>(*vkDevice, true);
-		}
-	}
-
-	void VulkanContext::createShaders() {
-		AX_CORE_LOG_INFO("Creating Vulkan builtin shaders");
-		materialShader = MaterialShader::create(*device);
-		materialShader->createPipeline(*mainRenderPass, framebufferWidth, framebufferHeight);
-	}
-
-	void VulkanContext::createBuffers() {
-		AX_CORE_LOG_INFO("Creating Vulkan buffers");
-		VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-		uint64_t vertexBufferSize = sizeof(Vertex) * 1024 * 1024;
-		objectVertexBuffer = std::make_unique<VulkanBuffer>(*vkDevice, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, vertexBufferSize, memoryFlags, true);
-		geometryVertexOffset = 0;
-
-		uint64_t indexBufferSize = sizeof(uint32_t) * 1024 * 1024;
-		objectIndexBuffer = std::make_unique<VulkanBuffer>(*vkDevice, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, indexBufferSize, memoryFlags, true);
-		geometryIndexOffset = 0;
-	}
-
-	void VulkanContext::uploadData(CommandPool& pool, Fence* fence, Queue& queue, VulkanBuffer& buffer, void* data, uint64_t size, uint64_t offset) {
-		VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		VulkanBuffer stagingBuffer(*vkDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size, flags, true);
-		stagingBuffer.copyFrom(data, size, 0, offset);
-		stagingBuffer.copyTo(buffer, pool, fence, queue, size, 0, offset);
 	}
 }

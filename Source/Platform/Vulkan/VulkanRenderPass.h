@@ -1,11 +1,15 @@
 #pragma once
-#include "VulkanDevice.h"
-#include "VulkanCommandBuffer.h"
-#include "VulkanSwapChain.h"
-#include "Renderer/Core/RenderPass.h"
+#include "Renderer/RenderPassCache.h"
+#include "Renderer/Swapchain.h"
+#include "Math/AxMath.h"
+#include <vulkan/vulkan.h>
 
 namespace Axiom {
-	enum class VulkanRenderPassState {
+	class VulkanSwapchain;
+	class VulkanDevice;
+	class VulkanCommandBuffer;
+
+	enum class RenderPassState {
 		READY,
 		RECORDING,
 		IN_RENDER_PASS,
@@ -14,27 +18,35 @@ namespace Axiom {
 		NOT_ALLOCATED
 	};
 
-	class VulkanRenderPass : public RenderPass {
+	struct VulkanRenderPassBeginInfo {
+		Math::uVec2 extent;
+		Math::iVec2 offset = { 0, 0 };
+	};
+
+	class VulkanRenderPass {
 	public:
-		VulkanRenderPass(VulkanDevice& vkDevice, SwapChain& vkSwapChain, Math::Vec2 offset, Math::Vec2 extent, Math::Vec4 clearColor, float depth, uint32_t stencil);
-		~VulkanRenderPass() override;
+		VulkanRenderPass(VulkanDevice& vkDevice, RenderPassCreateInfo rendePassCreateInfo) :
+			device(vkDevice), renderPass(VK_NULL_HANDLE), createInfo(rendePassCreateInfo) {}
 
-		void begin(CommandBuffer& commandBuffer, Framebuffer& framebuffer) const override;
-		void end(CommandBuffer& commandBuffer) const override;
+		~VulkanRenderPass();
 
-		VulkanRenderPassState getState() const { return state; }
+		void init(Swapchain& swapchain);
+		void begin(VulkanCommandBuffer& commandBuffer, VulkanRenderPassBeginInfo beginInfo, uint32_t framebufferIndex) const;
+		void end(VulkanCommandBuffer& commandBuffer) const;
+		void recreateFramebuffers(Swapchain& swapchain);
 
-		void setExtent(Math::Vec2 newExtent) { extent = newExtent; }
-		
+		VkRenderPass getHandle() const { return renderPass; }
+
+	private:
+		void createFramebuffers(VulkanSwapchain& swapchain);
+		void destroyFramebuffers();
+
 	private:
 		VulkanDevice& device;
-		Math::Vec2 offset;
-		Math::Vec2 extent;
-		Math::Vec4 clearColor;
-		float depth;
-		uint32_t stencil;
-
-		VulkanRenderPassState state;
+		VkRenderPass renderPass;
+		RenderPassCreateInfo createInfo;
+		RenderPassState state = RenderPassState::NOT_ALLOCATED;
+		std::vector<VkFramebuffer> framebuffers;
 	};
 }
 
