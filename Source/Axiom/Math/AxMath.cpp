@@ -6,25 +6,25 @@ namespace Math {
 		return std::sinf(radians);
 	}
 	float axCos(float radians) {
-		return std::cosf(radians);
+		return cosf(radians);
 	}
 	float axTan(float radians) {
-		return std::tanf(radians);
+		return tanf(radians);
 	}
 	float axAsin(float value) {
-		return std::asinf(value);
+		return asinf(value);
 	}
 	float axAcos(float value) {
-		return std::acosf(value);
+		return acosf(value);
 	}
 	float axAtan(float value) {
-		return std::atanf(value);
+		return atanf(value);
 	}
 	float axSqrt(float value) {
-		return std::sqrtf(value);
+		return sqrtf(value);
 	}
 	float axPow(float base, float exponent) {
-		return std::powf(base, exponent);
+		return powf(base, exponent);
 	}
 	float axAbs(float value) {
 		return std::abs(value);

@@ -81,6 +81,7 @@ namespace Axiom {
 				return std::make_unique<VulkanAdapter>(adapter);
 			}
 		}
+		return nullptr;
 	}
 
 	VkSurfaceKHR VulkanInstance::createSurface(void* windowHandle) const  {

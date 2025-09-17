@@ -53,7 +53,11 @@ namespace Axiom {
 			auto now = std::chrono::system_clock::now();
 			auto timeToNow = std::chrono::system_clock::to_time_t(now);
 			std::tm tmNow;
+#if defined(_MSC_VER)
 			localtime_s(&tmNow, &timeToNow);
+#else
+			localtime_r(&timeToNow, &tmNow);
+#endif
 
 			char timeBuffer[64];
 			std::strftime(timeBuffer, sizeof(timeBuffer), mTimestampFormat.c_str(), &tmNow);
