@@ -1,6 +1,5 @@
 #include "axpch.h"
 #include "Win32Window.h"
-#include "WaylandWindow.h"
 
 namespace Axiom {
 	LRESULT CALLBACK Win32Window::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {

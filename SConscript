@@ -65,7 +65,8 @@ if compiler == 'msvc':
     shaderc_lib = 'shaderc_combined' + ('d' if config.lower() == 'debug' else '')
     current_env.Append(LIBS=[shaderc_lib])
 else:  # GCC or Clang
-    current_env.Append(LIBS=['vulkan-1', 'shaderc_combined'])
+    current_env.Append(LIBPATH=[os.path.join(vulkan_sdk, 'lib')])
+    current_env.Append(LIBS=['shaderc_combined'])
 
 current_env['OBJPREFIX'] = f'../../../Bin-Int/{platform}-{architecture}/{config_name}/'
 

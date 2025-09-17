@@ -16,4 +16,8 @@ namespace Axiom {
 	void WaylandWindow::init(const WindowProps& props) {
 
 	}
+
+	std::unique_ptr<Window> Window::create(const WindowProps& props) {
+		return std::make_unique<WaylandWindow>(props);
+	}
 }
