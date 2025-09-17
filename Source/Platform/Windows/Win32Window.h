@@ -14,14 +14,15 @@ namespace Axiom {
 		~Win32Window();
 
 		void onUpdate() override;
-		uint32_t getWidth() const override { return data.width; }
-		uint32_t getHeight() const override { return data.height; }
+
 		void setEventCallback(const EventCallback& callback) override { data.eventCallback = callback; }
 		void setVSync(bool enabled) override;
 		bool isVSync() const override { return data.vSync; }
 
 		void* getNativeWindow() const override { return window; }
 		void* getNativeDisplay() const override { return hInstance; }
+		uint32_t getWidth() const override { return data.width; }
+		uint32_t getHeight() const override { return data.height; }
 
 	private:
 		void init(const WindowProps& props);

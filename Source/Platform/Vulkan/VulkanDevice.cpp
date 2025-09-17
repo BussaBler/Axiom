@@ -16,7 +16,7 @@ namespace Axiom {
 		AX_CORE_LOG_INFO("Initializing Vulkan Logical Device...");
 		queueFamilies = adapter.findQueueFamilies();
 
-		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilies.size(), {});
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilies.size());
 		float queuePriority = 1.0f;
 		for (uint32_t i = 0; i < queueFamilies.size(); i++) {
 			queueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;

@@ -13,6 +13,7 @@
 #include <limits>
 #include <random>
 #include <any>
+#include <cstring>
 
 #include <array>
 #include <fstream>
