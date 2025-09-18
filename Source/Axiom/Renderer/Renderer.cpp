@@ -47,7 +47,6 @@ namespace Axiom {
 			mainRender.end(context->getMainCommandBuffer());
 			context->end(*swapchain);
 			swapchain->present(*context);
-			context->incrementFrameIndex();
 		}
 		
 	}

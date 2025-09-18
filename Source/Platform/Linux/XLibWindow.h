@@ -18,8 +18,8 @@ namespace Axiom
 		void setVSync(bool enabled) override {}
 		bool isVSync() const override { return false; }
 
-		void *getNativeWindow() override { return &window; }
-		void *getNativeDisplay() const override { return display; }
+		void* getNativeWindow() override { return &window; }
+		void* getNativeDisplay() const override { return display; }
 		uint32_t getWidth() const override { return data.width; }
 		uint32_t getHeight() const override { return data.height; }
 

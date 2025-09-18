@@ -153,7 +153,9 @@ namespace Axiom {
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
 			AX_CORE_LOG_WARN("Swapchain out of date during present, needs to be rebuilt");
 			isRecreating = true;
+			return;
 		}
+		vkContext.incrementFrameIndex();
 	}
 
 	void VulkanSwapchain::prepare(Context& context) {
@@ -167,6 +169,7 @@ namespace Axiom {
 			case VK_ERROR_OUT_OF_DATE_KHR:
 				AX_CORE_LOG_WARN("Swapchain out of date during acquire, needs to be rebuilt");
 				isRecreating = true;
+				return;
 				break;
 			default:
 				AX_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire swapchain image!");

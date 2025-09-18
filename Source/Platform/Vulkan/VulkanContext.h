@@ -29,7 +29,7 @@ namespace Axiom {
 		VulkanContextFrame getCurrentFrameResource() { return frameResources[currentFrameIndex]; }
 		uint32_t getFrameCount() const override { return static_cast<uint32_t>(frameResources.size()); }
 		CommandBuffer& getMainCommandBuffer() override;
-		VkSemaphore getCurrentRenderFinishedSemaphore() const { return frameResources[currentFrameIndex].renderFinishedSemaphore; }
+		VkSemaphore getCurrentRenderFinishedSemaphore() const { return frameResources[currentImageIndex].renderFinishedSemaphore; }
 
 	private:
 		void createFrameResources(uint32_t frameCount);
