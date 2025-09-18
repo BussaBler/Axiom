@@ -6,7 +6,7 @@
 #include "Platform/Windows/Win32Window.h"
 #include <vulkan/vulkan_win32.h>
 #elif defined(AX_PLATFORM_LINUX)
-#include "Platform/Linux/WaylandWindow.h"
+#include "Platform/Linux/XLibWindow.h"
 #include <vulkan/vulkan_xlib.h>
 #endif
 

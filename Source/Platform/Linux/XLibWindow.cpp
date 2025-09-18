@@ -1,4 +1,4 @@
-#include "WaylandWindow.h"
+#include "XLibWindow.h"
 
 namespace Axiom {
 	XLibWindow::XLibWindow(const WindowProps& props) {
