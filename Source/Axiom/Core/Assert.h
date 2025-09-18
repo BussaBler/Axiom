@@ -5,7 +5,7 @@
 #if defined(_MSC_VER)
 #define AX_ASSERT(x, ...) { if (!x) { Axiom::AX_LOG_ERROR("Assertion failed: " #x, __VA_ARGS__); __debugbreak(); } }
 #define AX_CORE_ASSERT(x, ...) { if (!x) { Axiom::AX_CORE_LOG_ERROR("Assertion failed: " #x, __VA_ARGS__); __debugbreak(); } }
-#else defined(__GNUC__) || defined(__clang__)
+#elif defined(__GNUC__) || defined(__clang__)
 #define AX_ASSERT(x, ...) { if (!x) { Axiom::AX_LOG_ERROR("Assertion failed: " #x, __VA_ARGS__); __builtin_trap(); } }
 #define AX_CORE_ASSERT(x, ...) { if (!x) { Axiom::AX_CORE_LOG_ERROR("Assertion failed: " #x, __VA_ARGS__); __builtin_trap(); } }
 #endif

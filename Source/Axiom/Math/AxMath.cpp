@@ -3,7 +3,7 @@
 
 namespace Math {
 	float axSin(float radians) {
-		return std::sinf(radians);
+		return sinf(radians);
 	}
 	float axCos(float radians) {
 		return cosf(radians);

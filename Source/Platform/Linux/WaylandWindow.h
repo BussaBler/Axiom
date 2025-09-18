@@ -33,5 +33,6 @@ namespace Axiom {
 			bool vSync;
 			EventCallback eventCallback;
 		};
+		WindowData data;
 	};
 }

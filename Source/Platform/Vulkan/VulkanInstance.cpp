@@ -92,6 +92,8 @@ namespace Axiom {
 		createInfo.hwnd = reinterpret_cast<HWND>(windowHandle);
 		createInfo.hinstance = GetModuleHandle(nullptr);
 		AX_CORE_ASSERT(vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) == VK_SUCCESS, "Failed to create window surface!");
+#elif defined(AX_PLATFORM_LINUX)
+		
 #endif
 		return surface;
 	}
