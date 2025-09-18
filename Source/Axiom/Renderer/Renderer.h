@@ -15,7 +15,6 @@ namespace Axiom {
 		void init(void* windowHandle);
 		void shutdown();
 		void draw();
-		void present();
 		void resize(uint32_t width, uint32_t height);
 
 	private:

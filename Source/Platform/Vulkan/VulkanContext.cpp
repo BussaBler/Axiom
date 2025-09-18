@@ -4,6 +4,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanSwapchain.h"
 
 namespace Axiom {
 	VulkanContext::VulkanContext(VulkanDevice& vkDevice, VulkanQueue& vkQueue) : device(vkDevice), queue(vkQueue) {
@@ -31,7 +32,7 @@ namespace Axiom {
 
 	void VulkanContext::submitCommandBuffer(VulkanCommandBuffer& commandBuffer) {
 		std::array<VkSemaphore, 1> waitSemaphores = { frameResources[currentFrameIndex].imageAvailableSemaphore };
-		std::array<VkSemaphore, 1> signalSemaphores = { frameResources[currentImageIndex].renderFinishedSemaphore };
+		std::array<VkSemaphore, 1> signalSemaphores = { frameResources[currentFrameIndex].renderFinishedSemaphore };
 		std::array<VkPipelineStageFlags, 1> waitStages = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
 
 		VkSubmitInfo submitInfo{};
@@ -47,14 +48,24 @@ namespace Axiom {
 		vkQueueSubmit(queue.getHandle(), 1, &submitInfo, frameResources[currentFrameIndex].inFlightFence);
 	}
 
-	void VulkanContext::begin() {
-		incrementFrameIndex();
+	bool VulkanContext::begin(Swapchain& swapchain) {
+		VulkanSwapchain& vkSwapchain = static_cast<VulkanSwapchain&>(swapchain);
+		if (vkSwapchain.getIsRecreating()) {
+			vkDeviceWaitIdle(device.getHandle());
+			return false;
+		}
+
 		VulkanContextFrame& currentFrame = frameResources[currentFrameIndex];
 		vkWaitForFences(device.getHandle(), 1, &currentFrame.inFlightFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(device.getHandle(), 1, &currentFrame.inFlightFence);
 
-		mainCommandBuffers[currentFrameIndex]->reset();
-		mainCommandBuffers[currentFrameIndex]->begin(false, false, false);
+		vkSwapchain.prepare(*this);
+		if (vkSwapchain.getIsRecreating()) {
+			vkDeviceWaitIdle(device.getHandle());
+			return false;
+		}
+
+		mainCommandBuffers[vkSwapchain.getCurrentImageIndex()]->reset();
+		mainCommandBuffers[vkSwapchain.getCurrentImageIndex()]->begin(false, false, false);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -63,25 +74,38 @@ namespace Axiom {
 		viewport.height = -720.0f;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(mainCommandBuffers[currentFrameIndex]->getHandle(), 0, 1, &viewport);
+		vkCmdSetViewport(mainCommandBuffers[vkSwapchain.getCurrentImageIndex()]->getHandle(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = { 1280, 720 };
-		vkCmdSetScissor(mainCommandBuffers[currentFrameIndex]->getHandle(), 0, 1, &scissor);
+		vkCmdSetScissor(mainCommandBuffers[vkSwapchain.getCurrentImageIndex()]->getHandle(), 0, 1, &scissor);
+
+		currentImageIndex = vkSwapchain.getCurrentImageIndex();
+		return true;
 	}
 
-	void VulkanContext::end() {
-		mainCommandBuffers[currentFrameIndex]->end();
-		submitCommandBuffer(*mainCommandBuffers[currentFrameIndex]);
+	void VulkanContext::end(Swapchain& swapchain) {
+		VulkanSwapchain& vkSwapchain = static_cast<VulkanSwapchain&>(swapchain);
+		mainCommandBuffers[vkSwapchain.getCurrentImageIndex()]->end();
+
+		if (inFlightFences[vkSwapchain.getCurrentImageIndex()] != VK_NULL_HANDLE) {
+			vkWaitForFences(device.getHandle(), 1, &inFlightFences[vkSwapchain.getCurrentImageIndex()], VK_TRUE, UINT64_MAX);
+		}
+
+		inFlightFences[vkSwapchain.getCurrentImageIndex()] = frameResources[currentFrameIndex].inFlightFence;
+		vkResetFences(device.getHandle(), 1, &frameResources[currentFrameIndex].inFlightFence);
+
+		submitCommandBuffer(*mainCommandBuffers[vkSwapchain.getCurrentImageIndex()]);
 	}
 
 	CommandBuffer& VulkanContext::getMainCommandBuffer() {
-		return *mainCommandBuffers[currentFrameIndex];
+		return *mainCommandBuffers[currentImageIndex];
 	}
 
 	void VulkanContext::createFrameResources(uint32_t frameCount) {
 		frameResources.resize(frameCount);
+		inFlightFences.resize(frameCount);
 		for (uint32_t i = 0; i < frameCount; i++) {
 			VulkanContextFrame frame{};
 

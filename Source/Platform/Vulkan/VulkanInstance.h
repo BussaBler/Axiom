@@ -5,7 +5,10 @@
 #if defined(AX_PLATFORM_WINDOWS)
 #include "Platform/Windows/Win32Window.h"
 #include <vulkan/vulkan_win32.h>
-#endif // AX_PLATFORM_WINDOWS
+#elif defined(AX_PLATFORM_LINUX)
+#include "Platform/Linux/WaylandWindow.h"
+#include <vulkan/vulkan_xlib.h>
+#endif
 
 namespace Axiom {
 	class VulkanInstance : public Instance {

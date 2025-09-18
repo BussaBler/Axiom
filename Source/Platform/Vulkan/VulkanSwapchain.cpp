@@ -55,6 +55,15 @@ namespace Axiom {
 			}
 		}
 
+		VkExtent2D swapChainExtent{swapchainCreateInfo.width, swapchainCreateInfo.height};
+		if (surfaceCapabilities.currentExtent.width != UINT32_MAX) {
+			swapChainExtent = surfaceCapabilities.currentExtent;
+		}
+		else {
+			swapChainExtent.width = Math::axClamp(swapChainExtent.width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
+			swapChainExtent.height = Math::axClamp(swapChainExtent.height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+		}
+
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.clipped = VK_TRUE;
@@ -62,7 +71,7 @@ namespace Axiom {
 		createInfo.imageColorSpace = swapChainSurfaceFormat.colorSpace;
 		createInfo.imageFormat = swapChainSurfaceFormat.format;
 		createInfo.presentMode = swapChainPresentMode;
-		createInfo.imageExtent = { swapchainCreateInfo.width, swapchainCreateInfo.height };
+		createInfo.imageExtent = swapChainExtent;
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -121,8 +130,10 @@ namespace Axiom {
 
 	void VulkanSwapchain::rebuild(const SwapchainCreateInfo& swapchainCreateInfo) {
 		this->swapchainCreateInfo = swapchainCreateInfo;
+		isRecreating = true;
 		vkDeviceWaitIdle(device.getHandle());
 		build();
+		isRecreating = false;
 	}
 
 	void VulkanSwapchain::present(Context& context) {
@@ -141,21 +152,21 @@ namespace Axiom {
 		VkResult result = vkQueuePresentKHR(presentQueue.getHandle(), &presentInfo);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
 			AX_CORE_LOG_WARN("Swapchain out of date during present, needs to be rebuilt");
+			isRecreating = true;
 		}
 	}
 
 	void VulkanSwapchain::prepare(Context& context) {
 		VulkanContext& vkContext = static_cast<VulkanContext&>(context);
-		AX_CORE_ASSERT(vkContext.getFrameCount() > frameImages.size(), "Not enough swapchain images for the context frame count!");
-		vkContext.begin();
+		AX_CORE_ASSERT(vkContext.getFrameCount() <= frameImages.size(), "Not enough swapchain images for the context frame count!");
 
 		VulkanContextFrame currentFrame = vkContext.getCurrentFrameResource();
 		VkResult result = vkAcquireNextImageKHR(device.getHandle(), swapchain, UINT64_MAX, currentFrame.imageAvailableSemaphore, VK_NULL_HANDLE, &currentImageIndex);
-		vkContext.setCurrentImageIndex(currentImageIndex);
 
 		switch (result) {
 			case VK_ERROR_OUT_OF_DATE_KHR:
 				AX_CORE_LOG_WARN("Swapchain out of date during acquire, needs to be rebuilt");
+				isRecreating = true;
 				break;
 			default:
 				AX_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire swapchain image!");

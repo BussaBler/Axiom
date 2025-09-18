@@ -25,6 +25,7 @@ namespace Axiom {
 		VulkanImage& getImage(uint32_t index) { return *frameImages[index]; }
 		VulkanImage& getDepthImage() { return *depthImage; }
 		uint32_t getCurrentImageIndex() const { return currentImageIndex; }
+		bool getIsRecreating() const { return isRecreating; }
 
 	private:
 		VulkanDevice& device;
@@ -36,6 +37,7 @@ namespace Axiom {
 		std::vector<std::unique_ptr<VulkanImage>> frameImages;
 		uint32_t currentImageIndex = 0;
 		std::unique_ptr<VulkanImage> depthImage;
+		bool isRecreating = false;
 	};
 }
 

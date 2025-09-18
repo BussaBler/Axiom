@@ -89,11 +89,17 @@ namespace Axiom {
 #if defined(AX_PLATFORM_WINDOWS)
 		VkWin32SurfaceCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-		createInfo.hwnd = reinterpret_cast<HWND>(windowHandle);
+		Win32Window* window = reinterpret_cast<Win32Window*>(windowHandle);
+		createInfo.hwnd = reinterpret_cast<HWND>(window->getNativeWindow());
 		createInfo.hinstance = GetModuleHandle(nullptr);
 		AX_CORE_ASSERT(vkCreateWin32SurfaceKHR(instance, &createInfo, nullptr, &surface) == VK_SUCCESS, "Failed to create window surface!");
 #elif defined(AX_PLATFORM_LINUX)
-		
+		VkXlibSurfaceCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+		XLibWindow* window = reinterpret_cast<XLibWindow*>(windowHandle);
+		createInfo.dpy = static_cast<Display*>(window->getNativeDisplay());
+		createInfo.window = *static_cast<::Window*>(window->getNativeWindow());
+		AX_CORE_ASSERT(vkCreateXlibSurfaceKHR(instance, &createInfo, nullptr, &surface) == VK_SUCCESS, "Failed to create window surface!");
 #endif
 		return surface;
 	}
@@ -110,7 +116,9 @@ namespace Axiom {
 #endif // AX_DEBUG
 #if defined(AX_PLATFORM_WINDOWS)
 		extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#endif // AX_PLATFORM_WINDOWS
+#elif defined(AX_PLATFORM_LINUX)
+		extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+#endif
 		for (const char* ext : extensions) {
 			AX_CORE_LOG_DEBUG("Required Vulkan Instance Extension: {}", ext);
 		}

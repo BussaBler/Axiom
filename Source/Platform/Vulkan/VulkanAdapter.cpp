@@ -98,6 +98,8 @@ namespace Axiom {
 				return format;
 			}
 		}
+
+		return VK_FORMAT_UNDEFINED;
 	}
 
 	bool VulkanAdapter::checkAvailableDeviceExtensions() const {

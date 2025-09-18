@@ -39,20 +39,23 @@ namespace Axiom {
 	}
 
 	void Renderer::draw() {
-		swapchain->prepare(*context);
-		RenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };
-		auto mainRender = renderPassCache->get(renderPassInfo);
-		mainRender.begin(context->getMainCommandBuffer());
-		mainRender.end(context->getMainCommandBuffer());
-		context->end();
-	}
-
-	void Renderer::present() {
-		swapchain->present(*context);
+		if (context->begin(*swapchain)) {
+			RenderPassCreateInfo renderPassInfo{};
+			renderPassInfo.clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };
+			auto mainRender = renderPassCache->get(renderPassInfo);
+			mainRender.begin(context->getMainCommandBuffer());
+			mainRender.end(context->getMainCommandBuffer());
+			context->end(*swapchain);
+			swapchain->present(*context);
+			context->incrementFrameIndex();
+		}
+		
 	}
 
 	void Renderer::resize(uint32_t width, uint32_t height) {
+		if (width == 0 || height == 0) {
+			return;
+		}
 		SwapchainCreateInfo swapchainCreateInfo = swapchain->getSwapchainCreateInfo();
 		swapchainCreateInfo.width = width;
 		swapchainCreateInfo.height = height;

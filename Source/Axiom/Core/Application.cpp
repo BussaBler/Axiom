@@ -15,7 +15,7 @@ namespace Axiom {
 		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 		renderer = std::make_unique<Renderer>();
-		renderer->init(window->getNativeWindow());
+		renderer->init(window.get());
 	}
 
 	Application::~Application() {
@@ -64,7 +64,6 @@ namespace Axiom {
 				layer->onUpdate();
 			}
 			renderer->draw();
-			renderer->present();
 			window->onUpdate();
 		}
 	}
