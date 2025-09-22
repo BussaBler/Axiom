@@ -4,6 +4,9 @@
 #include "VulkanSwapchain.h"
 #include "VulkanRenderPass.h"
 #include "VulkanRenderPassCache.h"
+#include "VulkanBuffer.h"
+// temp
+#include "VulkanMaterialShader.h"
 
 namespace Axiom {
 	VulkanDevice::~VulkanDevice() {
@@ -60,6 +63,28 @@ namespace Axiom {
 
 	std::unique_ptr<RenderPassCache> VulkanDevice::createRenderPassCache(Swapchain& swapchain) {
 		return std::make_unique<VulkanRenderPassCache>(*this, static_cast<VulkanSwapchain&>(swapchain));
+	}
+
+	std::unique_ptr<Shader> VulkanDevice::createShader(RenderPassToken& token) {
+		auto renderPass = static_cast<VulkanRenderPass*>(token.get());
+		auto shader = std::make_unique<VulkanMaterialShader>(*this);
+		shader->init(renderPass->getHandle());
+		return std::move(shader);
+	}
+
+	std::unique_ptr<Resource> VulkanDevice::createResource(ResourceCreateInfo& resourceCreateInfo) {
+		switch (resourceCreateInfo.type) {
+			case ResourceType::Buffer: {
+				auto buffer = std::make_unique<VulkanBuffer>(*this);
+				buffer->init(resourceCreateInfo);
+				return std::move(buffer);
+				break;
+			}
+			default:
+				AX_CORE_LOG_ERROR("Unsupported resource type!");
+				return nullptr;
+				break;
+		}
 	}
 
 	std::unique_ptr<VulkanQueue> VulkanDevice::createQueue(VkQueueFlags flags) {

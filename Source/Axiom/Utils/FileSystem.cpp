@@ -10,14 +10,21 @@ namespace Axiom {
 
 	std::vector<uint8_t> FileSystem::readFile(const std::filesystem::path& filePath) {
 		std::ifstream in{ filePath, std::ios::binary };
-		if (!in) AX_CORE_LOG_ERROR("Could not open the file: {0}", filePath.string());
+		if (!in) {
+			AX_CORE_LOG_ERROR("Could not open the file: {0}", filePath.string());
+			return {};
+		}
+
 		std::vector<uint8_t> buf(std::istreambuf_iterator<char>(in), {});
 		return buf;
 	}
 
 	std::string FileSystem::readFileStr(const std::filesystem::path& filePath) {
 		std::ifstream in{ filePath, std::ios::in | std::ios::binary | std::ios::ate };
-		if (!in) AX_CORE_LOG_ERROR("Could not open the file: {0}", filePath.string());
+		if (!in) {
+			AX_CORE_LOG_ERROR("Could not open the file: {0}", filePath.string());
+			return {};
+		}
 
 		const auto size = in.tellg();
 		std::string buf(size, '\0');
@@ -33,7 +40,12 @@ namespace Axiom {
 	}
 
 	std::vector<FileInfo> FileSystem::getDirectory(const std::filesystem::path& folderPath) {
-		std::vector<FileInfo> files;
+		std::vector<FileInfo> files{};
+		if (!exists(folderPath)) {
+			AX_CORE_LOG_WARN("Could not get the directory: {0}", folderPath.string());
+			return files;
+		}
+
 		for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
 			FileInfo fileInfo;
 			fileInfo.name = entry.path().filename().string();
@@ -41,7 +53,6 @@ namespace Axiom {
 			fileInfo.size = entry.is_regular_file() ? entry.file_size() : 0;
 			files.push_back(fileInfo);
 		}
-
 		return files;
 	}
 

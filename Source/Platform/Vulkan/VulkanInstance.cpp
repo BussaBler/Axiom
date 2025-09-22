@@ -4,7 +4,22 @@
 
 namespace Axiom {
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-		AX_CORE_LOG_ERROR("Vulkan validation layer: {0}", pCallbackData->pMessage);
+		switch (messageSeverity) {
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+				AX_CORE_LOG_TRACE("Vulkan validation layer: {0}", pCallbackData->pMessage);
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+				AX_CORE_LOG_INFO("Vulkan validation layer: {0}", pCallbackData->pMessage);
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+				AX_CORE_LOG_WARN("Vulkan validation layer: {0}", pCallbackData->pMessage);
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+				AX_CORE_LOG_ERROR("Vulkan validation layer: {0}", pCallbackData->pMessage);
+				break;
+			default:
+				break;
+		}
 		return VK_FALSE;
 	}
 

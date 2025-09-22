@@ -7,15 +7,15 @@ namespace Axiom {
 		VulkanImage(VulkanDevice& vkDevice, VkImage vkImage, VkImageLayout vkCurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 		~VulkanImage() override;
 
-		void map(void** mappedMemory, uint32_t size, uint32_t offset) override;
-		ResourceView& getView(const ResourceViewCreateInfo& resourceViewCreateInfo) override;
+		void loadData(void* data, uint64_t size, uint64_t offset = 0, uint32_t flags = 0) override;
+		ResourceView& getView(const ResourceViewCreateInfo& resourceViewCreateInfo);
 
 		void init(const ResourceCreateInfo& resourceCreateInfo);
 
 		VkImage getHandle() const { return image; }
 		VkImageLayout getCurrentLayout() const { return currentLayout; }
 
-		static VkImageUsageFlags getVkImageUsageFlags(ResourceUsage usage);
+		static VkImageUsageFlags getVkImageUsageFlags(uint32_t usage);
 
 	private:
 		VkImage image;

@@ -18,6 +18,7 @@ namespace Axiom {
 	private:
 		void begin(RenderPassToken& token, CommandBuffer& commandBuffer) override;
 		void end(RenderPassToken& token, CommandBuffer& commandBuffer) override;
+		void* get(RenderPassToken& token) override;
 
 	private:
 		VulkanDevice& device;

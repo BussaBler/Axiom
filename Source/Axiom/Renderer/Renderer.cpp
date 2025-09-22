@@ -28,10 +28,33 @@ namespace Axiom {
 		context = device->createContext();
 		SwapchainCreateInfo swapchainCreateInfo{};
 		swapchainCreateInfo.width = 1280;
-		swapchainCreateInfo.height = 720;
+		swapchainCreateInfo.height = 720; 
 		swapchainCreateInfo.windowHandle = windowHandle;
 		swapchain = device->createSwapchain(swapchainCreateInfo);
 		renderPassCache = device->createRenderPassCache(*swapchain);
+		RenderPassCreateInfo renderPassInfo{};
+		renderPassInfo.clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };
+		auto mainRender = renderPassCache->get(renderPassInfo);
+
+		shader = device->createShader(mainRender);
+		ResourceCreateInfo vertexBufferInfo{};
+		vertexBufferInfo.size = 3 * sizeof(float) * 4;
+		vertexBufferInfo.usage = ResourceUsage::VertexBuffer | ResourceUsage::TransferDst;
+		vertexBufferInfo.memoryUsage = ResourceMemoryUsage::CPU_To_GPU;
+		vertexBuffer = device->createResource(vertexBufferInfo);
+		std::array<Math::Vec3, 3> vertices = {
+			Math::Vec3(0.0f, 0.5f, 0.0f),
+			Math::Vec3(-0.5f, -0.5f, 0.0f),
+			Math::Vec3(0.5f, -0.5f, 0.0f)
+		};
+		vertexBuffer->loadData(vertices.data(), vertexBufferInfo.size);
+		ResourceCreateInfo indexBufferInfo{};
+		indexBufferInfo.size = 3 * sizeof(uint32_t);
+		indexBufferInfo.usage = ResourceUsage::IndexBuffer | ResourceUsage::TransferDst;
+		indexBufferInfo.memoryUsage = ResourceMemoryUsage::CPU_To_GPU;
+		indexBuffer = device->createResource(indexBufferInfo);
+		std::array<uint32_t, 3> indices = { 0, 1, 2 };
+		indexBuffer->loadData(indices.data(), indexBufferInfo.size);
 	}
 
 	void Renderer::shutdown() {
@@ -44,11 +67,14 @@ namespace Axiom {
 			renderPassInfo.clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };
 			auto mainRender = renderPassCache->get(renderPassInfo);
 			mainRender.begin(context->getMainCommandBuffer());
+			shader->bind(context->getMainCommandBuffer());
+			bindVertexBuffer(*vertexBuffer);
+			bindIndexBuffer(*indexBuffer);
+			context->drawIndexed(3, 1, context->getMainCommandBuffer());
 			mainRender.end(context->getMainCommandBuffer());
 			context->end(*swapchain);
 			swapchain->present(*context);
 		}
-		
 	}
 
 	void Renderer::resize(uint32_t width, uint32_t height) {
@@ -60,5 +86,13 @@ namespace Axiom {
 		swapchainCreateInfo.height = height;
 		swapchain->rebuild(swapchainCreateInfo);
 		renderPassCache->updateSwapchain(*swapchain);
+	}
+
+	void Renderer::bindVertexBuffer(Resource& vertexBuffer) {
+		context->bindVertexBuffer(vertexBuffer, context->getMainCommandBuffer());
+	}
+
+	void Renderer::bindIndexBuffer(Resource& indedxBuffer) {
+		context->bindIndexBuffer(indedxBuffer, context->getMainCommandBuffer());
 	}
 }

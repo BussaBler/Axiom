@@ -14,6 +14,8 @@ namespace Axiom {
 		std::unique_ptr<Context> createContext() override;
 		std::unique_ptr<Swapchain> createSwapchain(SwapchainCreateInfo& swapchainCreateInfo) override;
 		std::unique_ptr<RenderPassCache> createRenderPassCache(Swapchain& swapchain) override;
+		std::unique_ptr<Shader> createShader(RenderPassToken& token) override;
+		std::unique_ptr<Resource> createResource(ResourceCreateInfo& resourceCreateInfo) override;
 
 		VkDevice getHandle() const { return device; }
 		VulkanAdapter& getAdapter() const { return adapter; }

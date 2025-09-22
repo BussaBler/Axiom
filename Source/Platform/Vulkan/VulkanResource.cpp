@@ -8,7 +8,7 @@ namespace Axiom {
 	std::mutex VulkanResource::idMutex;
 
 	VulkanResource::VulkanResource(VulkanDevice& vkDevice)
-		: device(vkDevice), memory(VK_NULL_HANDLE), currentAccessFlags(0), memorySize(0), id(-1), resourceView(nullptr) {
+		: device(vkDevice), memory(VK_NULL_HANDLE), currentAccessFlags(0), memorySize(0), id(generateId()), resourceView(nullptr) {
 	}
 
 	VulkanResource::~VulkanResource() {
@@ -111,5 +111,22 @@ namespace Axiom {
 				return ResourceFormat::Unknown;
 				break;
 		}
+	}
+
+	VkMemoryPropertyFlags VulkanResource::getMemoryPropertyFlags(uint32_t memoryUsage) {
+		VkMemoryPropertyFlags flags = 0;
+		if (memoryUsage & ResourceMemoryUsage::GPU_Only) {
+			flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		}
+		if (memoryUsage & ResourceMemoryUsage::CPU_Only) {
+			flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		}
+		if (memoryUsage & ResourceMemoryUsage::CPU_To_GPU) {
+			flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		}
+		if (memoryUsage & ResourceMemoryUsage::GPU_To_CPU) {
+			flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		}
+		return flags;
 	}
 }

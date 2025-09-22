@@ -10,6 +10,7 @@ namespace Axiom {
 		virtual void onDetach() {}
 		virtual void onUpdate() {}
 		virtual void onEvent(Event& event) {}
+		virtual void onRender() {}
 		const std::string& getName() const { return debugName; }
 
 	protected:

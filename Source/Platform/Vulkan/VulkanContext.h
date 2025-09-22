@@ -24,6 +24,9 @@ namespace Axiom {
 		bool begin(Swapchain& swapchain) override;
 		void end(Swapchain& swapchain) override;
 		void incrementFrameIndex() override { currentFrameIndex = (currentFrameIndex + 1) % getFrameCount(); }
+		void bindVertexBuffer(Resource& vertexBuffer, CommandBuffer& commandBuffer) override;
+		void bindIndexBuffer(Resource& indexBuffer, CommandBuffer& commandBuffer) override;
+		void drawIndexed(uint32_t indexCount, uint32_t instanceCount, CommandBuffer& commandBuffer) override;
 		
 		uint32_t getCurrentFrameIndex() const override { return currentFrameIndex; }
 		VulkanContextFrame getCurrentFrameResource() { return frameResources[currentFrameIndex]; }

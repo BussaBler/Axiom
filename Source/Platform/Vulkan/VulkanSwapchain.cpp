@@ -25,7 +25,9 @@ namespace Axiom {
 	}
 
 	void VulkanSwapchain::build() {
-		AX_CORE_LOG_INFO("Building Vulkan Swapchain...");
+		if (!swapchain) {
+			AX_CORE_LOG_INFO("Building Vulkan Swapchain...");
+		}
 		VkSurfaceKHR newSurface = device.getAdapter().getInstance().createSurface(swapchainCreateInfo.windowHandle);
 		auto surfaceFormats = device.getAdapter().getSurfaceFormats(newSurface);
 		auto presentModes = device.getAdapter().getPresentModes(newSurface);

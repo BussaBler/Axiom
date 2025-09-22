@@ -5,9 +5,7 @@
 
 namespace Axiom {
 	VulkanImage::VulkanImage(VulkanDevice& vkDevice, VkImage vkImage, VkImageLayout vkCurrentLayout)
-		: VulkanResource(vkDevice), image(vkImage), currentLayout(vkCurrentLayout), format(VK_FORMAT_UNDEFINED) {
-		id = generateId();
-	}
+		: VulkanResource(vkDevice), image(vkImage), currentLayout(vkCurrentLayout), format(VK_FORMAT_UNDEFINED) {}
 
 	VulkanImage::~VulkanImage() {
 		if (image && shouldClean) {
@@ -16,8 +14,7 @@ namespace Axiom {
 		}
 	}
 
-	void VulkanImage::map(void** mappedMemory, uint32_t size, uint32_t offset) {
-
+	void VulkanImage::loadData(void* data, uint64_t size, uint64_t offset, uint32_t flags) {
 	}
 
 	ResourceView& VulkanImage::getView(const ResourceViewCreateInfo& resourceViewCreateInfo) {
@@ -58,7 +55,7 @@ namespace Axiom {
 		shouldClean = true;
 	}
 
-	VkImageUsageFlags VulkanImage::getVkImageUsageFlags(ResourceUsage usage) {
+	VkImageUsageFlags VulkanImage::getVkImageUsageFlags(uint32_t usage) {
 		VkImageUsageFlags flags{};
 		if (usage & RenderTarget) {
 			flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;

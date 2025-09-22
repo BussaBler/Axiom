@@ -5,7 +5,6 @@
 
 namespace Axiom {
 	class VulkanDevice;
-	class VulkanQueue;
 
 	class VulkanCommandBuffer : public CommandBuffer {
 	public:
@@ -20,6 +19,7 @@ namespace Axiom {
 		void free(VkCommandPool commandPool);
 
 		void allocateAndBeginSingleUse(VkCommandPool commandPool, bool isPrimary = true);
+		void endSingleUse(VkQueue queue, VkCommandPool commandPool, VkFence fence = VK_NULL_HANDLE);
 
 		VkCommandBuffer getHandle() const { return commandBuffer; }
 		VkCommandBuffer* getHandlePtr() { return &commandBuffer; }

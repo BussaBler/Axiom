@@ -15,6 +15,7 @@ namespace Axiom {
 
 		static VkFormat getVkFormat(ResourceFormat format);
 		static ResourceFormat getResourceFormat(VkFormat format);
+		static VkMemoryPropertyFlags getMemoryPropertyFlags(uint32_t memoryUsage);
 
 	protected:
 		VulkanDevice& device;
@@ -24,6 +25,7 @@ namespace Axiom {
 		uint32_t id;
 		std::unique_ptr<VulkanView> resourceView;
 
+	private:
 		static uint32_t idCounter;
 		static std::mutex idMutex;
 	};

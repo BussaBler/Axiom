@@ -39,5 +39,9 @@ namespace Axiom {
 		renderPassPool[token.getIndex()]->end(static_cast<VulkanCommandBuffer&>(commandBuffer));
 	}
 
+	void* VulkanRenderPassCache::get(RenderPassToken& token) {
+		return renderPassPool[token.getIndex()].get();
+	}
+
 
 }

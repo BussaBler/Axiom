@@ -28,6 +28,7 @@ namespace Axiom {
 	protected:
 		virtual void begin(RenderPassToken& token, CommandBuffer& commandBuffer) = 0;
 		virtual void end(RenderPassToken& token, CommandBuffer& commandBuffer) = 0;
+		virtual void* get(RenderPassToken& token) = 0;
 	};
 
 	struct RenderPassToken {
@@ -39,6 +40,10 @@ namespace Axiom {
 		void end(CommandBuffer& commandBuffer) {
 			owner->end(*this, commandBuffer);
 		}
+		void* get() {
+			return owner->get(*this);
+		}
+
 		uint32_t getIndex() const { return index; }
 		uint32_t getGeneration() const { return generation; }
 

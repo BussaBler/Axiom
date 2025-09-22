@@ -57,4 +57,15 @@ namespace Axiom {
 		allocate(commandPool, isPrimary);
 		begin(true, false, false);
 	}
+
+	void VulkanCommandBuffer::endSingleUse(VkQueue queue, VkCommandPool commandPool, VkFence fence) {
+		end();
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+		AX_CORE_ASSERT(vkQueueSubmit(queue, 1, &submitInfo, fence) == VK_SUCCESS, "Failed to submit command buffer!");
+		vkQueueWaitIdle(queue);
+		free(commandPool);
+	}
 }

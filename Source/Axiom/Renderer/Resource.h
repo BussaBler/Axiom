@@ -3,6 +3,10 @@
 #include "ResourceView.h"
 
 namespace Axiom {
+	enum ResourceType {
+		Buffer = 0,
+	};
+
 	enum ResourceFormat {
 		Unknown = 0,
 		R8_U = 1,
@@ -39,11 +43,21 @@ namespace Axiom {
 		Stencil = 1 << 2
 	};
 
+	enum ResourceMemoryUsage {
+		GPU_Only = 1 << 0,
+		CPU_Only = 1 << 1,
+		CPU_To_GPU = 1 << 2,
+		GPU_To_CPU = 1 << 3
+	};
+
 	struct ResourceCreateInfo {
 		uint32_t width = 1;
 		uint32_t height = 1;
+		uint64_t size = 0;
 		ResourceFormat format = ResourceFormat::Unknown;
-		ResourceUsage usage = ResourceUsage::ShaderResource;
+		uint32_t usage = ResourceUsage::ShaderResource;
+		ResourceType type = ResourceType::Buffer;
+		uint32_t memoryUsage = ResourceMemoryUsage::GPU_Only;
 	};
 
 	struct ResourceViewCreateInfo {
@@ -54,9 +68,9 @@ namespace Axiom {
 	class Resource {
 	public:
 		virtual ~Resource() = default;
+		virtual void loadData(void* data, uint64_t size, uint64_t offset = 0, uint32_t flags = 0) = 0;
 
-		virtual void map(void** mappedMemory, uint32_t size, uint32_t offset) = 0;
-		virtual ResourceView& getView(const ResourceViewCreateInfo& resourceViewCreateInfo) = 0;
+		//virtual ResourceView& getView(const ResourceViewCreateInfo& resourceViewCreateInfo) = 0;
 		virtual uint32_t generateId() = 0;
 	};
 }

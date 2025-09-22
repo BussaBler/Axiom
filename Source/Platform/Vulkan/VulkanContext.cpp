@@ -5,6 +5,7 @@
 #include "VulkanQueue.h"
 #include "VulkanFramebuffer.h"
 #include "VulkanSwapchain.h"
+#include "VulkanBuffer.h"
 
 namespace Axiom {
 	VulkanContext::VulkanContext(VulkanDevice& vkDevice, VulkanQueue& vkQueue) : device(vkDevice), queue(vkQueue) {
@@ -98,6 +99,27 @@ namespace Axiom {
 		vkResetFences(device.getHandle(), 1, &frameResources[currentFrameIndex].inFlightFence);
 
 		submitCommandBuffer(*mainCommandBuffers[currentImageIndex]);
+	}
+
+	void VulkanContext::bindVertexBuffer(Resource& vertexBuffer, CommandBuffer& commandBuffer) {
+		VulkanCommandBuffer& vkCommandBuffer = static_cast<VulkanCommandBuffer&>(commandBuffer);
+		VulkanBuffer& vkBuffer = static_cast<VulkanBuffer&>(vertexBuffer);
+
+		std::array<VkBuffer, 1> buffers = { vkBuffer.getHandle() };
+		std::array<VkDeviceSize, 1> offsets = { 0 };
+
+		vkCmdBindVertexBuffers(vkCommandBuffer.getHandle(), 0, static_cast<uint32_t>(buffers.size()), buffers.data(), offsets.data());
+	}
+
+	void VulkanContext::bindIndexBuffer(Resource& indexBuffer, CommandBuffer& commandBuffer) {
+		VulkanCommandBuffer& vkCommandBuffer = static_cast<VulkanCommandBuffer&>(commandBuffer);
+		VulkanBuffer& vkBuffer = static_cast<VulkanBuffer&>(indexBuffer);
+		vkCmdBindIndexBuffer(vkCommandBuffer.getHandle(), vkBuffer.getHandle(), 0, VK_INDEX_TYPE_UINT32);
+	}
+
+	void VulkanContext::drawIndexed(uint32_t indexCount, uint32_t instanceCount, CommandBuffer& commandBuffer) {
+		VulkanCommandBuffer& vkCommandBuffer = static_cast<VulkanCommandBuffer&>(commandBuffer);
+		vkCmdDrawIndexed(vkCommandBuffer.getHandle(), indexCount, instanceCount, 0, 0, 0);
 	}
 
 	CommandBuffer& VulkanContext::getMainCommandBuffer() {
