@@ -18,8 +18,8 @@ namespace Axiom {
 
 	void VulkanShader::init(VkRenderPass vkRenderPass) {
 		createShaderModules();
+		createDescriptors();
 		createPipeline(vkRenderPass);
-		//createDescriptors();
 	}
 
 	void VulkanShader::bind(CommandBuffer& commandBuffer) const {

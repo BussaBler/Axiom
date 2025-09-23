@@ -88,7 +88,7 @@ namespace Axiom {
 		if (usage & ResourceUsage::IndexBuffer) {
 			bufferUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 		}
-		if (usage & ResourceUsage::ConstantBuffer) {
+		if (usage & ResourceUsage::UniformBuffer) {
 			bufferUsage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		}
 		if (usage & ResourceUsage::ShaderResource) {

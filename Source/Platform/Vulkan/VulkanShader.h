@@ -6,6 +6,7 @@
 namespace Axiom {
 	class VulkanDevice;
 	class VulkanPipeline;
+	class VulkanBuffer;
 
 	struct VulkanShaderStage {
 		VkShaderModuleCreateInfo createInfo{};
@@ -24,6 +25,7 @@ namespace Axiom {
 	protected:
 		void createShaderModules();
 		virtual void createPipeline(VkRenderPass vkRenderPass) {};
+		virtual void createDescriptors() {};
 
 	protected:
 		VulkanDevice& device;

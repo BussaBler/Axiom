@@ -27,7 +27,7 @@ namespace Axiom {
 		IndexBuffer = 1 << 1,
 		RenderTarget = 1 << 2,
 		ShaderResource = 1 << 3,
-		ConstantBuffer = 1 << 4,
+		UniformBuffer = 1 << 4,
 		TransferDst = 1 << 5,
 		TransferSrc = 1 << 6,
 		CopyDst = 1 << 7,

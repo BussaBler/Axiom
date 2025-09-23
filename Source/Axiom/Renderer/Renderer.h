@@ -1,4 +1,6 @@
 #pragma once
+#include "GlobalUbo.h"
+
 namespace Axiom {
 	class Instance;
 	class Adapter;
@@ -32,6 +34,8 @@ namespace Axiom {
 		std::unique_ptr<Shader> shader;
 		std::unique_ptr<Resource> vertexBuffer;
 		std::unique_ptr<Resource> indexBuffer;
+		std::unique_ptr<Resource> uniformBuffer;
+		GlobalUbo globalUbo;
 	};
 }
 

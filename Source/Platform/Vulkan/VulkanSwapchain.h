@@ -2,6 +2,7 @@
 #include "Renderer/Swapchain.h"
 #include "VulkanContext.h"
 #include "VulkanImage.h"
+#include "Math/AxMath.h"
 #include <vulkan/vulkan.h>
 
 namespace Axiom {
@@ -26,6 +27,7 @@ namespace Axiom {
 		VulkanImage& getDepthImage() { return *depthImage; }
 		uint32_t getCurrentImageIndex() const { return currentImageIndex; }
 		bool getIsRecreating() const { return isRecreating; }
+		Math::uVec2 getExtent() const { return { swapchainCreateInfo.width, swapchainCreateInfo.height }; }
 
 	private:
 		VulkanDevice& device;

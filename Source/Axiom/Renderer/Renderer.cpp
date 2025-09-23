@@ -55,6 +55,15 @@ namespace Axiom {
 		indexBuffer = device->createResource(indexBufferInfo);
 		std::array<uint32_t, 3> indices = { 0, 1, 2 };
 		indexBuffer->loadData(indices.data(), indexBufferInfo.size);
+		ResourceCreateInfo uniformBufferInfo{};
+		uniformBufferInfo.size = sizeof(GlobalUbo) * 3;
+		uniformBufferInfo.usage = ResourceUsage::UniformBuffer | ResourceUsage::TransferDst | ResourceUsage::TransferSrc;
+		uniformBufferInfo.memoryUsage = ResourceMemoryUsage::CPU_To_GPU;
+		uniformBuffer = device->createResource(uniformBufferInfo);
+		globalUbo.view = Math::Mat4::identity();
+		globalUbo.proj = Math::Mat4::identity();
+		globalUbo.color = Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		shader->bindUniformBuffer(*uniformBuffer);
 	}
 
 	void Renderer::shutdown() {
@@ -67,9 +76,13 @@ namespace Axiom {
 			renderPassInfo.clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };
 			auto mainRender = renderPassCache->get(renderPassInfo);
 			mainRender.begin(context->getMainCommandBuffer());
+			
 			shader->bind(context->getMainCommandBuffer());
 			bindVertexBuffer(*vertexBuffer);
 			bindIndexBuffer(*indexBuffer);
+			uniformBuffer->loadData(&globalUbo, sizeof(GlobalUbo), sizeof(GlobalUbo) * context->getCurrentFrameIndex());
+			shader->bindDescriptors(context->getMainCommandBuffer(), context->getCurrentFrameIndex() * sizeof(GlobalUbo));
+			
 			context->drawIndexed(3, 1, context->getMainCommandBuffer());
 			mainRender.end(context->getMainCommandBuffer());
 			context->end(*swapchain);

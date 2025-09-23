@@ -20,6 +20,9 @@ namespace Axiom {
 		void init(VulkanPipelineCreateInfo& createInfo);
 		void bind(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint) const;
 
+		VkPipeline getHandle() const { return pipeline; }
+		VkPipelineLayout getLayout() const { return pipelineLayout; }
+
 	private:
 		VulkanDevice& device;
 		VkPipeline pipeline = VK_NULL_HANDLE;

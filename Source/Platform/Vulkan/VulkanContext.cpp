@@ -74,18 +74,20 @@ namespace Axiom {
 		mainCommandBuffers[imageIndex]->reset();
 		mainCommandBuffers[imageIndex]->begin(false, false, false);
 
+		Math::uVec2 extent = vkSwapchain.getExtent();
+		Math::Vec2 fExtent = { static_cast<float>(extent.x()), static_cast<float>(extent.y()) };
 		VkViewport viewport{};
 		viewport.x = 0.0f;
-		viewport.y = 720.0f;
-		viewport.width = 1280.0f;
-		viewport.height = -720.0f;
+		viewport.y = fExtent.y();
+		viewport.width = fExtent.x();
+		viewport.height = -fExtent.y();
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(mainCommandBuffers[imageIndex]->getHandle(), 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
-		scissor.extent = { 1280, 720 };
+		scissor.extent = { extent.x(), extent.y() };
 		vkCmdSetScissor(mainCommandBuffers[imageIndex]->getHandle(), 0, 1, &scissor);
 
 		currentImageIndex = imageIndex;
