@@ -4,6 +4,7 @@
 #include "RenderPassCache.h"
 #include "Shader.h"
 #include "Resource.h"
+#include "Texture.h"
 
 namespace Axiom {
 	struct DeviceCreateInfo {
@@ -20,6 +21,7 @@ namespace Axiom {
 		virtual std::unique_ptr<RenderPassCache> createRenderPassCache(Swapchain& swapchain) = 0;
 		virtual std::unique_ptr<Shader> createShader(RenderPassToken& token) = 0;
 		virtual std::unique_ptr<Resource> createResource(ResourceCreateInfo& resourceCreateInfo) = 0;
+		virtual std::unique_ptr<Texture> createTexture(TextureCreateInfo& textureCreateInfo) = 0;
 	};
 }
 

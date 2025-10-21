@@ -3,6 +3,8 @@
 #include "Instance.h"
 #include "Device.h"
 #include "RenderPassCache.h"
+#include "Texture.h"
+#include "Vertex.h"
 
 namespace Axiom {
 	Renderer::Renderer() = default;
@@ -33,37 +35,49 @@ namespace Axiom {
 		swapchain = device->createSwapchain(swapchainCreateInfo);
 		renderPassCache = device->createRenderPassCache(*swapchain);
 		RenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };
+		renderPassInfo.clearColor = { 0.2f, 0.2f, 1.0f, 1.0f };
 		auto mainRender = renderPassCache->get(renderPassInfo);
 
 		shader = device->createShader(mainRender);
-		ResourceCreateInfo vertexBufferInfo{};
-		vertexBufferInfo.size = 3 * sizeof(float) * 4;
-		vertexBufferInfo.usage = ResourceUsage::VertexBuffer | ResourceUsage::TransferDst;
-		vertexBufferInfo.memoryUsage = ResourceMemoryUsage::CPU_To_GPU;
-		vertexBuffer = device->createResource(vertexBufferInfo);
-		std::array<Math::Vec3, 3> vertices = {
-			Math::Vec3(0.0f, 0.5f, 0.0f),
-			Math::Vec3(-0.5f, -0.5f, 0.0f),
-			Math::Vec3(0.5f, -0.5f, 0.0f)
+
+		ResourceCreateInfo stagingBufferInfo{};
+		stagingBufferInfo.size = 4 * sizeof(Vertex);
+		stagingBufferInfo.usage = ResourceUsage::TransferSrc;
+		stagingBufferInfo.memoryUsage = ResourceMemoryUsage::CPU_To_GPU;
+		auto stagingBuffer = device->createResource(stagingBufferInfo);
+		std::array<Vertex, 4> vertices = {
+			Vertex(Math::Vec3(-0.5f, 0.5f, 0.0f), Math::Vec2(0.0f, 1.0f)),
+			Vertex(Math::Vec3(-0.5f, -0.5f, 0.0f), Math::Vec2(0.0f, 0.0f)),
+			Vertex(Math::Vec3(0.5f, -0.5f, 0.0f), Math::Vec2(1.0f, 0.0f)),
+			Vertex(Math::Vec3(0.5f, 0.5f, 0.0f), Math::Vec2(1.0f, 1.0f))
 		};
-		vertexBuffer->loadData(vertices.data(), vertexBufferInfo.size);
+		stagingBuffer->loadData(vertices.data(), stagingBufferInfo.size);
+
+		ResourceCreateInfo vertexBufferInfo{};
+		vertexBufferInfo.size = 4 * sizeof(Vertex);
+		vertexBufferInfo.usage = ResourceUsage::VertexBuffer | ResourceUsage::TransferDst;
+		vertexBufferInfo.memoryUsage = ResourceMemoryUsage::GPU_Only;
+		vertexBuffer = device->createResource(vertexBufferInfo);
+		stagingBuffer->copyTo(*vertexBuffer);
+
 		ResourceCreateInfo indexBufferInfo{};
-		indexBufferInfo.size = 3 * sizeof(uint32_t);
+		indexBufferInfo.size = 6 * sizeof(uint32_t);
 		indexBufferInfo.usage = ResourceUsage::IndexBuffer | ResourceUsage::TransferDst;
 		indexBufferInfo.memoryUsage = ResourceMemoryUsage::CPU_To_GPU;
 		indexBuffer = device->createResource(indexBufferInfo);
-		std::array<uint32_t, 3> indices = { 0, 1, 2 };
+		std::array<uint32_t, 6> indices = { 0, 1, 2, 2, 3, 0 };
 		indexBuffer->loadData(indices.data(), indexBufferInfo.size);
+
 		ResourceCreateInfo uniformBufferInfo{};
-		uniformBufferInfo.size = sizeof(GlobalUbo) * 3;
+		uniformBufferInfo.size = sizeof(GlobalUbo) + sizeof(MaterialUbo);
 		uniformBufferInfo.usage = ResourceUsage::UniformBuffer | ResourceUsage::TransferDst | ResourceUsage::TransferSrc;
 		uniformBufferInfo.memoryUsage = ResourceMemoryUsage::CPU_To_GPU;
 		uniformBuffer = device->createResource(uniformBufferInfo);
-		globalUbo.view = Math::Mat4::identity();
-		globalUbo.proj = Math::Mat4::identity();
-		globalUbo.color = Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		shader->bindUniformBuffer(*uniformBuffer);
+		globalUbo.view = Math::Mat4::translate(Math::Vec3(0.0f, 0.0f, -2.0f));
+		globalUbo.proj = Math::Mat4::perspective(Math::toRadians(45.0f), 1280.0f / 720.0f, 0.1f, 1000.0f);
+		materialUbo.diffuseColor = Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+		createDefaultResources();
 	}
 
 	void Renderer::shutdown() {
@@ -80,10 +94,16 @@ namespace Axiom {
 			shader->bind(context->getMainCommandBuffer());
 			bindVertexBuffer(*vertexBuffer);
 			bindIndexBuffer(*indexBuffer);
-			uniformBuffer->loadData(&globalUbo, sizeof(GlobalUbo), sizeof(GlobalUbo) * context->getCurrentFrameIndex());
-			shader->bindDescriptors(context->getMainCommandBuffer(), context->getCurrentFrameIndex() * sizeof(GlobalUbo));
-			
-			context->drawIndexed(3, 1, context->getMainCommandBuffer());
+			uniformBuffer->loadData(&globalUbo, sizeof(GlobalUbo));
+			uniformBuffer->loadData(&materialUbo, sizeof(MaterialUbo), sizeof(GlobalUbo));
+
+			shader->updateFrameIndex(context->getCurrentFrameIndex());
+			shader->bindUniformBuffer(*uniformBuffer);
+			shader->bindTexture(*defaultTexture);
+			shader->bindPushConstants(context->getMainCommandBuffer(), &rotation, sizeof(Math::Mat4));
+			shader->bindDescriptors(context->getMainCommandBuffer());
+
+			context->drawIndexed(6, 1, context->getMainCommandBuffer());
 			mainRender.end(context->getMainCommandBuffer());
 			context->end(*swapchain);
 			swapchain->present(*context);
@@ -105,7 +125,30 @@ namespace Axiom {
 		context->bindVertexBuffer(vertexBuffer, context->getMainCommandBuffer());
 	}
 
-	void Renderer::bindIndexBuffer(Resource& indedxBuffer) {
-		context->bindIndexBuffer(indedxBuffer, context->getMainCommandBuffer());
+	void Renderer::bindIndexBuffer(Resource& indexBuffer) {
+		context->bindIndexBuffer(indexBuffer, context->getMainCommandBuffer());
+	}
+
+	void Renderer::createDefaultResources() {
+		TextureCreateInfo textureCreateInfo{};
+		textureCreateInfo.width = 256;
+		textureCreateInfo.height = 256;
+		textureCreateInfo.channels = 4;
+
+		std::vector<uint8_t> pixels(256 * 256 * 4);
+		for (uint32_t y = 0; y < 256; ++y) {
+			for (uint32_t x = 0; x < 256; ++x) {
+				const bool purple = ((x / 32) + (y / 32)) % 2 == 0;
+				const size_t base = (static_cast<size_t>(y) * 256 + x) * 4;
+				const uint8_t v = purple ? 255 : 0;
+				pixels[base + 0] = v;
+				pixels[base + 1] = 0;
+				pixels[base + 2] = v;
+				pixels[base + 3] = 255;
+			}
+		}
+
+		textureCreateInfo.data = pixels.data();
+		defaultTexture = device->createTexture(textureCreateInfo);
 	}
 }

@@ -5,13 +5,14 @@
 #include "VulkanRenderPass.h"
 #include "VulkanRenderPassCache.h"
 #include "VulkanBuffer.h"
+#include "VulkanTexture.h"
 // temp
 #include "VulkanMaterialShader.h"
 
 namespace Axiom {
 	VulkanDevice::~VulkanDevice() {
 		AX_CORE_LOG_INFO("Destroying Vulkan Logical Device...");
-		queues.clear();
+		mainQueue.reset();
 		vkDestroyDevice(device, nullptr);
 	}
 
@@ -41,9 +42,12 @@ namespace Axiom {
 		createInfo.pEnabledFeatures = &deviceFeatures;
 		AX_CORE_ASSERT(vkCreateDevice(adapter.getHandle(), &createInfo, nullptr, &device) == VK_SUCCESS, "Failed to create logical device!");
 	
-		auto mainQueue = createQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT);
+		mainQueue = createQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT);
 		if (mainQueue) {
-			queues[VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT] = std::move(mainQueue);
+			queues[VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT] = mainQueue.get();
+			queues[VK_QUEUE_GRAPHICS_BIT] = mainQueue.get();
+			queues[VK_QUEUE_TRANSFER_BIT] = mainQueue.get();
+			queues[VK_QUEUE_COMPUTE_BIT] = mainQueue.get();
 		} else {
 			AX_CORE_LOG_ERROR("Failed to create Main Vulkan Queue!");
 		}
@@ -85,6 +89,12 @@ namespace Axiom {
 				return nullptr;
 				break;
 		}
+	}
+
+	std::unique_ptr<Texture> VulkanDevice::createTexture(TextureCreateInfo& textureCreateInfo) {
+		std::unique_ptr<VulkanTexture> texture = std::make_unique<VulkanTexture>(*this);
+		texture->init(textureCreateInfo);
+		return std::move(texture);
 	}
 
 	std::unique_ptr<VulkanQueue> VulkanDevice::createQueue(VkQueueFlags flags) {

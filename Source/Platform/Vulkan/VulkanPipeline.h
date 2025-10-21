@@ -9,6 +9,7 @@ namespace Axiom {
 		std::vector<VkVertexInputAttributeDescription> vertexAttributes;
 		std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+		std::vector<VkPushConstantRange> pushConstantRanges;
 		bool isWireframe = false;
 	};
 

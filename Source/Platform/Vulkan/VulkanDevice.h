@@ -16,13 +16,14 @@ namespace Axiom {
 		std::unique_ptr<RenderPassCache> createRenderPassCache(Swapchain& swapchain) override;
 		std::unique_ptr<Shader> createShader(RenderPassToken& token) override;
 		std::unique_ptr<Resource> createResource(ResourceCreateInfo& resourceCreateInfo) override;
+		std::unique_ptr<Texture> createTexture(TextureCreateInfo& textureCreateInfo) override;
 
 		VkDevice getHandle() const { return device; }
 		VulkanAdapter& getAdapter() const { return adapter; }
 		VulkanQueue* getQueue(VkQueueFlags flags) {
 			auto it = queues.find(flags);
 			if (it != queues.end()) {
-				return it->second.get();
+				return it->second;
 			}
 			AX_CORE_LOG_ERROR("Requested Vulkan Queue not found!");
 			return nullptr;
@@ -34,7 +35,8 @@ namespace Axiom {
 		VkDevice device;
 		VulkanAdapter& adapter;
 		std::vector<QueueFamily> queueFamilies;
-		std::map<VkQueueFlags, std::unique_ptr<VulkanQueue>> queues;
+		std::unique_ptr<VulkanQueue> mainQueue;
+		std::map<VkQueueFlags, VulkanQueue*> queues;
     };
 }
 

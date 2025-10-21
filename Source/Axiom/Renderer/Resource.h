@@ -5,6 +5,7 @@
 namespace Axiom {
 	enum ResourceType {
 		Buffer = 0,
+		Image = 1,
 	};
 
 	enum ResourceFormat {
@@ -58,6 +59,7 @@ namespace Axiom {
 		uint32_t usage = ResourceUsage::ShaderResource;
 		ResourceType type = ResourceType::Buffer;
 		uint32_t memoryUsage = ResourceMemoryUsage::GPU_Only;
+		uint32_t aspectMask = ResourceAspectMask::Color;
 	};
 
 	struct ResourceViewCreateInfo {
@@ -69,8 +71,12 @@ namespace Axiom {
 	public:
 		virtual ~Resource() = default;
 		virtual void loadData(void* data, uint64_t size, uint64_t offset = 0, uint32_t flags = 0) = 0;
+		virtual void copyTo(Resource& destination, uint64_t srcOffset = 0, uint64_t dstOffset = 0, uint64_t size = UINT64_MAX) {}
 
 		//virtual ResourceView& getView(const ResourceViewCreateInfo& resourceViewCreateInfo) = 0;
 		virtual uint32_t generateId() = 0;
+
+	protected:
+		ResourceCreateInfo createInfo;
 	};
 }

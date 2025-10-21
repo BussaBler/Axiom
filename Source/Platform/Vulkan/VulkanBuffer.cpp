@@ -62,18 +62,20 @@ namespace Axiom {
 		unlockMemory();
 	}
 
-	void VulkanBuffer::copyToBuffer(VulkanBuffer& destination, VkCommandPool commandPool, VkFence fence, VkQueue queue, uint64_t srcOffset, uint64_t dstOffset, uint64_t size) {
-		vkQueueWaitIdle(queue);
+	void VulkanBuffer::copyTo(Resource& destination, uint64_t srcOffset, uint64_t dstOffset, uint64_t size) {
+		VkQueue queue = device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getHandle();
+		VkCommandPool commandPool = device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getCommandPool();
+		VulkanBuffer& destinationBuffer = static_cast<VulkanBuffer&>(destination);
+		device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->wait();
 
 		VulkanCommandBuffer commandBuffer(device);
 		commandBuffer.allocateAndBeginSingleUse(commandPool, true);
-
 		VkBufferCopy copyRegion{};
 		copyRegion.srcOffset = srcOffset;
 		copyRegion.dstOffset = dstOffset;
 		copyRegion.size = (size == VK_WHOLE_SIZE) ? memorySize : size;
-		vkCmdCopyBuffer(commandBuffer.getHandle(), buffer, destination.getHandle(), 1, &copyRegion);
-		commandBuffer.endSingleUse(queue, commandPool, fence);
+		vkCmdCopyBuffer(commandBuffer.getHandle(), buffer, destinationBuffer.getHandle(), 1, &copyRegion);
+		commandBuffer.endSingleUse(queue, commandPool);
 	}
 
 	void VulkanBuffer::bind(uint64_t offset) {

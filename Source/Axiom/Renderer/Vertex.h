@@ -4,5 +4,6 @@
 namespace Axiom {
 	struct Vertex {
 		Math::Vec3 position;
+		Math::Vec2 texCoord;
 	};
 }

@@ -14,6 +14,8 @@ namespace Axiom {
 
 		VkQueue getHandle() const { return queue; }
 		VkCommandPool getCommandPool() const { return commandPool; }
+		uint32_t getFamilyIndex() const { return familyIndex; }
+		uint32_t getQueueIndex() const { return queueIndex; }
 
 	private:
 		VulkanDevice& device;

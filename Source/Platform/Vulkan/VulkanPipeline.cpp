@@ -19,8 +19,8 @@ namespace Axiom {
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(createInfo.descriptorSetLayouts.size());
 		pipelineLayoutInfo.pSetLayouts = createInfo.descriptorSetLayouts.data();
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+		pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(createInfo.pushConstantRanges.size());
+		pipelineLayoutInfo.pPushConstantRanges = createInfo.pushConstantRanges.data();
 		if (vkCreatePipelineLayout(device.getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
 			AX_CORE_LOG_ERROR("Failed to create Vulkan Pipeline Layout!");
 			return;
