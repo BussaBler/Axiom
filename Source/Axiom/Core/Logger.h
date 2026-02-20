@@ -50,17 +50,9 @@ namespace Axiom {
 				return;
 			}
 
-			auto now = std::chrono::system_clock::now();
-			auto timeToNow = std::chrono::system_clock::to_time_t(now);
-			std::tm tmNow;
-#if defined(_MSC_VER)
-			localtime_s(&tmNow, &timeToNow);
-#else
-			localtime_r(&timeToNow, &tmNow);
-#endif
-
-			char timeBuffer[64];
-			std::strftime(timeBuffer, sizeof(timeBuffer), mTimestampFormat.c_str(), &tmNow);
+			auto currentTime = std::chrono::system_clock::now();
+			auto zonedTime = std::chrono::zoned_time(std::chrono::current_zone(), currentTime);
+			std::string timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", zonedTime);
 
 			auto fmt_args = std::make_format_args<std::format_context>(static_cast<const Args&>(args)...);
 			std::string formatted = std::vformat(fmtString, fmt_args);
@@ -69,10 +61,10 @@ namespace Axiom {
 			auto color = mColorCodes[static_cast<size_t>(priority)];
 			auto reset = mColorCodes[static_cast<size_t>(Priority::Trace)];
 			
-			std::cout << color << '[' << timeBuffer << ']' << messagePriorityToString(priority) << mInitialString << formatted << '\n' << reset;
+			std::cout << color << '[' << timestamp << ']' << messagePriorityToString(priority) << mInitialString << formatted << '\n' << reset;
 
 			if (mFile.is_open()) {
-				mFile << '[' << timeBuffer << ']' << messagePriorityToString(priority) << mInitialString << formatted << '\n';
+				mFile << '[' << timestamp << ']' << messagePriorityToString(priority) << mInitialString << formatted << '\n';
 			}
 		}
 

@@ -5,6 +5,7 @@
 #include "RenderPassCache.h"
 #include "Texture.h"
 #include "Vertex.h"
+#include "Core/Input.h"
 
 namespace Axiom {
 	Renderer::Renderer() = default;
@@ -96,7 +97,6 @@ namespace Axiom {
 			bindIndexBuffer(*indexBuffer);
 			uniformBuffer->loadData(&globalUbo, sizeof(GlobalUbo));
 			uniformBuffer->loadData(&materialUbo, sizeof(MaterialUbo), sizeof(GlobalUbo));
-
 			shader->updateFrameIndex(context->getCurrentFrameIndex());
 			shader->bindUniformBuffer(*uniformBuffer);
 			shader->bindTexture(*defaultTexture);

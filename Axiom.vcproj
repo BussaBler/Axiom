@@ -1,0 +1,454 @@
+# Microsoft Developer Studio Project File - Name="Axiom" - Package Owner=<4>
+# Microsoft Developer Studio Generated Build File, Format Version 6.00
+# ** DO NOT EDIT **
+
+# TARGTYPE "Win32 (x86) External Target" 0x0106
+
+CFG=Axiom - Win32 Debug|x64
+!MESSAGE This is not a valid makefile. To build this project using NMAKE,
+!MESSAGE use the Export Makefile command and run
+!MESSAGE
+!MESSAGE NMAKE /f "Axiom.mak".
+!MESSAGE
+!MESSAGE You can specify a configuration when running NMAKE
+!MESSAGE by defining the macro CFG on the command line. For example:
+!MESSAGE
+!MESSAGE NMAKE /f "Axiom.mak" CFG="Axiom - Win32 Debug|x64"
+!MESSAGE
+!MESSAGE Possible choices for configuration are:
+!MESSAGE
+!MESSAGE "Axiom - Win32 Debug|x64" (based on "Win32 (x86) External Target")
+!MESSAGE
+
+# Begin Project
+# PROP AllowPerConfigDependencies 0
+# PROP Scc_ProjName ""
+# PROP Scc_LocalPath ""
+
+!IF  "$(CFG)" == "Axiom - Win32 Debug|x64"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 1
+# PROP BASE Output_Dir ""
+# PROP BASE Intermediate_Dir ""
+# PROP BASE Cmd_Line "echo Starting SCons && "C:\Users\Bussab\AppData\Local\Programs\Python\Python313\python.exe" -c "from os.path import join; import sys; sys.path = [ join(sys.prefix, 'Lib', 'site-packages', 'scons-4.9.1'), join(sys.prefix, 'scons-4.9.1'), join(sys.prefix, 'Lib', 'site-packages', 'scons'), join(sys.prefix, 'scons') ] + sys.path; import SCons.Script; SCons.Script.main()" -C "C:\Users\Bussab\Documents\USP\Codes C++\Axiom" -f SConstruct "C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Build\Axiom\Axiom.lib""
+# PROP BASE Rebuild_Opt "-c && echo Starting SCons && "C:\Users\Bussab\AppData\Local\Programs\Python\Python313\python.exe" -c "from os.path import join; import sys; sys.path = [ join(sys.prefix, 'Lib', 'site-packages', 'scons-4.9.1'), join(sys.prefix, 'scons-4.9.1'), join(sys.prefix, 'Lib', 'site-packages', 'scons'), join(sys.prefix, 'scons') ] + sys.path; import SCons.Script; SCons.Script.main()" -C "C:\Users\Bussab\Documents\USP\Codes C++\Axiom" -f SConstruct "C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Build\Axiom\Axiom.lib""
+# PROP BASE Target_File "C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Build\Axiom\Axiom.lib"
+# PROP BASE Bsc_Name ""
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 1
+# PROP Output_Dir ""
+# PROP Intermediate_Dir ""
+# PROP Cmd_Line "echo Starting SCons && "C:\Users\Bussab\AppData\Local\Programs\Python\Python313\python.exe" -c "from os.path import join; import sys; sys.path = [ join(sys.prefix, 'Lib', 'site-packages', 'scons-4.9.1'), join(sys.prefix, 'scons-4.9.1'), join(sys.prefix, 'Lib', 'site-packages', 'scons'), join(sys.prefix, 'scons') ] + sys.path; import SCons.Script; SCons.Script.main()" -C "C:\Users\Bussab\Documents\USP\Codes C++\Axiom" -f SConstruct "C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Build\Axiom\Axiom.lib""
+# PROP Rebuild_Opt "-c && echo Starting SCons && "C:\Users\Bussab\AppData\Local\Programs\Python\Python313\python.exe" -c "from os.path import join; import sys; sys.path = [ join(sys.prefix, 'Lib', 'site-packages', 'scons-4.9.1'), join(sys.prefix, 'scons-4.9.1'), join(sys.prefix, 'Lib', 'site-packages', 'scons'), join(sys.prefix, 'scons') ] + sys.path; import SCons.Script; SCons.Script.main()" -C "C:\Users\Bussab\Documents\USP\Codes C++\Axiom" -f SConstruct "C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Build\Axiom\Axiom.lib""
+# PROP Target_File "C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Build\Axiom\Axiom.lib"
+# PROP Bsc_Name ""
+# PROP Target_Dir ""
+
+!ENDIF
+
+# Begin Target
+
+# Name "Axiom - Win32 Debug|x64"
+
+!IF  "$(CFG)" == "Axiom - Win32 Debug|x64"
+
+!ENDIF
+
+# Begin Group "Header Files"
+
+# PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Application.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Assert.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Base.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\EntryPoint.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Input.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\KeyCodes.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Layer.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\LayerStack.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Log.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Logger.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\MouseButtonCodes.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Window.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Event\ApplicationEvent.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Event\Event.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Event\KeyCodes.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Event\KeyEvent.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Event\MouseEvent.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\ImGui\ImGuiLayer.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Math\AxMath.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Math\Mat.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Math\Vec.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Adapter.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\CommandBuffer.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Context.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Device.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\GlobalUbo.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Instance.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\MaterialUbo.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Renderer.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\RenderPassCache.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Resource.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\ResourceView.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Shader.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Swapchain.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Texture.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Vertex.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Utils\FileSystem.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Utils\StringUtils.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\axpch.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Linux\XLibWindow.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanAdapter.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanBuffer.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanCommandBuffer.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanContext.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanDevice.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanFramebuffer.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanImage.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanImageView.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanInstance.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanMaterialShader.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanPipeline.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanQueue.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanRenderPass.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanRenderPassCache.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanResource.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanShader.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanSwapchain.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanTexture.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanView.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Windows\Win32Window.h"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Windows\WindowsInput.h"
+# End Source File
+# End Group
+# Begin Group "Source Files"
+
+# PROP Default_Filter "cpp;c;cxx;l;y;def;odl;idl;hpj;bat"
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Application.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Layer.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\LayerStack.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Log.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Core\Logger.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\ImGui\ImGuiLayer.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Math\AxMath.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Instance.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Renderer\Renderer.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Utils\FileSystem.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Axiom\Utils\StringUtils.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\axpch.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Linux\XLibWindow.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanAdapter.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanBuffer.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanCommandBuffer.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanContext.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanDevice.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanFramebuffer.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanImage.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanImageView.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanInstance.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanMaterialShader.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanPipeline.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanQueue.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanRenderPass.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanRenderPassCache.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanResource.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanShader.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanSwapchain.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanTexture.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Vulkan\VulkanView.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Windows\Win32Window.cpp"
+# End Source File
+# Begin Source File
+
+SOURCE="C:\Users\Bussab\Documents\USP\Codes C++\Axiom\Axiom\Source\Platform\Windows\WindowsInput.cpp"
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE="SConstruct"
+# End Source File
+# End Target
+# End Project
+gASVDAUAAAAAAAB9lIwJRGVidWd8eDY0lIwPU0NvbnMuVG9vbC5tc3ZzlIwGQ29uZmlnlJOUKYGUfZQojAtidWlsZHRhcmdldJSMQ0M6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxCdWlsZFxBeGlvbVxBeGlvbS5saWKUjAZvdXRkaXKUjACUjAdjbWRhcmdzlGgKjApjcHBkZWZpbmVzlIwLY29sbGVjdGlvbnOUjAVkZXF1ZZSTlClSlCiMCEFYX0RFQlVHlIwRQVhfRU5BQkxFX0FTU0VSVFOUjBNBWF9QTEFURk9STV9XSU5ET1dTlGWMCGNwcGZsYWdzlIwKU0NvbnMuVXRpbJSMBUNMVmFylJOUKYGUfZSMBGRhdGGUXZQojAMvWmmUjAMvT2SUjAUvRUhzY5SMBy9ub2xvZ2+UjAMvRlOUjAQvTURklIwCJCiUjAMvVFCUjAIkKZSMCi9zdGQ6YysrMjCUZXNijAdydW5maWxllGgIjAhjcHBwYXRoc5RdlCiMVkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxWZW5kb3JcVnVsa2FuU0RLXDEuNC4zMjEuMVxJbmNsdWRllIxWQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFZlbmRvclxWdWxrYW5TREtcMS40LjMyMS4xXEluY2x1ZGWUjEBDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cVmVuZG9yXEltR3VplIw6QzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZZSMQEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb22UjD5DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cVmVuZG9yXGdsbZSMVkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxWZW5kb3JcVnVsa2FuU0RLXDEuNC4zMjEuMVxJbmNsdWRllIxAQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFZlbmRvclxJbUd1aZSMPkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxWZW5kb3Jcc3RilIw8QzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXFRoZW9yZW1cU291cmNllIw6QzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZZSMQEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb22UZYwHdmFyaWFudJSMBURlYnVnlIwIcGxhdGZvcm2UjAN4NjSUdWJzLg==
+gASVjCEAAAAAAAB9lCiMDFNvdXJjZSBGaWxlc5RdlCiMVUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cQ29yZVxBcHBsaWNhdGlvbi5jcHCUjE9DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcTGF5ZXIuY3BwlIxUQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxDb3JlXExheWVyU3RhY2suY3BwlIxNQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxDb3JlXExvZy5jcHCUjFBDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcTG9nZ2VyLmNwcJSMVUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cSW1HdWlcSW1HdWlMYXllci5jcHCUjFBDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXE1hdGhcQXhNYXRoLmNwcJSMVkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cUmVuZGVyZXJcSW5zdGFuY2UuY3BwlIxWQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxSZW5kZXJlclxSZW5kZXJlci5jcHCUjFVDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFV0aWxzXEZpbGVTeXN0ZW0uY3BwlIxWQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxVdGlsc1xTdHJpbmdVdGlscy5jcHCUjERDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXGF4cGNoLmNwcJSMWEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cTGludXhcWExpYldpbmRvdy5jcHCUjFxDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5BZGFwdGVyLmNwcJSMW0M6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkJ1ZmZlci5jcHCUjGJDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5Db21tYW5kQnVmZmVyLmNwcJSMXEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkNvbnRleHQuY3BwlIxbQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuRGV2aWNlLmNwcJSMYEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkZyYW1lYnVmZmVyLmNwcJSMWkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkltYWdlLmNwcJSMXkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkltYWdlVmlldy5jcHCUjF1DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5JbnN0YW5jZS5jcHCUjGNDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5NYXRlcmlhbFNoYWRlci5jcHCUjF1DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5QaXBlbGluZS5jcHCUjFpDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5RdWV1ZS5jcHCUjF9DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5SZW5kZXJQYXNzLmNwcJSMZEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthblJlbmRlclBhc3NDYWNoZS5jcHCUjF1DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5SZXNvdXJjZS5jcHCUjFtDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5TaGFkZXIuY3BwlIxeQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuU3dhcGNoYWluLmNwcJSMXEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthblRleHR1cmUuY3BwlIxZQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuVmlldy5jcHCUjFtDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFdpbmRvd3NcV2luMzJXaW5kb3cuY3BwlIxcQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxXaW5kb3dzXFdpbmRvd3NJbnB1dC5jcHCUZYwMSGVhZGVyIEZpbGVzlF2UKIxTQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxDb3JlXEFwcGxpY2F0aW9uLmiUjE5DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcQXNzZXJ0LmiUjExDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcQmFzZS5olIxSQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxDb3JlXEVudHJ5UG9pbnQuaJSMTUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cQ29yZVxJbnB1dC5olIxQQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxDb3JlXEtleUNvZGVzLmiUjE1DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcTGF5ZXIuaJSMUkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cQ29yZVxMYXllclN0YWNrLmiUjEtDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcTG9nLmiUjE5DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcTG9nZ2VyLmiUjFhDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXENvcmVcTW91c2VCdXR0b25Db2Rlcy5olIxOQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxDb3JlXFdpbmRvdy5olIxZQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxFdmVudFxBcHBsaWNhdGlvbkV2ZW50LmiUjE5DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXEV2ZW50XEV2ZW50LmiUjFFDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXEV2ZW50XEtleUNvZGVzLmiUjFFDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXEV2ZW50XEtleUV2ZW50LmiUjFNDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXEV2ZW50XE1vdXNlRXZlbnQuaJSMU0M6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cSW1HdWlcSW1HdWlMYXllci5olIxOQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxNYXRoXEF4TWF0aC5olIxLQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxNYXRoXE1hdC5olIxLQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxNYXRoXFZlYy5olIxTQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxSZW5kZXJlclxBZGFwdGVyLmiUjFlDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFJlbmRlcmVyXENvbW1hbmRCdWZmZXIuaJSMU0M6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cUmVuZGVyZXJcQ29udGV4dC5olIxSQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxSZW5kZXJlclxEZXZpY2UuaJSMVUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cUmVuZGVyZXJcR2xvYmFsVWJvLmiUjFRDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFJlbmRlcmVyXEluc3RhbmNlLmiUjFdDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFJlbmRlcmVyXE1hdGVyaWFsVWJvLmiUjFRDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFJlbmRlcmVyXFJlbmRlcmVyLmiUjFtDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFJlbmRlcmVyXFJlbmRlclBhc3NDYWNoZS5olIxUQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxSZW5kZXJlclxSZXNvdXJjZS5olIxYQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxSZW5kZXJlclxSZXNvdXJjZVZpZXcuaJSMUkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcQXhpb21cUmVuZGVyZXJcU2hhZGVyLmiUjFVDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFJlbmRlcmVyXFN3YXBjaGFpbi5olIxTQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxSZW5kZXJlclxUZXh0dXJlLmiUjFJDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFJlbmRlcmVyXFZlcnRleC5olIxTQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxBeGlvbVxVdGlsc1xGaWxlU3lzdGVtLmiUjFRDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXEF4aW9tXFV0aWxzXFN0cmluZ1V0aWxzLmiUjEJDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXGF4cGNoLmiUjFZDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXExpbnV4XFhMaWJXaW5kb3cuaJSMWkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkFkYXB0ZXIuaJSMWUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkJ1ZmZlci5olIxgQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuQ29tbWFuZEJ1ZmZlci5olIxaQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuQ29udGV4dC5olIxZQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuRGV2aWNlLmiUjF5DOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5GcmFtZWJ1ZmZlci5olIxYQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuSW1hZ2UuaJSMXEM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbkltYWdlVmlldy5olIxbQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuSW5zdGFuY2UuaJSMYUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthbk1hdGVyaWFsU2hhZGVyLmiUjFtDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5QaXBlbGluZS5olIxYQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuUXVldWUuaJSMXUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthblJlbmRlclBhc3MuaJSMYkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthblJlbmRlclBhc3NDYWNoZS5olIxbQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuUmVzb3VyY2UuaJSMWUM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cVnVsa2FuXFZ1bGthblNoYWRlci5olIxcQzpcVXNlcnNcQnVzc2FiXERvY3VtZW50c1xVU1BcQ29kZXMgQysrXEF4aW9tXEF4aW9tXFNvdXJjZVxQbGF0Zm9ybVxWdWxrYW5cVnVsa2FuU3dhcGNoYWluLmiUjFpDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5UZXh0dXJlLmiUjFdDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFZ1bGthblxWdWxrYW5WaWV3LmiUjFlDOlxVc2Vyc1xCdXNzYWJcRG9jdW1lbnRzXFVTUFxDb2RlcyBDKytcQXhpb21cQXhpb21cU291cmNlXFBsYXRmb3JtXFdpbmRvd3NcV2luMzJXaW5kb3cuaJSMWkM6XFVzZXJzXEJ1c3NhYlxEb2N1bWVudHNcVVNQXENvZGVzIEMrK1xBeGlvbVxBeGlvbVxTb3VyY2VcUGxhdGZvcm1cV2luZG93c1xXaW5kb3dzSW5wdXQuaJRljA1Mb2NhbCBIZWFkZXJzlF2UjA5SZXNvdXJjZSBGaWxlc5RdlIwLT3RoZXIgRmlsZXOUXZR1Lg==
