@@ -5,6 +5,7 @@
 #include <bit>
 #include <chrono>
 #include <cstring>
+#include <expected>
 #include <filesystem>
 #include <format>
 #include <functional>

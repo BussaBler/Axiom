@@ -1,7 +1,7 @@
 #pragma once
 #include "Renderer/Texture.h"
 #include "Core/Assert.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
@@ -14,14 +14,13 @@ namespace Axiom {
 
 		void init(TextureCreateInfo& createInfo);
 
-		VkSampler getHandle() const { return sampler; }
-		VkImageView getImageView() const;
+		Vk::Sampler getHandle() const { return sampler; }
+		Vk::ImageView getImageView() const;
 
 	private:
 		VulkanDevice& device;
 		std::unique_ptr<VulkanImage> image;
 		ResourceViewCreateInfo imageViewCreateInfo;
-		VkSampler sampler = VK_NULL_HANDLE;
+		Vk::Sampler sampler = nullptr;
 	};
 }
-

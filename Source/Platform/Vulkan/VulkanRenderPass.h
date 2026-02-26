@@ -2,7 +2,7 @@
 #include "Renderer/RenderPassCache.h"
 #include "Renderer/Swapchain.h"
 #include "Math/AxMath.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanSwapchain;
@@ -26,7 +26,7 @@ namespace Axiom {
 	class VulkanRenderPass {
 	public:
 		VulkanRenderPass(VulkanDevice& vkDevice, RenderPassCreateInfo rendePassCreateInfo) :
-			device(vkDevice), renderPass(VK_NULL_HANDLE), createInfo(rendePassCreateInfo) {}
+			device(vkDevice), renderPass(nullptr), createInfo(rendePassCreateInfo) {}
 
 		~VulkanRenderPass();
 
@@ -35,7 +35,7 @@ namespace Axiom {
 		void end(VulkanCommandBuffer& commandBuffer) const;
 		void recreateFramebuffers(Swapchain& swapchain);
 
-		VkRenderPass getHandle() const { return renderPass; }
+		Vk::RenderPass getHandle() const { return renderPass; }
 
 	private:
 		void createFramebuffers(VulkanSwapchain& swapchain);
@@ -43,10 +43,10 @@ namespace Axiom {
 
 	private:
 		VulkanDevice& device;
-		VkRenderPass renderPass;
+		Vk::RenderPass renderPass;
 		RenderPassCreateInfo createInfo;
 		RenderPassState state = RenderPassState::NOT_ALLOCATED;
-		std::vector<VkFramebuffer> framebuffers;
+		std::vector<Vk::Framebuffer> framebuffers;
 	};
 }
 

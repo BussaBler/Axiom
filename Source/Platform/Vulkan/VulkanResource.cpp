@@ -8,13 +8,13 @@ namespace Axiom {
 	std::mutex VulkanResource::idMutex;
 
 	VulkanResource::VulkanResource(VulkanDevice& vkDevice)
-		: device(vkDevice), memory(VK_NULL_HANDLE), currentAccessFlags(0), memorySize(0), id(generateId()), resourceView(nullptr) {
+		: device(vkDevice), memory(nullptr), currentAccessFlags(0), memorySize(0), id(generateId()), resourceView(nullptr) {
 	}
 
 	VulkanResource::~VulkanResource() {
-		if (memory != VK_NULL_HANDLE) {
-			vkFreeMemory(device.getHandle(), memory, nullptr);
-			memory = VK_NULL_HANDLE;
+		if (memory) {
+			device.getHandle().freeMemory(memory);
+			memory = nullptr;
 		}
 	}
 
@@ -23,109 +23,115 @@ namespace Axiom {
 		return idCounter++;
 	}
 
-	VkFormat VulkanResource::getVkFormat(ResourceFormat format) {
+	Vk::Format VulkanResource::getVkFormat(ResourceFormat format) {
 		switch (format) {
-			case Axiom::Unknown:
-				return VK_FORMAT_UNDEFINED;
+			case ResourceFormat::Unknown:
+				return Vk::Format::eUndefined;
 				break;
-			case Axiom::R8_U:
-				return VK_FORMAT_R8_UNORM;
+			case ResourceFormat::R8_U:
+				return Vk::Format::eR8Unorm;
 				break;
-			case Axiom::RG8_U:
-				return VK_FORMAT_R8G8_UNORM;
+			case ResourceFormat::RG8_U:
+				return Vk::Format::eR8G8Unorm;
 				break;
-			case Axiom::RGBA8_U:
-				return VK_FORMAT_R8G8B8A8_UNORM;
+			case ResourceFormat::RGB8_U:
+				return Vk::Format::eR8G8B8Unorm;
 				break;
-			case Axiom::RGBA8_S:
-				return VK_FORMAT_R8G8B8A8_SRGB;
+			case ResourceFormat::RGBA8_U:
+				return Vk::Format::eR8G8B8A8Unorm;
 				break;
-			case Axiom::BRGA8_U:
-				return VK_FORMAT_B8G8R8A8_UNORM;
+			case ResourceFormat::RGBA8_S:
+				return Vk::Format::eR8G8B8Srgb;
 				break;
-			case Axiom::BRGA8_S:
-				return VK_FORMAT_B8G8R8A8_SRGB;
+			case ResourceFormat::BRGA8_U:
+				return Vk::Format::eB8G8R8A8Unorm;
 				break;
-			case Axiom::RGBA16_F:
-				return VK_FORMAT_R16G16B16A16_SFLOAT;
+			case ResourceFormat::BRGA8_S:
+				return Vk::Format::eB8G8R8A8Srgb;
 				break;
-			case Axiom::RGBA32_F:
-				return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ResourceFormat::RGBA16_F:
+				return Vk::Format::eR16G16B16A16Sfloat;
 				break;
-			case Axiom::D24S8:
-				return VK_FORMAT_D24_UNORM_S8_UINT;
+			case ResourceFormat::RGBA32_F:
+				return Vk::Format::eR32G32B32A32Sfloat;
 				break;
-			case Axiom::D32_F:
-				return VK_FORMAT_D32_SFLOAT;
+			case ResourceFormat::D24S8:
+				return Vk::Format::eD24UnormS8Uint;
 				break;
-			case Axiom::D32S8:
-				return VK_FORMAT_D32_SFLOAT_S8_UINT;
+			case ResourceFormat::D32_F:
+				return Vk::Format::eD32Sfloat;
+				break;
+			case ResourceFormat::D32S8:
+				return Vk::Format::eD32SfloatS8Uint;
 				break;
 			default:
-				AX_CORE_LOG_ERROR("Unknown ResourceFormat in VulkanResource::getVkFormat");
-				return VK_FORMAT_UNDEFINED;
+				AX_CORE_LOG_ERROR("Unknown ResourceFormat in VulkanResource::getVkFormat {}", static_cast<int>(format));
+				return Vk::Format::eUndefined;
 				break;
 		}
 	}
 
-	ResourceFormat VulkanResource::getResourceFormat(VkFormat format) {
+	ResourceFormat VulkanResource::getResourceFormat(Vk::Format format) {
 		switch (format) {
-			case VK_FORMAT_UNDEFINED:
+			case Vk::Format::eUndefined:
 				return ResourceFormat::Unknown;
 				break;
-			case VK_FORMAT_R8_UNORM:
+			case Vk::Format::eR8Unorm:
 				return ResourceFormat::R8_U;
 				break;
-			case VK_FORMAT_R8G8_UNORM:
+			case Vk::Format::eR8G8Unorm:
 				return ResourceFormat::RG8_U;
 				break;
-			case VK_FORMAT_R8G8B8A8_UNORM:
+			case Vk::Format::eR8G8B8Unorm:
+				return ResourceFormat::RGB8_U;
+				break;
+			case Vk::Format::eR8G8B8A8Unorm:
 				return ResourceFormat::RGBA8_U;
 				break;
-			case VK_FORMAT_R8G8B8A8_SRGB:
+			case Vk::Format::eR8G8B8A8Srgb:
 				return ResourceFormat::RGBA8_S;
 				break;
-			case VK_FORMAT_B8G8R8A8_UNORM:
+			case Vk::Format::eB8G8R8A8Unorm:
 				return ResourceFormat::BRGA8_U;
 				break;
-			case VK_FORMAT_B8G8R8A8_SRGB:
+			case Vk::Format::eB8G8R8Srgb:
 				return ResourceFormat::BRGA8_S;
 				break;
-			case VK_FORMAT_R16G16B16A16_SFLOAT:
+			case Vk::Format::eR16G16B16A16Sfloat:
 				return ResourceFormat::RGBA16_F;
 				break;
-			case VK_FORMAT_R32G32B32A32_SFLOAT:
+			case Vk::Format::eR32G32B32A32Sfloat:
 				return ResourceFormat::RGBA32_F;
 				break;
-			case VK_FORMAT_D24_UNORM_S8_UINT:
+			case Vk::Format::eD24UnormS8Uint:
 				return ResourceFormat::D24S8;
 				break;
-			case VK_FORMAT_D32_SFLOAT:
+			case Vk::Format::eD32Sfloat:
 				return ResourceFormat::D32_F;
 				break;
-			case VK_FORMAT_D32_SFLOAT_S8_UINT:
+			case Vk::Format::eD32SfloatS8Uint:
 				return ResourceFormat::D32S8;
 				break;
 			default:
-				AX_CORE_LOG_ERROR("Unknown VkFormat in VulkanResource::getResourceFormat");
+				AX_CORE_LOG_ERROR("Unknown VkFormat in VulkanResource::getResourceFormat {}", static_cast<int>(format));
 				return ResourceFormat::Unknown;
 				break;
 		}
 	}
 
-	VkMemoryPropertyFlags VulkanResource::getMemoryPropertyFlags(uint32_t memoryUsage) {
-		VkMemoryPropertyFlags flags = 0;
+	Vk::MemoryPropertyFlags VulkanResource::getMemoryPropertyFlags(uint32_t memoryUsage) {
+		Vk::MemoryPropertyFlags flags{};
 		if (memoryUsage & ResourceMemoryUsage::GPU_Only) {
-			flags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+			flags |= Vk::MemoryPropertyFlagBits::eDeviceLocal;
 		}
 		if (memoryUsage & ResourceMemoryUsage::CPU_Only) {
-			flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			flags |= Vk::MemoryPropertyFlagBits::eHostVisible | Vk::MemoryPropertyFlagBits::eHostCoherent;
 		}
 		if (memoryUsage & ResourceMemoryUsage::CPU_To_GPU) {
-			flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			flags |= Vk::MemoryPropertyFlagBits::eHostVisible | Vk::MemoryPropertyFlagBits::eHostCoherent;
 		}
 		if (memoryUsage & ResourceMemoryUsage::GPU_To_CPU) {
-			flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+			flags |= Vk::MemoryPropertyFlagBits::eHostVisible | Vk::MemoryPropertyFlagBits::eHostCoherent;
 		}
 		return flags;
 	}

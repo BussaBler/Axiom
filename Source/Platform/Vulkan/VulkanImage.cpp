@@ -6,12 +6,12 @@
 #include "VulkanBuffer.h"
 
 namespace Axiom {
-	VulkanImage::VulkanImage(VulkanDevice& vkDevice, VkImage vkImage, VkImageLayout vkCurrentLayout)
-		: VulkanResource(vkDevice), image(vkImage), currentLayout(vkCurrentLayout), format(VK_FORMAT_UNDEFINED) {}
+	VulkanImage::VulkanImage(VulkanDevice& vkDevice, Vk::Image vkImage, Vk::ImageLayout vkCurrentLayout)
+		: VulkanResource(vkDevice), image(vkImage), currentLayout(vkCurrentLayout), format(Vk::Format::eUndefined) {}
 
 	VulkanImage::~VulkanImage() {
 		if (image && shouldClean) {
-			vkDestroyImage(device.getHandle(), image, nullptr);
+			device.getHandle().destroyImage(image);
 			image = VK_NULL_HANDLE;
 		}
 	}
@@ -27,11 +27,11 @@ namespace Axiom {
 		stagingBuffer.loadData(data, size, offset);
 
 		VulkanCommandBuffer commandBuffer(device);
-		commandBuffer.allocateAndBeginSingleUse(device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getCommandPool());
-		transitionLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		commandBuffer.allocateAndBeginSingleUse(device.getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute)->getCommandPool());
+		transitionLayout(commandBuffer, Vk::ImageLayout::eTransferDstOptimal);
 		copyFromBuffer(commandBuffer, stagingBuffer.getHandle());
-		transitionLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-		commandBuffer.endSingleUse(device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getHandle(), device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getCommandPool());
+		transitionLayout(commandBuffer, Vk::ImageLayout::eShaderReadOnlyOptimal);
+		commandBuffer.endSingleUse(device.getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute)->getHandle(), device.getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute)->getCommandPool());
 	}
 
 	ResourceView& VulkanImage::getView(const ResourceViewCreateInfo& resourceViewCreateInfo) {
@@ -47,101 +47,107 @@ namespace Axiom {
 	void VulkanImage::init(const ResourceCreateInfo& resourceCreateInfo) {
 		createInfo = resourceCreateInfo;
 		format = getVkFormat(resourceCreateInfo.format);
-		VkImageCreateInfo imageCreateInfo{};
-		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageCreateInfo.arrayLayers = 1;
-		imageCreateInfo.extent = { resourceCreateInfo.width, resourceCreateInfo.height, 1 };
-		imageCreateInfo.format = format;
-		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D; // TODO: make this configurable
-		imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageCreateInfo.mipLevels = 1; // TODO: make this configurable
-		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL; // TODO: make this configurable
-		imageCreateInfo.usage = getVkImageUsageFlags(resourceCreateInfo.usage);
-		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		AX_CORE_ASSERT(vkCreateImage(device.getHandle(), &imageCreateInfo, nullptr, &image) == VK_SUCCESS, "Failed to create image!");
+		Vk::ImageCreateInfo imageCreateInfo(
+			{},
+			Vk::ImageType::e2D, // TODO: make this configurable
+			format,
+			{ resourceCreateInfo.width, resourceCreateInfo.height, 1 },
+			1, // TODO: make this configurable
+			1, // TODO: make this configurable
+			Vk::SampleCountFlagBits::e1,
+			Vk::ImageTiling::eOptimal, // TODO: make this configurable
+			getVkImageUsageFlags(resourceCreateInfo.usage),
+			Vk::SharingMode::eExclusive,
+			{}
+		);
+		Vk::ResultValue<Vk::Image> imageResult = device.getHandle().createImage(imageCreateInfo);
 
-		VkMemoryRequirements memoryRequirements;
-		vkGetImageMemoryRequirements(device.getHandle(), image, &memoryRequirements);
+		AX_CORE_ASSERT(imageResult.result == Vk::Result::eSuccess, "Failed to create image!");
+		image = imageResult.value;
+
+		Vk::MemoryRequirements memoryRequirements = device.getHandle().getImageMemoryRequirements(image);
 		memorySize = memoryRequirements.size;
-		VkMemoryAllocateInfo allocateInfo{};
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocateInfo.allocationSize = memoryRequirements.size;
-		allocateInfo.memoryTypeIndex = device.getAdapter().findMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT); // TODO: make this configurable
-		AX_CORE_ASSERT(vkAllocateMemory(device.getHandle(), &allocateInfo, nullptr, &memory) == VK_SUCCESS, "Failed to allocate image memory!");
-	
-		vkBindImageMemory(device.getHandle(), image, memory, 0);
+		Vk::MemoryAllocateInfo allocateInfo(memoryRequirements.size, device.getAdapter().findMemoryType(memoryRequirements.memoryTypeBits, Vk::MemoryPropertyFlagBits::eDeviceLocal)); // TODO: make this configurable
+		Vk::ResultValue<Vk::DeviceMemory> memoryResult = device.getHandle().allocateMemory(allocateInfo);
+
+		AX_CORE_ASSERT(memoryResult.result == Vk::Result::eSuccess, "Failed to allocate image memory!");
+		memory = memoryResult.value;
+
+		AX_CORE_ASSERT(device.getHandle().bindImageMemory(image, memory, 0) == Vk::Result::eSuccess, "Failed to bind image memory!");
 		shouldClean = true;
 	}
 
-	void VulkanImage::transitionLayout(VulkanCommandBuffer& commandBuffer, VkImageLayout newLayout) {
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = currentLayout;
-		barrier.newLayout = newLayout;
-		barrier.srcQueueFamilyIndex = device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getFamilyIndex();
-		barrier.dstQueueFamilyIndex = device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getFamilyIndex();
-		barrier.image = image;
-		barrier.subresourceRange.aspectMask = VulkanImageView::getVkImageAspectFlags(createInfo.aspectMask);
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+	void VulkanImage::transitionLayout(VulkanCommandBuffer& commandBuffer, Vk::ImageLayout newLayout) {
+		Vk::ImageMemoryBarrier barrier(
+			{},
+			{},
+			currentLayout,
+			newLayout,
+			device.getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute)->getFamilyIndex(),
+			device.getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute)->getFamilyIndex(),
+			image,
+			{
+				VulkanImageView::getVkImageAspectFlags(createInfo.aspectMask),
+				0,
+				1,
+				0,
+				1
+			}
+		);
 
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
+		Vk::PipelineStageFlags sourceStage;
+		Vk::PipelineStageFlags destinationStage;
 
-		if (currentLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		if (currentLayout == Vk::ImageLayout::eUndefined && newLayout == Vk::ImageLayout::eTransferDstOptimal) {
+			barrier.setSrcAccessMask(Vk::AccessFlags{});
+			barrier.setDstAccessMask(Vk::AccessFlagBits::eTransferWrite);
+			sourceStage = Vk::PipelineStageFlagBits::eTopOfPipe;
+			destinationStage = Vk::PipelineStageFlagBits::eTransfer;
 		} 
-		else if (currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		else if (currentLayout == Vk::ImageLayout::eTransferDstOptimal && newLayout == Vk::ImageLayout::eShaderReadOnlyOptimal) {
+			barrier.setSrcAccessMask(Vk::AccessFlagBits::eTransferWrite);
+			barrier.setDstAccessMask(Vk::AccessFlagBits::eShaderRead);
+			sourceStage = Vk::PipelineStageFlagBits::eTransfer;
+			destinationStage = Vk::PipelineStageFlagBits::eFragmentShader;
 		}
 		else {
 			AX_CORE_LOG_ERROR("Unsupported layout transition!");
 			return;
 		}
-		vkCmdPipelineBarrier(commandBuffer.getHandle(), sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+		commandBuffer.getHandle().pipelineBarrier(sourceStage, destinationStage, {}, {}, {}, barrier);
 		currentLayout = newLayout;
 	}
 
-	void VulkanImage::copyFromBuffer(VulkanCommandBuffer& commandBuffer, VkBuffer buffer) const {
-		VkBufferImageCopy copyRegion{};
-		copyRegion.bufferOffset = 0;
-		copyRegion.bufferRowLength = 0;
-		copyRegion.bufferImageHeight = 0;
+	void VulkanImage::copyFromBuffer(VulkanCommandBuffer& commandBuffer, Vk::Buffer buffer) const {
+		Vk::BufferImageCopy copyRegion{};
+		copyRegion.setBufferOffset(0);
+		copyRegion.setBufferRowLength(0);
+		copyRegion.setBufferImageHeight(0);
 
-		copyRegion.imageSubresource.aspectMask = VulkanImageView::getVkImageAspectFlags(createInfo.aspectMask);
-		copyRegion.imageSubresource.mipLevel = 0;
-		copyRegion.imageSubresource.baseArrayLayer = 0;
-		copyRegion.imageSubresource.layerCount = 1;
+		copyRegion.setImageSubresource({ VulkanImageView::getVkImageAspectFlags(createInfo.aspectMask) , 0, 0, 1 });
+		copyRegion.setImageOffset({ 0, 0, 0 });
+		copyRegion.setImageExtent({ createInfo.width, createInfo.height, 1 });
 
-		copyRegion.imageOffset = { 0, 0, 0 };
-		copyRegion.imageExtent = { createInfo.width, createInfo.height, 1 };
-		vkCmdCopyBufferToImage(commandBuffer.getHandle(), buffer, image, currentLayout, 1, &copyRegion);
+		commandBuffer.getHandle().copyBufferToImage(buffer, image, currentLayout, copyRegion);
 	}
 
-	VkImageUsageFlags VulkanImage::getVkImageUsageFlags(uint32_t usage) {
-		VkImageUsageFlags flags{};
+	Vk::ImageUsageFlags VulkanImage::getVkImageUsageFlags(uint32_t usage) {
+		Vk::ImageUsageFlags flags{};
 		if (usage & RenderTarget) {
-			flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			flags |= Vk::ImageUsageFlagBits::eColorAttachment;
 		}
 		if (usage & ShaderResource) {
-			flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+			flags |= Vk::ImageUsageFlagBits::eSampled;
 		}
 		if (usage & TransferDst) {
-			flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			flags |= Vk::ImageUsageFlagBits::eTransferDst;
 		}
 		if (usage & TransferSrc) {
-			flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+			flags |= Vk::ImageUsageFlagBits::eTransferSrc;
 		}
 		if (usage & DepthStencil) {
-			flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			flags |= Vk::ImageUsageFlagBits::eDepthStencilAttachment;
 		}
 		return flags;
 	}

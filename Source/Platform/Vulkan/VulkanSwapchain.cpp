@@ -6,20 +6,20 @@
 
 namespace Axiom {
 	VulkanSwapchain::VulkanSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, VulkanDevice& vkDevice, VulkanQueue& presentQueue)
-		: Swapchain(swapchainCreateInfo), device(vkDevice), presentQueue(presentQueue), swapchain(VK_NULL_HANDLE), surface(VK_NULL_HANDLE),
-			swapChainImageFormat(VK_FORMAT_UNDEFINED) {
+		: Swapchain(swapchainCreateInfo), device(vkDevice), presentQueue(presentQueue), swapchain(nullptr), surface(nullptr),
+			swapChainImageFormat(Vk::Format::eUndefined) {
 
 	}
 
 	VulkanSwapchain::~VulkanSwapchain() {
 		AX_CORE_LOG_INFO("Destroying Vulkan Swapchain...");
 		if (swapchain) {
-			vkDestroySwapchainKHR(device.getHandle(), swapchain, nullptr);
-			swapchain = VK_NULL_HANDLE;
+			device.getHandle().destroySwapchainKHR(swapchain);
+			swapchain = nullptr;
 		}
 		if (surface) {
-			vkDestroySurfaceKHR(device.getAdapter().getInstance().getHandle(), surface, nullptr);
-			surface = VK_NULL_HANDLE;
+			device.getAdapter().getInstance().getHandle().destroySurfaceKHR(surface);
+			surface = nullptr;
 		}
 
 	}
@@ -28,16 +28,16 @@ namespace Axiom {
 		if (!swapchain) {
 			AX_CORE_LOG_INFO("Building Vulkan Swapchain...");
 		}
-		VkSurfaceKHR newSurface = device.getAdapter().getInstance().createSurface(swapchainCreateInfo.windowHandle);
+		Vk::SurfaceKHR newSurface = device.getAdapter().getInstance().createSurface(swapchainCreateInfo.windowHandle);
 		auto surfaceFormats = device.getAdapter().getSurfaceFormats(newSurface);
 		auto presentModes = device.getAdapter().getPresentModes(newSurface);
 		uint32_t frameCount = swapchainCreateInfo.desiredFrameCount;
-		VkSurfaceCapabilitiesKHR surfaceCapabilities = device.getAdapter().getSurfaceCapabilities(newSurface);
-		VkImageUsageFlags supportedUsageFlags = surfaceCapabilities.supportedUsageFlags;
+		Vk::SurfaceCapabilitiesKHR surfaceCapabilities = device.getAdapter().getSurfaceCapabilities(newSurface);
+		Vk::ImageUsageFlags supportedUsageFlags = surfaceCapabilities.supportedUsageFlags;
 
-		VkSurfaceFormatKHR swapChainSurfaceFormat = surfaceFormats[0];
+		Vk::SurfaceFormatKHR swapChainSurfaceFormat = surfaceFormats[0];
 		for (const auto& format : surfaceFormats) {
-			if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			if (format.format == Vk::Format::eB8G8R8A8Unorm && format.colorSpace == Vk::ColorSpaceKHR::eSrgbNonlinear) {
 				swapChainSurfaceFormat = format;
 				break;
 			}
@@ -46,18 +46,18 @@ namespace Axiom {
 		frameCount = Math::axClamp(frameCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
 
 		// TODO: add a config for this
-		VkPresentModeKHR swapChainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+		Vk::PresentModeKHR swapChainPresentMode = Vk::PresentModeKHR::eFifo;
 		for (const auto& presentMode : presentModes) {
-			if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			if (presentMode == Vk::PresentModeKHR::eMailbox) {
 				swapChainPresentMode = presentMode;
 				break;
 			}
-			else if (presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+			else if (presentMode == Vk::PresentModeKHR::eImmediate) {
 				swapChainPresentMode = presentMode;
 			}
 		}
 
-		VkExtent2D swapChainExtent{swapchainCreateInfo.width, swapchainCreateInfo.height};
+		Vk::Extent2D swapChainExtent(swapchainCreateInfo.width, swapchainCreateInfo.height);
 		if (surfaceCapabilities.currentExtent.width != UINT32_MAX) {
 			swapChainExtent = surfaceCapabilities.currentExtent;
 		}
@@ -66,57 +66,54 @@ namespace Axiom {
 			swapChainExtent.height = Math::axClamp(swapChainExtent.height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
 		}
 
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.clipped = VK_TRUE;
-		createInfo.surface = newSurface;
-		createInfo.imageColorSpace = swapChainSurfaceFormat.colorSpace;
-		createInfo.imageFormat = swapChainSurfaceFormat.format;
-		createInfo.presentMode = swapChainPresentMode;
-		createInfo.imageExtent = swapChainExtent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0;
-		createInfo.pQueueFamilyIndices = nullptr;
-		createInfo.preTransform = surfaceCapabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-		createInfo.minImageCount = frameCount;
-		createInfo.oldSwapchain = swapchain ? swapchain : VK_NULL_HANDLE;
+		Vk::SwapchainCreateInfoKHR createInfo(
+			{},
+			newSurface,
+			frameCount,
+			swapChainSurfaceFormat.format,
+			swapChainSurfaceFormat.colorSpace,
+			swapChainExtent,
+			1,
+			Vk::ImageUsageFlagBits::eColorAttachment,
+			Vk::SharingMode::eExclusive,
+			0,
+			surfaceCapabilities.currentTransform,
+			Vk::CompositeAlphaFlagBitsKHR::eOpaque,
+			swapChainPresentMode,
+			Vk::True,
+			swapchain ? swapchain : nullptr
+		);
+		Vk::ResultValue<Vk::SwapchainKHR> newSwapchainResult = device.getHandle().createSwapchainKHR(createInfo);
 
-		VkSwapchainKHR newSwapchain;
-		VkResult result = vkCreateSwapchainKHR(device.getHandle(), &createInfo, nullptr, &newSwapchain);
-		if (result != VK_SUCCESS) {
-			AX_CORE_LOG_ERROR("Failed to create swapchain! VkResult: {0}", static_cast<int>(result));
+		if (newSwapchainResult.result != Vk::Result::eSuccess) {
+			AX_CORE_LOG_ERROR("Failed to create swapchain! VkResult: {}", Vk::to_string(newSwapchainResult.result));
 			return;
 		}
 
 		if (swapchain) {
-			vkDestroySwapchainKHR(device.getHandle(), swapchain, nullptr);
-			vkDestroySurfaceKHR(device.getAdapter().getInstance().getHandle(), surface, nullptr);
+			device.getHandle().destroySwapchainKHR(swapchain);
+			device.getAdapter().getInstance().getHandle().destroySurfaceKHR(surface);
 		}
 		
-		swapchain = newSwapchain;
+		swapchain = newSwapchainResult.value;
 		surface = newSurface;
 
-		uint32_t imageCount = 0;
-		vkGetSwapchainImagesKHR(device.getHandle(), swapchain, &imageCount, nullptr);
-		frames.resize(imageCount);
-		vkGetSwapchainImagesKHR(device.getHandle(), swapchain, &imageCount, frames.data());
+		Vk::ResultValue<std::vector<Vk::Image>> framesResult = device.getHandle().getSwapchainImagesKHR(swapchain);
+		AX_CORE_ASSERT(framesResult.result == Vk::Result::eSuccess, "Failed to get swapchain images!");
+		frames = framesResult.value;
 
 		ResourceViewCreateInfo resourceViewCreateInfo{};
 		resourceViewCreateInfo.format = VulkanResource::getResourceFormat(swapChainSurfaceFormat.format);
 		resourceViewCreateInfo.aspectMask = ResourceAspectMask::Color;
 
 		frameImages.clear();
-		frameImages.reserve(imageCount);
-		for (uint32_t i = 0; i < imageCount; i++) {
-			frameImages.push_back(std::make_unique<VulkanImage>(device, frames[i], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR));
+		frameImages.reserve(frames.size());
+		for (uint32_t i = 0; i < frames.size(); i++) {
+			frameImages.push_back(std::make_unique<VulkanImage>(device, frames[i], Vk::ImageLayout::ePresentSrcKHR));
 			frameImages[i]->getView(resourceViewCreateInfo);
 		}
 
-		depthImage = std::make_unique<VulkanImage>(device, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED);
+		depthImage = std::make_unique<VulkanImage>(device, nullptr, Vk::ImageLayout::eUndefined);
 		ResourceCreateInfo depthImageCreateInfo{};
 		depthImageCreateInfo.width = swapchainCreateInfo.width;
 		depthImageCreateInfo.height = swapchainCreateInfo.height;
@@ -133,26 +130,21 @@ namespace Axiom {
 	void VulkanSwapchain::rebuild(const SwapchainCreateInfo& swapchainCreateInfo) {
 		this->swapchainCreateInfo = swapchainCreateInfo;
 		isRecreating = true;
-		vkDeviceWaitIdle(device.getHandle());
+		device.waitIdle();
 		build();
 		isRecreating = false;
 	}
 
 	void VulkanSwapchain::present(Context& context) {
 		VulkanContext& vkContext = static_cast<VulkanContext&>(context);
-		std::array<VkSwapchainKHR, 1> swapchains = { swapchain };
-		std::array<VkSemaphore, 1> waitSemaphores = { vkContext.getCurrentRenderFinishedSemaphore() };
+		std::array<Vk::SwapchainKHR, 1> swapchains = { swapchain };
+		std::array<Vk::Semaphore, 1> waitSemaphores = { vkContext.getCurrentRenderFinishedSemaphore() };
 
-		VkPresentInfoKHR presentInfo{};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.swapchainCount = static_cast<uint32_t>(swapchains.size());
-		presentInfo.pSwapchains = swapchains.data();
-		presentInfo.pImageIndices = &currentImageIndex;
-		presentInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
-		presentInfo.pWaitSemaphores = waitSemaphores.data();
+		Vk::PresentInfoKHR presentInfo(waitSemaphores, swapchains, currentImageIndex);
 
-		VkResult result = vkQueuePresentKHR(presentQueue.getHandle(), &presentInfo);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+
+		Vk::Result result = presentQueue.getHandle().presentKHR(presentInfo);
+		if (result == Vk::Result::eErrorOutOfDateKHR || result == Vk::Result::eSuboptimalKHR) {
 			AX_CORE_LOG_WARN("Swapchain out of date during present, needs to be rebuilt");
 			isRecreating = true;
 			return;
@@ -165,17 +157,18 @@ namespace Axiom {
 		AX_CORE_ASSERT(vkContext.getFrameCount() <= frameImages.size(), "Not enough swapchain images for the context frame count!");
 
 		VulkanContextFrame currentFrame = vkContext.getCurrentFrameResource();
-		VkResult result = vkAcquireNextImageKHR(device.getHandle(), swapchain, UINT64_MAX, currentFrame.imageAvailableSemaphore, VK_NULL_HANDLE, &currentImageIndex);
+		Vk::ResultValue<uint32_t> acquireNextImageResult = device.getHandle().acquireNextImageKHR(swapchain, UINT64_MAX, currentFrame.imageAvailableSemaphore, {});
 
-		switch (result) {
-			case VK_ERROR_OUT_OF_DATE_KHR:
+		switch (acquireNextImageResult.result) {
+			case Vk::Result::eErrorOutOfDateKHR:
 				AX_CORE_LOG_WARN("Swapchain out of date during acquire, needs to be rebuilt");
 				isRecreating = true;
 				return;
 				break;
 			default:
-				AX_CORE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire swapchain image!");
+				AX_CORE_ASSERT(acquireNextImageResult.result == Vk::Result::eSuccess || acquireNextImageResult.result == Vk::Result::eSuboptimalKHR, "Failed to acquire swapchain image!");
 			break;
 		}
+		currentImageIndex = acquireNextImageResult.value;
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include "Renderer/Context.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
@@ -9,9 +9,9 @@ namespace Axiom {
 	class VulkanFramebuffer;
 
 	struct VulkanContextFrame {
-		VkSemaphore imageAvailableSemaphore;
-		VkSemaphore renderFinishedSemaphore;
-		VkFence inFlightFence;
+		Vk::Semaphore imageAvailableSemaphore;
+		Vk::Semaphore renderFinishedSemaphore;
+		Vk::Fence inFlightFence;
 	};
 
 	class VulkanContext : public Context {
@@ -32,7 +32,7 @@ namespace Axiom {
 		VulkanContextFrame getCurrentFrameResource() { return frameResources[currentFrameIndex]; }
 		uint32_t getFrameCount() const override { return static_cast<uint32_t>(frameResources.size()); }
 		CommandBuffer& getMainCommandBuffer() override;
-		VkSemaphore getCurrentRenderFinishedSemaphore() const { return frameResources[currentImageIndex].renderFinishedSemaphore; }
+		Vk::Semaphore getCurrentRenderFinishedSemaphore() const { return frameResources[currentImageIndex].renderFinishedSemaphore; }
 
 	private:
 		void createFrameResources(uint32_t frameCount);
@@ -44,7 +44,7 @@ namespace Axiom {
 		uint32_t currentFrameIndex = 0;
 		uint32_t currentImageIndex = 0;
 		std::vector<VulkanContextFrame> frameResources;
-		std::vector<VkFence> inFlightFences;
+		std::vector<Vk::Fence> inFlightFences;
 		std::vector<std::unique_ptr<VulkanCommandBuffer>> mainCommandBuffers;
 		std::vector<std::unique_ptr<VulkanFramebuffer>> framebuffers;
 	};

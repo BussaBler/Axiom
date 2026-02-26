@@ -7,95 +7,69 @@
 
 namespace Axiom {
 	VulkanRenderPass::~VulkanRenderPass() {
-		vkDeviceWaitIdle(device.getHandle());
+		device.waitIdle();
 		AX_CORE_LOG_INFO("Destroying Vulkan Render Pass...");
-		if (renderPass != VK_NULL_HANDLE) {
-			vkDestroyRenderPass(device.getHandle(), renderPass, nullptr);
-			renderPass = VK_NULL_HANDLE;
+		if (renderPass) {
+			device.getHandle().destroyRenderPass(renderPass);
+			renderPass = nullptr;
 		}
 		destroyFramebuffers();
 	}
 
 	void VulkanRenderPass::init(Swapchain& swapchain) {
 		AX_CORE_LOG_INFO("Initializing Vulkan Render Pass...");
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-		std::array<VkAttachmentDescription, 2> attachments{};// TODO: Makes this configurable
+		std::array<Vk::AttachmentDescription, 2> attachments{};// TODO: Makes this configurable
+
 		// Color attachment
-		attachments[0].format = static_cast<VulkanSwapchain&>(swapchain).getImageFormat();
-		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		attachments[0].setFormat(static_cast<VulkanSwapchain&>(swapchain).getImageFormat());
+		attachments[0].setSamples(Vk::SampleCountFlagBits::e1);
+		attachments[0].setLoadOp(Vk::AttachmentLoadOp::eClear);
+		attachments[0].setStoreOp(Vk::AttachmentStoreOp::eStore);
+		attachments[0].setStencilLoadOp(Vk::AttachmentLoadOp::eDontCare);
+		attachments[0].setStencilStoreOp(Vk::AttachmentStoreOp::eDontCare);
+		attachments[0].setInitialLayout(Vk::ImageLayout::eUndefined);
+		attachments[0].setFinalLayout(Vk::ImageLayout::ePresentSrcKHR);
 
-		VkAttachmentReference colorAttachmentReference{};
-		colorAttachmentReference.attachment = 0;
-		colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentReference;
+		Vk::AttachmentReference colorAttachmentReference(0, Vk::ImageLayout::eColorAttachmentOptimal);
 
 		// Depth attachment
-		attachments[1].format = device.getAdapter().getDepthFormat();
-		attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachments[1].setFormat(device.getAdapter().getDepthFormat());
+		attachments[1].setSamples(Vk::SampleCountFlagBits::e1);
+		attachments[1].setLoadOp(Vk::AttachmentLoadOp::eClear);
+		attachments[1].setStoreOp(Vk::AttachmentStoreOp::eDontCare);
+		attachments[1].setStencilLoadOp(Vk::AttachmentLoadOp::eDontCare);
+		attachments[1].setStencilStoreOp(Vk::AttachmentStoreOp::eDontCare);
+		attachments[1].setInitialLayout(Vk::ImageLayout::eUndefined);
+		attachments[1].setFinalLayout(Vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-		VkAttachmentReference depthAttachmentReference{};
-		depthAttachmentReference.attachment = 1;
-		depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		Vk::AttachmentReference depthAttachmentReference(1, Vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-		subpass.pDepthStencilAttachment = &depthAttachmentReference;
+		Vk::SubpassDescription subpassDescription({}, Vk::PipelineBindPoint::eGraphics, {}, colorAttachmentReference, {}, &depthAttachmentReference);
+		Vk::SubpassDependency dependency(Vk::SubpassExternal, 0, Vk::PipelineStageFlagBits::eColorAttachmentOutput, Vk::PipelineStageFlagBits::eColorAttachmentOutput, {}, Vk::AccessFlagBits::eColorAttachmentRead | Vk::AccessFlagBits::eColorAttachmentWrite);
 
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		Vk::RenderPassCreateInfo renderPassInfo({}, attachments, subpassDescription, dependency);
+		Vk::ResultValue<Vk::RenderPass> renderPassResult = device.getHandle().createRenderPass(renderPassInfo);
 
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-		AX_CORE_ASSERT(vkCreateRenderPass(device.getHandle(), &renderPassInfo, nullptr, &renderPass) == VK_SUCCESS, "Failed to create Vulkan draw pass");
+		AX_CORE_ASSERT(renderPassResult.result == Vk::Result::eSuccess, "Failed to create Vulkan draw pass");
+		renderPass = renderPassResult.value;
 		createFramebuffers(static_cast<VulkanSwapchain&>(swapchain));
 	}
 
 	void VulkanRenderPass::begin(VulkanCommandBuffer& commandBuffer, VulkanRenderPassBeginInfo beginInfo, uint32_t framebufferIndex) const {
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = renderPass;
-		renderPassInfo.framebuffer = framebuffers[framebufferIndex];
-		renderPassInfo.renderArea.offset = { beginInfo.offset.x(), beginInfo.offset.y() };
-		renderPassInfo.renderArea.extent = { beginInfo.extent.x(), beginInfo.extent.y() };
+		Vk::Rect2D renderArea({ beginInfo.offset.x(), beginInfo.offset.y() }, { beginInfo.extent.x(), beginInfo.extent.y() });
+		std::array<Vk::ClearValue, 2> clearValues{};
+		clearValues[0].setColor({ createInfo.clearColor.x(), createInfo.clearColor.y(), createInfo.clearColor.z(), createInfo.clearColor.w() });
+		clearValues[1].setDepthStencil({ createInfo.clearDepth, createInfo.clearStencil });
+		
+		Vk::RenderPassBeginInfo renderPassInfo(renderPass, framebuffers[framebufferIndex], renderArea, clearValues);
 
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { { createInfo.clearColor.x(), createInfo.clearColor.y(), createInfo.clearColor.z(), createInfo.clearColor.w() } };
-		clearValues[1].depthStencil = { createInfo.clearDepth, createInfo.clearStencil };
-
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
-
-		vkCmdBeginRenderPass(commandBuffer.getHandle(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		commandBuffer.getHandle().beginRenderPass(renderPassInfo, Vk::SubpassContents::eInline);
 		commandBuffer.setState(CommandBufferState::IN_RENDER_PASS);
 	}
 
 	void VulkanRenderPass::end(VulkanCommandBuffer& commandBuffer) const {
-		vkCmdEndRenderPass(commandBuffer.getHandle());
+		commandBuffer.getHandle().endRenderPass();
 		commandBuffer.setState(CommandBufferState::RECORDING);
 	}
 
@@ -109,27 +83,23 @@ namespace Axiom {
 		for (uint32_t i = 0; i < swapchain.getImageCount(); i++) {
 			VulkanImageView& imageView = static_cast<VulkanImageView&>(swapchain.getImage(i).getView({}));
 			VulkanImageView& depthImageView = static_cast<VulkanImageView&>(swapchain.getDepthImage().getView({}));
-			std::array<VkImageView, 2> attachments = {
+			std::array<Vk::ImageView, 2> attachments = {
 				imageView.getHandle(),
 				depthImageView.getHandle()
 			};
 
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = renderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = swapchain.getSwapchainCreateInfo().width;
-			framebufferInfo.height = swapchain.getSwapchainCreateInfo().height;
-			framebufferInfo.layers = 1;
-			AX_CORE_ASSERT(vkCreateFramebuffer(device.getHandle(), &framebufferInfo, nullptr, &framebuffers[i]) == VK_SUCCESS, "Failed to create Vulkan framebuffer");
+			Vk::FramebufferCreateInfo framebufferInfo({}, renderPass, attachments, swapchain.getSwapchainCreateInfo().width, swapchain.getSwapchainCreateInfo().height, 1);
+			Vk::ResultValue<Vk::Framebuffer> framebufferResult = device.getHandle().createFramebuffer(framebufferInfo);
+
+			AX_CORE_ASSERT(framebufferResult.result == Vk::Result::eSuccess, "Failed to create Vulkan framebuffer");
+			framebuffers[i] = framebufferResult.value;
 		}
 	}
 
 	void VulkanRenderPass::destroyFramebuffers() {
 		for (auto framebuffer : framebuffers) {
-			if (framebuffer != VK_NULL_HANDLE) {
-				vkDestroyFramebuffer(device.getHandle(), framebuffer, nullptr);
+			if (framebuffer) {
+				device.getHandle().destroyFramebuffer(framebuffer);	
 			}
 		}
 		framebuffers.clear();

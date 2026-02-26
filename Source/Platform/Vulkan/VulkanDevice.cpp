@@ -13,54 +13,51 @@ namespace Axiom {
 	VulkanDevice::~VulkanDevice() {
 		AX_CORE_LOG_INFO("Destroying Vulkan Logical Device...");
 		mainQueue.reset();
-		vkDestroyDevice(device, nullptr);
+		device.destroy();
 	}
 
 	void VulkanDevice::init(const DeviceCreateInfo& deviceCreateInfo) {
 		AX_CORE_LOG_INFO("Initializing Vulkan Logical Device...");
 		queueFamilies = adapter.findQueueFamilies();
 
-		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilies.size());
-		float queuePriority = 1.0f;
+		std::vector<Vk::DeviceQueueCreateInfo> queueCreateInfos(queueFamilies.size());
+		std::array<float, 1> queuePriority = { 1.0f };
 		for (uint32_t i = 0; i < queueFamilies.size(); i++) {
-			queueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			queueCreateInfos[i].queueFamilyIndex = queueFamilies[i].index;
-			queueCreateInfos[i].queueCount = 1;
-			queueCreateInfos[i].pQueuePriorities = &queuePriority;
+			queueCreateInfos[i] = Vk::DeviceQueueCreateInfo({}, queueFamilies[i].index, queuePriority);
 		}
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
+		std::array<const char*, 0> enabledLayerNames = {};
+		std::array<const char*, 1> enabledExtensionsNames = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-		VkDeviceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-		createInfo.pQueueCreateInfos = queueCreateInfos.data();
-		createInfo.enabledExtensionCount = 1;
-		const char* deviceExtensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-		createInfo.ppEnabledExtensionNames = deviceExtensions;
-		createInfo.pEnabledFeatures = &deviceFeatures;
-		AX_CORE_ASSERT(vkCreateDevice(adapter.getHandle(), &createInfo, nullptr, &device) == VK_SUCCESS, "Failed to create logical device!");
+		Vk::PhysicalDeviceFeatures deviceFeatures{};
+		deviceFeatures.setSamplerAnisotropy(Vk::True);
+
+		Vk::DeviceCreateInfo createInfo({}, queueCreateInfos, enabledLayerNames, enabledExtensionsNames, &deviceFeatures);
+		Vk::ResultValue<Vk::Device> deviceResult = adapter.getHandle().createDevice(createInfo);
+
+		AX_CORE_ASSERT(deviceResult.result == Vk::Result::eSuccess, "Failed to create logical device!");
+		device = deviceResult.value;
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
 	
-		mainQueue = createQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT);
+		mainQueue = createQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute);
 		if (mainQueue) {
-			queues[VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT] = mainQueue.get();
-			queues[VK_QUEUE_GRAPHICS_BIT] = mainQueue.get();
-			queues[VK_QUEUE_TRANSFER_BIT] = mainQueue.get();
-			queues[VK_QUEUE_COMPUTE_BIT] = mainQueue.get();
+			queues[Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute] = mainQueue.get();
+			queues[Vk::QueueFlagBits::eGraphics] = mainQueue.get();
+			queues[Vk::QueueFlagBits::eTransfer] = mainQueue.get();
+			queues[Vk::QueueFlagBits::eCompute] = mainQueue.get();
 		} else {
 			AX_CORE_LOG_ERROR("Failed to create Main Vulkan Queue!");
 		}
 	}
 
 	std::unique_ptr<Context> VulkanDevice::createContext() {
-		std::unique_ptr<VulkanContext> context = std::make_unique<VulkanContext>(*this, *getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT));
+		std::unique_ptr<VulkanContext> context = std::make_unique<VulkanContext>(*this, *getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute));
 		context->init(3);
 		return std::move(context);
 	}
 
 	std::unique_ptr<Swapchain> VulkanDevice::createSwapchain(SwapchainCreateInfo& swapchainCreateInfo) {
-		std::unique_ptr<VulkanSwapchain> swapchain = std::make_unique<VulkanSwapchain>(swapchainCreateInfo, *this, *getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT));
+		std::unique_ptr<VulkanSwapchain> swapchain = std::make_unique<VulkanSwapchain>(swapchainCreateInfo, *this, *getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute));
 		swapchain->build();
 		return std::move(swapchain);
 	}
@@ -97,7 +94,11 @@ namespace Axiom {
 		return std::move(texture);
 	}
 
-	std::unique_ptr<VulkanQueue> VulkanDevice::createQueue(VkQueueFlags flags) {
+	void VulkanDevice::waitIdle() const {
+		AX_CORE_ASSERT(device.waitIdle() == Vk::Result::eSuccess, "Failed to wait for device idle!");
+	}
+
+	std::unique_ptr<VulkanQueue> VulkanDevice::createQueue(Vk::QueueFlags flags) {
 		uint32_t index = -1;
 		for (uint32_t i = 0; i < queueFamilies.size(); i++) {
 			if (queueFamilies[i].flags & flags) {

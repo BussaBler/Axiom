@@ -18,9 +18,11 @@ namespace Axiom {
 		std::unique_ptr<Resource> createResource(ResourceCreateInfo& resourceCreateInfo) override;
 		std::unique_ptr<Texture> createTexture(TextureCreateInfo& textureCreateInfo) override;
 
-		VkDevice getHandle() const { return device; }
+		void waitIdle() const;
+
+		Vk::Device getHandle() const { return device; }
 		VulkanAdapter& getAdapter() const { return adapter; }
-		VulkanQueue* getQueue(VkQueueFlags flags) {
+		VulkanQueue* getQueue(Vk::QueueFlags flags) {
 			auto it = queues.find(flags);
 			if (it != queues.end()) {
 				return it->second;
@@ -29,14 +31,14 @@ namespace Axiom {
 			return nullptr;
 		}
 	private:
-		std::unique_ptr<VulkanQueue> createQueue(VkQueueFlags flags);
+		std::unique_ptr<VulkanQueue> createQueue(Vk::QueueFlags flags);
 
     private:
-		VkDevice device;
+		Vk::Device device;
 		VulkanAdapter& adapter;
 		std::vector<QueueFamily> queueFamilies;
 		std::unique_ptr<VulkanQueue> mainQueue;
-		std::map<VkQueueFlags, VulkanQueue*> queues;
+		std::map<Vk::QueueFlags, VulkanQueue*> queues;
     };
 }
 

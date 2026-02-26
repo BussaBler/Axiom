@@ -1,7 +1,7 @@
 #pragma once
 #include "VulkanView.h"
 #include "VulkanImage.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanImageView : public VulkanView {
@@ -11,13 +11,13 @@ namespace Axiom {
 
 		void init(const ResourceViewCreateInfo& resourceViewCreateInfo);
 
-		VkImageView getHandle() const { return imageView; }
+		Vk::ImageView getHandle() const { return imageView; }
 
-		static VkImageAspectFlags getVkImageAspectFlags(uint32_t format);
+		static Vk::ImageAspectFlags getVkImageAspectFlags(uint32_t format);
 
 	private:
 		VulkanImage& image;
-		VkImageView imageView;
+		Vk::ImageView imageView;
 	};
 }
 

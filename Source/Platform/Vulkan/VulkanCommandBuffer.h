@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/Log.h"
 #include "Renderer/CommandBuffer.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
@@ -15,18 +15,18 @@ namespace Axiom {
 		void end() override;
 		void reset() override;
 
-		void allocate(VkCommandPool commandPool, bool isPrimary = true);
-		void free(VkCommandPool commandPool);
+		void allocate(Vk::CommandPool commandPool, bool isPrimary = true);
+		void free(Vk::CommandPool commandPool);
 
-		void allocateAndBeginSingleUse(VkCommandPool commandPool, bool isPrimary = true);
-		void endSingleUse(VkQueue queue, VkCommandPool commandPool, VkFence fence = VK_NULL_HANDLE);
+		void allocateAndBeginSingleUse(Vk::CommandPool commandPool, bool isPrimary = true);
+		void endSingleUse(Vk::Queue queue, Vk::CommandPool commandPool, Vk::Fence fence = VK_NULL_HANDLE);
 
-		VkCommandBuffer getHandle() const { return commandBuffer; }
-		VkCommandBuffer* getHandlePtr() { return &commandBuffer; }
+		Vk::CommandBuffer getHandle() const { return commandBuffer; }
+		Vk::CommandBuffer* getHandlePtr() { return &commandBuffer; }
 
 	private:
 		VulkanDevice& device;
-		VkCommandBuffer commandBuffer;
+		Vk::CommandBuffer commandBuffer;
 	};
 }
 

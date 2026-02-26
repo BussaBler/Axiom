@@ -1,33 +1,33 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
 
 	struct VulkanPipelineCreateInfo {
-		VkRenderPass renderPass{};
-		std::vector<VkVertexInputAttributeDescription> vertexAttributes;
-		std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-		std::vector<VkPushConstantRange> pushConstantRanges;
+		Vk::RenderPass renderPass{};
+		std::vector<Vk::VertexInputAttributeDescription> vertexAttributes;
+		std::vector<Vk::DescriptorSetLayout> descriptorSetLayouts;
+		std::vector<Vk::PipelineShaderStageCreateInfo> shaderStages;
+		std::vector<Vk::PushConstantRange> pushConstantRanges;
 		bool isWireframe = false;
 	};
 
 	class VulkanPipeline {
 	public:
-		VulkanPipeline(VulkanDevice& vkDevice) : device(vkDevice) {}
+		VulkanPipeline(VulkanDevice& vkDevice) : device(vkDevice), pipeline(nullptr), pipelineLayout(nullptr) {}
 		~VulkanPipeline();
 
 		void init(VulkanPipelineCreateInfo& createInfo);
-		void bind(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint) const;
+		void bind(Vk::CommandBuffer commandBuffer, Vk::PipelineBindPoint bindPoint) const;
 
-		VkPipeline getHandle() const { return pipeline; }
-		VkPipelineLayout getLayout() const { return pipelineLayout; }
+		Vk::Pipeline getHandle() const { return pipeline; }
+		Vk::PipelineLayout getLayout() const { return pipelineLayout; }
 
 	private:
 		VulkanDevice& device;
-		VkPipeline pipeline = VK_NULL_HANDLE;
-		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+		Vk::Pipeline pipeline;
+		Vk::PipelineLayout pipelineLayout;
 
 	};
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/Assert.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
@@ -12,8 +12,8 @@ namespace Axiom {
 
 		void wait() const;
 
-		VkQueue getHandle() const { return queue; }
-		VkCommandPool getCommandPool() const { return commandPool; }
+		Vk::Queue getHandle() const { return queue; }
+		Vk::CommandPool getCommandPool() const { return commandPool; }
 		uint32_t getFamilyIndex() const { return familyIndex; }
 		uint32_t getQueueIndex() const { return queueIndex; }
 
@@ -21,8 +21,8 @@ namespace Axiom {
 		VulkanDevice& device;
 		uint32_t familyIndex;
 		uint32_t queueIndex;
-		VkQueue queue;
-		VkCommandPool commandPool;
+		Vk::Queue queue;
+		Vk::CommandPool commandPool;
 	};
 }
 

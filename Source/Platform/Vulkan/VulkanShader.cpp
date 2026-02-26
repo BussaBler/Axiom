@@ -6,29 +6,29 @@
 #include <shaderc/shaderc.hpp>
 
 namespace Axiom {
-	std::filesystem::path VulkanShader::shadeDir = "Axiom/Assets/Shaders";
+	std::filesystem::path VulkanShader::shadeDir = "Assets/Shaders";
 
 	VulkanShader::~VulkanShader() {
 		for (auto& stage : shaderStages) {
-			if (stage.module != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device.getHandle(), stage.module, nullptr);
+			if (stage.module) {
+				device.getHandle().destroyShaderModule(stage.module);
 			}
 		}
 	}
 
-	void VulkanShader::init(VkRenderPass vkRenderPass) {
+	void VulkanShader::init(Vk::RenderPass vkRenderPass) {
 		createShaderModules();
 		createDescriptors();
 		createPipeline(vkRenderPass);
 	}
 
 	void VulkanShader::bind(CommandBuffer& commandBuffer) const {
-		pipeline->bind(static_cast<VulkanCommandBuffer&>(commandBuffer).getHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS);
+		pipeline->bind(static_cast<VulkanCommandBuffer&>(commandBuffer).getHandle(), Vk::PipelineBindPoint::eGraphics);
 	}
 
 	void VulkanShader::createShaderModules() {
 		std::array<std::string, MAX_SHADER_STAGES> shaderStageNames = { ".vert", ".frag" };
-		std::array<VkShaderStageFlagBits, MAX_SHADER_STAGES> shaderStageFlags = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT };
+		std::array<Vk::ShaderStageFlagBits, MAX_SHADER_STAGES> shaderStageFlags = { Vk::ShaderStageFlagBits::eVertex, Vk::ShaderStageFlagBits::eFragment };
 		std::array<shaderc_shader_kind, MAX_SHADER_STAGES> shadercKinds = { shaderc_vertex_shader, shaderc_fragment_shader };
 
 		for (size_t i = 0; i < MAX_SHADER_STAGES; i++) {
@@ -49,17 +49,19 @@ namespace Axiom {
 			}
 
 			std::vector<uint32_t> spirv(result.cbegin(), result.cend());
-			shaderStages[i].createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			shaderStages[i].createInfo.codeSize = spirv.size() * sizeof(uint32_t);
-			shaderStages[i].createInfo.pCode = spirv.data();
-			if (vkCreateShaderModule(device.getHandle(), &shaderStages[i].createInfo, nullptr, &shaderStages[i].module) != VK_SUCCESS) {
+			shaderStages[i].createInfo.setCodeSize(spirv.size() * sizeof(uint32_t));
+			shaderStages[i].createInfo.setCode(spirv);
+			Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = device.getHandle().createShaderModule(shaderStages[i].createInfo);
+
+			if (shaderModuleResult.result != Vk::Result::eSuccess) {
 				AX_CORE_LOG_ERROR("Failed to create shader module for: {}", fullPath.string());
 				continue;
 			}
-			shaderStages[i].stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			shaderStages[i].stageInfo.stage = shaderStageFlags[i];
-			shaderStages[i].stageInfo.pName = "main";
-			shaderStages[i].stageInfo.module = shaderStages[i].module;
+			shaderStages[i].module = shaderModuleResult.value;
+
+			shaderStages[i].stageInfo.setStage(shaderStageFlags[i]);
+			shaderStages[i].stageInfo.setPName("main");
+			shaderStages[i].stageInfo.setModule(shaderStages[i].module);
 		}
 	}
 }

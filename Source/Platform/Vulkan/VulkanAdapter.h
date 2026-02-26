@@ -1,6 +1,6 @@
 #pragma once
 #include "Renderer/Adapter.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanInstance;
@@ -9,48 +9,45 @@ namespace Axiom {
 		uint32_t maxQueues;
 		uint32_t index;
 		uint32_t availableIndex;
-		VkQueueFlags flags;
+		Vk::QueueFlags flags;
 	};
 
 	class VulkanAdapter : public Adapter {
 	public:
-		VulkanAdapter(VulkanInstance& vkInstance, VkPhysicalDevice physicalDevice) : instance(vkInstance), physicalDevice(physicalDevice) {}
+		VulkanAdapter(VulkanInstance& vkInstance, Vk::PhysicalDevice physicalDevice) : instance(vkInstance), physicalDevice(physicalDevice) {}
 		~VulkanAdapter() = default;
 		VulkanAdapter(const VulkanAdapter&) = default;
 		std::unique_ptr<Device> createDevice() override;
 
 		static std::vector<VulkanAdapter> getAvailableAdapters(VulkanInstance& instance);
-		const VkPhysicalDeviceProperties& getProperties() const {
-			static VkPhysicalDeviceProperties properties;
-			vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+		const Vk::PhysicalDeviceProperties& getProperties() const {
+			static Vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
 			return properties;
 		}
-		const VkPhysicalDeviceFeatures& getFeatures() const {
-			static VkPhysicalDeviceFeatures features;
-			vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+		const Vk::PhysicalDeviceFeatures& getFeatures() const {
+			static Vk::PhysicalDeviceFeatures features = physicalDevice.getFeatures();
 			return features;
 		}
-		const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const {
-			static VkPhysicalDeviceMemoryProperties memoryProperties;
-			vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+		const Vk::PhysicalDeviceMemoryProperties& getMemoryProperties() const {
+			static Vk::PhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getMemoryProperties();
 			return memoryProperties;
 		}
-		std::vector<VkQueueFamilyProperties> getQueueFamilyProperties() const;
+		std::vector<Vk::QueueFamilyProperties> getQueueFamilyProperties() const;
 		std::vector<QueueFamily> findQueueFamilies() const;
-		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
-		std::vector<VkSurfaceFormatKHR> getSurfaceFormats(VkSurfaceKHR surface) const;
-		std::vector<VkPresentModeKHR> getPresentModes(VkSurfaceKHR surface) const;
-		VkSurfaceCapabilitiesKHR getSurfaceCapabilities(VkSurfaceKHR surface) const;
-		VkFormat getDepthFormat() const;
-		VkPhysicalDevice getHandle() const { return physicalDevice; }
+		uint32_t findMemoryType(uint32_t typeFilter, Vk::MemoryPropertyFlags properties) const;
+		std::vector<Vk::SurfaceFormatKHR> getSurfaceFormats(Vk::SurfaceKHR surface) const;
+		std::vector<Vk::PresentModeKHR> getPresentModes(Vk::SurfaceKHR surface) const;
+		Vk::SurfaceCapabilitiesKHR getSurfaceCapabilities(Vk::SurfaceKHR surface) const;
+		Vk::Format getDepthFormat() const;
+		Vk::PhysicalDevice getHandle() const { return physicalDevice; }
 		VulkanInstance& getInstance() const { return instance; }
 
 		bool checkAvailableDeviceExtensions() const;
-		bool checkSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex) const;
+		bool checkSurfaceSupport(Vk::SurfaceKHR surface, uint32_t queueFamilyIndex) const;
 
 	private:
 		VulkanInstance& instance;
-		VkPhysicalDevice physicalDevice;
+		Vk::PhysicalDevice physicalDevice;
 	};
 }
 

@@ -5,36 +5,42 @@
 namespace Axiom {
 	VulkanImageView::~VulkanImageView() {
 		if (imageView) {
-			vkDestroyImageView(device.getHandle(), imageView, nullptr);
+			device.getHandle().destroyImageView(imageView);
 			imageView = VK_NULL_HANDLE;
 		}
 	}
 
 	void VulkanImageView::init(const ResourceViewCreateInfo& resourceCreateInfo) {
-		VkImageViewCreateInfo viewCreateInfo{};
-		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewCreateInfo.image = image.getHandle();
-		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // TODO: make this configurable
-		viewCreateInfo.format = VulkanResource::getVkFormat(resourceCreateInfo.format);
-		viewCreateInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-		viewCreateInfo.subresourceRange.aspectMask = getVkImageAspectFlags(resourceCreateInfo.aspectMask);
-		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = 1;
-		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = 1;
-		AX_CORE_ASSERT(vkCreateImageView(device.getHandle(), &viewCreateInfo, nullptr, &imageView) == VK_SUCCESS, "Failed to create image view!");
+		Vk::ImageViewCreateInfo viewCreateInfo(
+			{},
+			image.getHandle(),
+			Vk::ImageViewType::e2D, // TODO: make this configurable
+			VulkanResource::getVkFormat(resourceCreateInfo.format),
+			{ Vk::ComponentSwizzle::eR, Vk::ComponentSwizzle::eG, Vk::ComponentSwizzle::eB, Vk::ComponentSwizzle::eA },
+			{
+				getVkImageAspectFlags(resourceCreateInfo.aspectMask),
+				0,
+				1,
+				0,
+				1
+			}
+		);
+		Vk::ResultValue<Vk::ImageView> imageViewResult = device.getHandle().createImageView(viewCreateInfo);
+
+		AX_CORE_ASSERT(imageViewResult.result == Vk::Result::eSuccess, "Failed to create image view!");
+		imageView = imageViewResult.value;
 	}
 
-	VkImageAspectFlags VulkanImageView::getVkImageAspectFlags(uint32_t format) {
-		VkImageAspectFlags flags{};
+	Vk::ImageAspectFlags VulkanImageView::getVkImageAspectFlags(uint32_t format) {
+		Vk::ImageAspectFlags flags{};
 		if (format & ResourceAspectMask::Color) {
-			flags |= VK_IMAGE_ASPECT_COLOR_BIT;
+			flags |= Vk::ImageAspectFlagBits::eColor;
 		}
 		if (format & ResourceAspectMask::Depth) {
-			flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+			flags |= Vk::ImageAspectFlagBits::eDepth;
 		}
 		if (format & ResourceAspectMask::Stencil) {
-			flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+			flags |= Vk::ImageAspectFlagBits::eStencil;
 		}
 		return flags;
 	}

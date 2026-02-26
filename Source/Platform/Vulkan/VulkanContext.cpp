@@ -14,11 +14,11 @@ namespace Axiom {
 
 	VulkanContext::~VulkanContext() {
 		AX_CORE_LOG_INFO("Destroying Vulkan Context...");
-		vkDeviceWaitIdle(device.getHandle());
+		device.waitIdle();
 		for (const auto& frame : frameResources) {
-			vkDestroySemaphore(device.getHandle(), frame.imageAvailableSemaphore, nullptr);
-			vkDestroySemaphore(device.getHandle(), frame.renderFinishedSemaphore, nullptr);
-			vkDestroyFence(device.getHandle(), frame.inFlightFence, nullptr);
+			device.getHandle().destroySemaphore(frame.imageAvailableSemaphore);
+			device.getHandle().destroySemaphore(frame.renderFinishedSemaphore);
+			device.getHandle().destroyFence(frame.inFlightFence);
 		}
 		for (const auto& cmdBuffer : mainCommandBuffers) {
 			cmdBuffer->free(queue.getCommandPool());
@@ -32,42 +32,35 @@ namespace Axiom {
 	}
 
 	void VulkanContext::submitCommandBuffer(VulkanCommandBuffer& commandBuffer) {
-		std::array<VkSemaphore, 1> waitSemaphores = { frameResources[currentFrameIndex].imageAvailableSemaphore };
-		std::array<VkSemaphore, 1> signalSemaphores = { frameResources[currentImageIndex].renderFinishedSemaphore };
-		std::array<VkPipelineStageFlags, 1> waitStages = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
+		std::array<Vk::Semaphore, 1> waitSemaphores = { frameResources[currentFrameIndex].imageAvailableSemaphore };
+		std::array<Vk::Semaphore, 1> signalSemaphores = { frameResources[currentImageIndex].renderFinishedSemaphore };
+		std::array<Vk::PipelineStageFlags, 1> waitStages = { Vk::PipelineStageFlagBits::eAllCommands };
+		std::array<Vk::CommandBuffer, 1> commandBuffers = { commandBuffer.getHandle() };
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
-		submitInfo.pWaitSemaphores = waitSemaphores.data();
-		submitInfo.signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size());
-		submitInfo.pSignalSemaphores = signalSemaphores.data();
-		submitInfo.pWaitDstStageMask = waitStages.data();
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = commandBuffer.getHandlePtr();
+		Vk::SubmitInfo submitInfo(waitSemaphores, waitStages, commandBuffers, signalSemaphores);
 
-		vkQueueSubmit(queue.getHandle(), 1, &submitInfo, frameResources[currentFrameIndex].inFlightFence);
+		AX_CORE_ASSERT(queue.getHandle().submit(submitInfo, frameResources[currentFrameIndex].inFlightFence) == Vk::Result::eSuccess, "Failed to submit command buffer!");
 	}
 
 	bool VulkanContext::begin(Swapchain& swapchain) {
 		VulkanSwapchain& vkSwapchain = static_cast<VulkanSwapchain&>(swapchain);
 		if (vkSwapchain.getIsRecreating()) {
-			vkDeviceWaitIdle(device.getHandle());
+			device.waitIdle();
 			return false;
 		}
 
 		VulkanContextFrame& currentFrame = frameResources[currentFrameIndex];
-		vkWaitForFences(device.getHandle(), 1, &currentFrame.inFlightFence, VK_TRUE, UINT64_MAX);
+		AX_CORE_ASSERT(device.getHandle().waitForFences(currentFrame.inFlightFence, Vk::True, UINT64_MAX) == Vk::Result::eSuccess, "Failed to wait for fences");
 
 		vkSwapchain.prepare(*this);
 		if (vkSwapchain.getIsRecreating()) {
-			vkDeviceWaitIdle(device.getHandle());
+			device.waitIdle();
 			return false;
 		}
 		
 		uint32_t imageIndex = vkSwapchain.getCurrentImageIndex();
-		if (inFlightFences[imageIndex] != VK_NULL_HANDLE) {
-			vkWaitForFences(device.getHandle(), 1, &inFlightFences[imageIndex], VK_TRUE, UINT64_MAX);
+		if (inFlightFences[imageIndex]) {
+			AX_CORE_ASSERT(device.getHandle().waitForFences(currentFrame.inFlightFence, Vk::True, UINT64_MAX) == Vk::Result::eSuccess, "Failed to wait for fences");
 		}
 		inFlightFences[imageIndex] = frameResources[currentFrameIndex].inFlightFence;
 
@@ -76,19 +69,11 @@ namespace Axiom {
 
 		Math::uVec2 extent = vkSwapchain.getExtent();
 		Math::Vec2 fExtent = { static_cast<float>(extent.x()), static_cast<float>(extent.y()) };
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = fExtent.y();
-		viewport.width = fExtent.x();
-		viewport.height = -fExtent.y();
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(mainCommandBuffers[imageIndex]->getHandle(), 0, 1, &viewport);
+		Vk::Viewport viewport(0.0f, fExtent.y(), fExtent.x(), -fExtent.y(), 0.0f, 1.0f);
+		mainCommandBuffers[imageIndex]->getHandle().setViewport(0, viewport);
 
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = { extent.x(), extent.y() };
-		vkCmdSetScissor(mainCommandBuffers[imageIndex]->getHandle(), 0, 1, &scissor);
+		Vk::Rect2D scissor({ 0, 0 }, { extent.x(), extent.y() });
+		mainCommandBuffers[imageIndex]->getHandle().setScissor(0, scissor);
 
 		currentImageIndex = imageIndex;
 		return true;
@@ -98,7 +83,7 @@ namespace Axiom {
 		VulkanSwapchain& vkSwapchain = static_cast<VulkanSwapchain&>(swapchain);
 		mainCommandBuffers[currentImageIndex]->end();
 
-		vkResetFences(device.getHandle(), 1, &frameResources[currentFrameIndex].inFlightFence);
+		device.getHandle().resetFences(frameResources[currentFrameIndex].inFlightFence);
 
 		submitCommandBuffer(*mainCommandBuffers[currentImageIndex]);
 	}
@@ -107,21 +92,23 @@ namespace Axiom {
 		VulkanCommandBuffer& vkCommandBuffer = static_cast<VulkanCommandBuffer&>(commandBuffer);
 		VulkanBuffer& vkBuffer = static_cast<VulkanBuffer&>(vertexBuffer);
 
-		std::array<VkBuffer, 1> buffers = { vkBuffer.getHandle() };
-		std::array<VkDeviceSize, 1> offsets = { 0 };
+		std::array<Vk::Buffer, 1> buffers = { vkBuffer.getHandle() };
+		std::array<Vk::DeviceSize, 1> offsets = { 0 };
 
-		vkCmdBindVertexBuffers(vkCommandBuffer.getHandle(), 0, static_cast<uint32_t>(buffers.size()), buffers.data(), offsets.data());
+		vkCommandBuffer.getHandle().bindVertexBuffers(0, buffers, offsets);
 	}
 
 	void VulkanContext::bindIndexBuffer(Resource& indexBuffer, CommandBuffer& commandBuffer) {
 		VulkanCommandBuffer& vkCommandBuffer = static_cast<VulkanCommandBuffer&>(commandBuffer);
 		VulkanBuffer& vkBuffer = static_cast<VulkanBuffer&>(indexBuffer);
-		vkCmdBindIndexBuffer(vkCommandBuffer.getHandle(), vkBuffer.getHandle(), 0, VK_INDEX_TYPE_UINT32);
+		
+		vkCommandBuffer.getHandle().bindIndexBuffer(vkBuffer.getHandle(), 0, Vk::IndexType::eUint32);
 	}
 
 	void VulkanContext::drawIndexed(uint32_t indexCount, uint32_t instanceCount, CommandBuffer& commandBuffer) {
 		VulkanCommandBuffer& vkCommandBuffer = static_cast<VulkanCommandBuffer&>(commandBuffer);
-		vkCmdDrawIndexed(vkCommandBuffer.getHandle(), indexCount, instanceCount, 0, 0, 0);
+
+		vkCommandBuffer.getHandle().drawIndexed(indexCount, instanceCount, 0, 0, 0);
 	}
 
 	CommandBuffer& VulkanContext::getMainCommandBuffer() {
@@ -134,16 +121,21 @@ namespace Axiom {
 		for (uint32_t i = 0; i < frameCount; i++) {
 			VulkanContextFrame frame{};
 
-			VkSemaphoreCreateInfo semaphoreInfo{};
-			semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-			semaphoreInfo.flags = 0;
-			AX_CORE_ASSERT(vkCreateSemaphore(device.getHandle(), &semaphoreInfo, nullptr, &frame.imageAvailableSemaphore) == VK_SUCCESS, "Failed to create semaphore!");
-			AX_CORE_ASSERT(vkCreateSemaphore(device.getHandle(), &semaphoreInfo, nullptr, &frame.renderFinishedSemaphore) == VK_SUCCESS, "Failed to create semaphore!");
+			Vk::SemaphoreCreateInfo semaphoreInfo({});
+			Vk::ResultValue<Vk::Semaphore> imageAvailableSemaphoreResult = device.getHandle().createSemaphore(semaphoreInfo);
+			Vk::ResultValue<Vk::Semaphore> renderFinishedSemaphoreResult = device.getHandle().createSemaphore(semaphoreInfo);
+
+			AX_CORE_ASSERT(imageAvailableSemaphoreResult.result == Vk::Result::eSuccess, "Failed to create semaphore!");
+			AX_CORE_ASSERT(renderFinishedSemaphoreResult.result == Vk::Result::eSuccess, "Failed to create semaphore!");
+			frame.imageAvailableSemaphore = imageAvailableSemaphoreResult.value;
+			frame.renderFinishedSemaphore = renderFinishedSemaphoreResult.value;
 			
-			VkFenceCreateInfo fenceInfo{};
-			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-			AX_CORE_ASSERT(vkCreateFence(device.getHandle(), &fenceInfo, nullptr, &frame.inFlightFence) == VK_SUCCESS, "Failed to create fence!");
+			Vk::FenceCreateInfo fenceInfo(Vk::FenceCreateFlagBits::eSignaled);
+			Vk::ResultValue<Vk::Fence> fenceResult = device.getHandle().createFence(fenceInfo);
+
+			AX_CORE_ASSERT(fenceResult.result == Vk::Result::eSuccess, "Failed to create fence!");
+			frame.inFlightFence = fenceResult.value;
+
 			frameResources[i] = frame;
 		}
 	}
@@ -151,7 +143,7 @@ namespace Axiom {
 	void VulkanContext::createMainCommandBuffer() {
 		for (int i = 0; i < frameResources.size(); i++) {
 			mainCommandBuffers.push_back(std::make_unique<VulkanCommandBuffer>(device));
-			mainCommandBuffers[i]->allocate(device.getQueue(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_COMPUTE_BIT)->getCommandPool());
+			mainCommandBuffers[i]->allocate(device.getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute)->getCommandPool());
 		}
 	}
 }

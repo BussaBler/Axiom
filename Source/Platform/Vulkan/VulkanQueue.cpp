@@ -5,19 +5,20 @@
 namespace Axiom {
 	VulkanQueue::VulkanQueue(VulkanDevice& device, uint32_t familyIndex, uint32_t queueIndex) 
 		: device(device), familyIndex(familyIndex), queueIndex(queueIndex) {
-		vkGetDeviceQueue(device.getHandle(), familyIndex, queueIndex, &queue);
-		VkCommandPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		poolInfo.queueFamilyIndex = familyIndex;
-		AX_CORE_ASSERT(vkCreateCommandPool(device.getHandle(), &poolInfo, nullptr, &commandPool) == VK_SUCCESS, "Failed to create command pool!");
+		queue = device.getHandle().getQueue(familyIndex, queueIndex);
+
+		Vk::CommandPoolCreateInfo poolInfo(Vk::CommandPoolCreateFlagBits::eResetCommandBuffer, familyIndex);
+		Vk::ResultValue<Vk::CommandPool> commandPoolResult = device.getHandle().createCommandPool(poolInfo);
+
+		AX_CORE_ASSERT(commandPoolResult.result == Vk::Result::eSuccess, "Failed to create command pool!");
+		commandPool = commandPoolResult.value;
 	}
 
 	VulkanQueue::~VulkanQueue() {
-		vkDestroyCommandPool(device.getHandle(), commandPool, nullptr);
+		device.getHandle().destroyCommandPool(commandPool);
 	}
 
 	void VulkanQueue::wait() const {
-		AX_CORE_ASSERT(vkQueueWaitIdle(queue) == VK_SUCCESS, "Failed to wait for queue idle!");
+		AX_CORE_ASSERT(queue.waitIdle() == Vk::Result::eSuccess, "Failed to wait for queue idle!");
 	}
 }

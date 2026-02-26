@@ -2,7 +2,7 @@
 #include "VulkanShader.h"
 #include "Renderer/GlobalUbo.h"
 #include "Renderer/MaterialUbo.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanMaterialShader : public VulkanShader {
@@ -17,14 +17,14 @@ namespace Axiom {
 		void bindTexture(Texture& texture) override;
 
 	private:
-		void createPipeline(VkRenderPass vkRenderPass) override;
+		void createPipeline(Vk::RenderPass vkRenderPass) override;
 		void createDescriptors() override;
 
 	private:
-		VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-		std::vector<VkDescriptorSet> descriptorSets;
-		VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-		uint32_t currentFrameIndex;
+		Vk::DescriptorSetLayout descriptorSetLayout = nullptr;
+		std::vector<Vk::DescriptorSet> descriptorSets;
+		Vk::DescriptorPool descriptorPool = nullptr;
+		uint32_t currentFrameIndex = 0;
 	};
 }
 

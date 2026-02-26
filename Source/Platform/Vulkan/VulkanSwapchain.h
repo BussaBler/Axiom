@@ -3,7 +3,7 @@
 #include "VulkanContext.h"
 #include "VulkanImage.h"
 #include "Math/AxMath.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
@@ -20,8 +20,8 @@ namespace Axiom {
 		void present(Context& context) override;
 		void prepare(Context& context) override;
 
-		VkSwapchainKHR getHandle() const { return swapchain; }
-		VkFormat getImageFormat() const { return swapChainImageFormat; }
+		Vk::SwapchainKHR getHandle() const { return swapchain; }
+		Vk::Format getImageFormat() const { return swapChainImageFormat; }
 		uint32_t getImageCount() const { return static_cast<uint32_t>(frames.size()); }
 		VulkanImage& getImage(uint32_t index) { return *frameImages[index]; }
 		VulkanImage& getDepthImage() { return *depthImage; }
@@ -32,10 +32,10 @@ namespace Axiom {
 	private:
 		VulkanDevice& device;
 		VulkanQueue& presentQueue;
-		VkSwapchainKHR swapchain;
-		VkSurfaceKHR surface;
-		VkFormat swapChainImageFormat;
-		std::vector<VkImage> frames;
+		Vk::SwapchainKHR swapchain;
+		Vk::SurfaceKHR surface;
+		Vk::Format swapChainImageFormat;
+		std::vector<Vk::Image> frames;
 		std::vector<std::unique_ptr<VulkanImage>> frameImages;
 		uint32_t currentImageIndex = 0;
 		std::unique_ptr<VulkanImage> depthImage;

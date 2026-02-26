@@ -1,100 +1,57 @@
 Import('baseEnv', 'debugEnv', 'releaseEnv', 'buildInfo')
+
 import os
 from SCons.Script import Dir, Return
 
 platform = buildInfo['platform']
-architecture = buildInfo['architecture'] 
+architecture = buildInfo['architecture']
 compiler = buildInfo['compiler']
 config = buildInfo['config']
-vulkanSdk = buildInfo['vulkanSdk']
+configName = config.capitalize()
 vsproj = buildInfo['vsproj']
 
-currentEnv = debugEnv if config.lower() == 'debug' else releaseEnv
-configName = config.capitalize()
+localEnv = (debugEnv if config.lower() == 'debug' else releaseEnv).Clone()
 
-objPrefix = f'Bin-Int/{platform}-{architecture}/{configName}/'
-currentEnv['OBJPREFIX'] = objPrefix
+def configurePlatform(env, platformName):
+    platformMap = {
+        'windows': {'define': 'AX_PLATFORM_WINDOWS', 'path': 'Source/Platform/Windows/*.cpp'},
+        'linux': {'define': 'AX_PLATFORM_LINUX', 'path': 'Source/Platform/Linux/*.cpp'},
+        'darwin': {'define': 'AX_PLATFORM_MACOS', 'path': 'Source/Platform/MacOS/*.cpp'}
+    }
 
-srcDir = Dir('../../Axiom/Source')
-allCppFiles = srcDir.glob('Axiom/**/*.cpp')
-allCppFiles += srcDir.glob('Axiom/Renderer/**/*.cpp')
-allCppFiles += srcDir.glob('Axiom/Renderer/Data/**/*.cpp')
-
-axiomSources = [f for f in allCppFiles if '/Platform/' not in str(f) and '\\Platform\\' not in str(f)]
-
-axiomSources += srcDir.glob('Platform/Vulkan/*.cpp')
-axiomSources += srcDir.glob('Platform/Vulkan/Shader/*.cpp')
-
-def configurePlatformSpecific(env, platformName, compilerType):
-    # configure platform-specific settings
+    key = next((k for k in platformMap if platformName.startswith(k)), None)
     
-    if compilerType == 'msvc':
-        env.Append(CXXFLAGS=['/std:c++20'])
-    else:
-        env.Append(CXXFLAGS=['-std=c++20'])
-    
-    if platformName.startswith('windows'):
-        env.Append(CPPDEFINES=['AX_PLATFORM_WINDOWS'])
-        return srcDir.glob('Platform/Windows/*.cpp')
-    elif platformName.startswith('linux'):
-        env.Append(CPPDEFINES=['AX_PLATFORM_LINUX'])
-        return srcDir.glob('Platform/Linux/*.cpp')
-    elif platformName.startswith('darwin'):
-        env.Append(CPPDEFINES=['AX_PLATFORM_MACOS'])
-        return srcDir.glob('Platform/MacOS/*.cpp')
-    else:
-        return []
+    if key:
+        env.Append(CPPDEFINES=[platformMap[key]['define']])
+        return Glob(platformMap[key]['path'])
+    return []
 
-platformSources = configurePlatformSpecific(currentEnv, platform, compiler)
-axiomSources += platformSources
+coreSources = Glob('Source/*.cpp')
+coreSources += Glob('Source/*/*.cpp')
+# TODO: temp solution to add platform-specific code, should be changed to add more renderer backends
+vulkanSources = Glob('Source/Platform/Vulkan/*.cpp')
 
-currentEnv.Append(CPPPATH=[
-    '../../Axiom/Source',
-    '../../Axiom/Source/Axiom',
-    '../../Axiom/Vendor/glm',
-    os.path.join(vulkanSdk, 'Include'),
-    '../../Axiom/Vendor/ImGui',
-    '../../Axiom/Vendor/stb',
+sources = coreSources + vulkanSources + configurePlatform(localEnv, platform)
+
+localEnv.Append(CPPPATH=[
+    Dir('#/Axiom/Source'),
 ])
 
-if compiler == 'msvc':
-    currentEnv.Append(LIBPATH=[os.path.join(vulkanSdk, 'Lib')])
-    shadercLib = 'shaderc_combined' + ('d' if config.lower() == 'debug' else '')
-    currentEnv.Append(LIBS=[shadercLib])
-else:  # GCC or Clang
-    currentEnv.Append(LIBPATH=[os.path.join(vulkanSdk, 'lib')])
-    currentEnv.Append(LIBS=['shaderc_combined'])
-
-currentEnv['OBJPREFIX'] = f'../../../Bin-Int/{platform}-{architecture}/{configName}/'
-
-axiomLib = currentEnv.StaticLibrary('Axiom', axiomSources)
+axiomLib = localEnv.StaticLibrary(f'#/Bin/{configName}/Axiom/Axiom', sources)
 
 axiomProject = None
 if vsproj:
-    axiomSources = srcDir.glob('Axiom/**/*.cpp')
-    axiomSources += srcDir.glob('Axiom/**/**/*.cpp')
-    axiomSources += srcDir.glob('Axiom/**/**/**/*.cpp')
-    axiomSources += srcDir.glob('Platform/**/*.cpp')
-    axiomSources += srcDir.glob('Platform/**/**/*.cpp')
-    axiomSources += srcDir.glob('*.cpp')
+    axiomSources = Glob('Source/*.cpp') + Glob('Source/*/*.cpp') + Glob('Source/*/*/*.cpp')
+    axiomHeaders = Glob('Source/*.h') + Glob('Source/*/*.h') + Glob('Source/*/*/*.h')
+    localEnv['CPPPATH'] = [Dir(path) for path in localEnv['CPPPATH']]
 
-    axiomHeaders = srcDir.glob('Axiom/**/*.h')
-    axiomHeaders += srcDir.glob('Axiom/**/**/*.h')
-    axiomHeaders += srcDir.glob('Axiom/**/**/**/*.h')
-    axiomHeaders += srcDir.glob('Platform/**/*.h')
-    axiomHeaders += srcDir.glob('Platform/**/**/*.h')
-    axiomHeaders += srcDir.glob('*.h')
-
-    currentEnv['CPPPATH'] = [Dir(path) for path in currentEnv['CPPPATH']]
-
-    axiomProject = currentEnv.MSVSProject(
-        target='../../Axiom/Axiom' + currentEnv['MSVSPROJECTSUFFIX'],
+    axiomProject = localEnv.MSVSProject(
+        target='#/Axiom/Axiom' + localEnv['MSVSPROJECTSUFFIX'],
         srcs=[str(f) for f in axiomSources],
         incs=[str(f) for f in axiomHeaders],
         buildtarget=axiomLib,
         variant=[f'{configName}|x64'],
         auto_build_solution=0,
     )
-
 
 Return('axiomLib', 'axiomProject')

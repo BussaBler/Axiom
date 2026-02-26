@@ -8,19 +8,20 @@ namespace Axiom {
 		Image = 1,
 	};
 
-	enum ResourceFormat {
-		Unknown = 0,
-		R8_U = 1,
-		RG8_U = 2,
-		RGBA8_U = 3,
-		RGBA8_S = 4,
-		BRGA8_U = 5,
-		BRGA8_S = 6,
-		RGBA16_F = 7,
-		RGBA32_F = 8,
-		D24S8 = 9,
-		D32_F = 10,
-		D32S8 = 11
+	enum class ResourceFormat {
+		Unknown,
+		R8_U,
+		RG8_U,
+		RGB8_U,
+		RGBA8_U,
+		RGBA8_S,
+		BRGA8_U,
+		BRGA8_S,
+		RGBA16_F,
+		RGBA32_F,
+		D24S8,
+		D32_F,
+		D32S8
 	};
 
 	enum ResourceUsage {

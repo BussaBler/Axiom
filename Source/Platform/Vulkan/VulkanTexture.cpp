@@ -11,9 +11,9 @@ namespace Axiom {
 	}
 
 	VulkanTexture::~VulkanTexture() {
-		if (sampler != VK_NULL_HANDLE) {
-			vkDestroySampler(device.getHandle(), sampler, nullptr);
-			sampler = VK_NULL_HANDLE;
+		if (sampler) {
+			device.getHandle().destroySampler(sampler);
+			sampler = nullptr;
 		}
 	}
 
@@ -33,28 +33,29 @@ namespace Axiom {
 		image->getView(viewCreateInfo);
 		image->loadData(createInfo.data, static_cast<uint64_t>(createInfo.width) * createInfo.height * createInfo.channels);
 
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = 16;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
+		Vk::SamplerCreateInfo samplerInfo{};
+		samplerInfo.setMagFilter(Vk::Filter::eLinear);
+		samplerInfo.setMinFilter(Vk::Filter::eLinear);
+		samplerInfo.setAddressModeU(Vk::SamplerAddressMode::eRepeat);
+		samplerInfo.setAddressModeV(Vk::SamplerAddressMode::eRepeat);
+		samplerInfo.setAddressModeW(Vk::SamplerAddressMode::eRepeat);
+		samplerInfo.setAnisotropyEnable(Vk::True);
+		samplerInfo.setMaxAnisotropy(16);
+		samplerInfo.setBorderColor(Vk::BorderColor::eIntOpaqueBlack);
+		samplerInfo.setUnnormalizedCoordinates(Vk::False);
+		samplerInfo.setCompareEnable(Vk::False);
+		samplerInfo.setCompareOp(Vk::CompareOp::eAlways);
+		samplerInfo.setMipmapMode(Vk::SamplerMipmapMode::eLinear);
+		samplerInfo.setMipLodBias(0.0f);
+		samplerInfo.setMinLod(0.0f);
+		samplerInfo.setMaxLod(0.0f);
+		Vk::ResultValue<Vk::Sampler> samplerResult = device.getHandle().createSampler(samplerInfo);
 
-		AX_CORE_ASSERT(vkCreateSampler(device.getHandle(), &samplerInfo, nullptr, &sampler) == VK_SUCCESS, "Failed to create texture sampler!");
+		AX_CORE_ASSERT(samplerResult.result == Vk::Result::eSuccess, "Failed to create texture sampler!");
+		sampler = samplerResult.value;
 	}
 
-	VkImageView VulkanTexture::getImageView() const {
+	Vk::ImageView VulkanTexture::getImageView() const {
 		return static_cast<VulkanImageView&>(image->getView(imageViewCreateInfo)).getHandle();
 	}
 }

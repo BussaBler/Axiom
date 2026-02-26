@@ -9,27 +9,21 @@ namespace Axiom {
 	}
 
 	std::vector<VulkanAdapter> VulkanAdapter::getAvailableAdapters(VulkanInstance& instance) {
-		uint32_t deviceCount;
-		vkEnumeratePhysicalDevices(instance.getHandle(), &deviceCount, nullptr);
-		AX_CORE_ASSERT(deviceCount > 0, "Failed to find GPUs with Vulkan support!");
-
-		std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-		vkEnumeratePhysicalDevices(instance.getHandle(), &deviceCount, physicalDevices.data());
+		Vk::ResultValue<std::vector<Vk::PhysicalDevice>> physicalDevicesResult = instance.getHandle().enumeratePhysicalDevices();
+		AX_CORE_ASSERT(physicalDevicesResult.result == Vk::Result::eSuccess, "Failed to enumerate physical devices for Vulkan instance");
+		AX_CORE_ASSERT(!physicalDevicesResult.value.empty(), "No Vulkan suitable physical devices found");
 
 		std::vector<VulkanAdapter> adapters;
-		for (const auto& device : physicalDevices) {
+		for (const auto& device : physicalDevicesResult.value) {
 			adapters.emplace_back(instance, device);
 		}
 
 		return adapters;
 	}
 
-	std::vector<VkQueueFamilyProperties> VulkanAdapter::getQueueFamilyProperties() const {
-		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-		return queueFamilies;
+	std::vector<Vk::QueueFamilyProperties> VulkanAdapter::getQueueFamilyProperties() const {
+		std::vector<Vk::QueueFamilyProperties> queueFamiliesProperties = physicalDevice.getQueueFamilyProperties();
+		return queueFamiliesProperties;
 	}
 
 	std::vector<QueueFamily> VulkanAdapter::findQueueFamilies() const {
@@ -48,7 +42,7 @@ namespace Axiom {
 		return queueFamilies;
 	}
 
-	uint32_t VulkanAdapter::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const {
+	uint32_t VulkanAdapter::findMemoryType(uint32_t typeFilter, Vk::MemoryPropertyFlags properties) const {
 		auto memoryProperties = getMemoryProperties();
 		for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
 			if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -59,54 +53,52 @@ namespace Axiom {
 		return 0;
 	}
 
-	std::vector<VkSurfaceFormatKHR> VulkanAdapter::getSurfaceFormats(VkSurfaceKHR surface) const {
-		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-		std::vector<VkSurfaceFormatKHR> formats(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
-		return formats;
+	std::vector<Vk::SurfaceFormatKHR> VulkanAdapter::getSurfaceFormats(Vk::SurfaceKHR surface) const {
+		Vk::ResultValue<std::vector<Vk::SurfaceFormatKHR>> surfaceFormatsResult = physicalDevice.getSurfaceFormatsKHR(surface);
+		AX_CORE_ASSERT(surfaceFormatsResult.result == Vk::Result::eSuccess, "Failed to get surface formats for device: {}", getProperties().deviceName);
+
+		return surfaceFormatsResult.value;
 	}
 
-	std::vector<VkPresentModeKHR> VulkanAdapter::getPresentModes(VkSurfaceKHR surface) const {
-		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-		std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
-		return presentModes;
+	std::vector<Vk::PresentModeKHR> VulkanAdapter::getPresentModes(Vk::SurfaceKHR surface) const {
+		Vk::ResultValue<std::vector<Vk::PresentModeKHR>> presentModesResult = physicalDevice.getSurfacePresentModesKHR(surface);
+		AX_CORE_ASSERT(presentModesResult.result == Vk::Result::eSuccess, "Failed to get present modes for device: {}", getProperties().deviceName);
+
+		return presentModesResult.value;
 	}
 
-	VkSurfaceCapabilitiesKHR VulkanAdapter::getSurfaceCapabilities(VkSurfaceKHR surface) const {
-		VkSurfaceCapabilitiesKHR capabilities;
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
-		return capabilities;
+	Vk::SurfaceCapabilitiesKHR VulkanAdapter::getSurfaceCapabilities(Vk::SurfaceKHR surface) const {
+		Vk::ResultValue<Vk::SurfaceCapabilitiesKHR> surfaceCapabilitiesResult = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+		AX_CORE_ASSERT(surfaceCapabilitiesResult.result == Vk::Result::eSuccess, "Failed to get surface capabilities for device: {}", getProperties().deviceName);
+
+		return surfaceCapabilitiesResult.value;
 	}
 
-	VkFormat VulkanAdapter::getDepthFormat() const {
-		std::array<VkFormat,3> depthFormats = {
-			VK_FORMAT_D32_SFLOAT_S8_UINT,
-			VK_FORMAT_D32_SFLOAT,
-			VK_FORMAT_D24_UNORM_S8_UINT
+	Vk::Format VulkanAdapter::getDepthFormat() const {
+		std::array<Vk::Format,3> depthFormats = {
+			Vk::Format::eD32SfloatS8Uint,
+			Vk::Format::eD32Sfloat,
+			Vk::Format::eD24UnormS8Uint
 		};
 
 		for (const auto& format : depthFormats) {
-			VkFormatProperties formatProperties;
-			vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProperties);
-			if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+			Vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
+			if (formatProperties.optimalTilingFeatures & Vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
 				return format;
 			}
-			if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+			if (formatProperties.linearTilingFeatures & Vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
 				return format;
 			}
 		}
 
-		return VK_FORMAT_UNDEFINED;
+		return Vk::Format::eUndefined;
 	}
 
 	bool VulkanAdapter::checkAvailableDeviceExtensions() const {
-		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
-		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+		Vk::ResultValue<std::vector<Vk::ExtensionProperties>> availableExtensionsResult = physicalDevice.enumerateDeviceExtensionProperties();
+		AX_CORE_ASSERT(availableExtensionsResult.result == Vk::Result::eSuccess, "Failed to enumerate device extensions for device: {}", getProperties().deviceName);
+		const auto& availableExtensions = availableExtensionsResult.value;
+		
 		std::vector<const char*> requiredExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 		for (const char* required : requiredExtensions) {
 			bool found = false;
@@ -124,10 +116,9 @@ namespace Axiom {
 		return true;
 	}
 
-	bool VulkanAdapter::checkSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex) const {
-		VkBool32 supported = VK_FALSE;
-		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIndex, surface, &supported);
-		return supported == VK_TRUE;
+	bool VulkanAdapter::checkSurfaceSupport(Vk::SurfaceKHR surface, uint32_t queueFamilyIndex) const {
+		Vk::ResultValue<uint32_t> supported = physicalDevice.getSurfaceSupportKHR(queueFamilyIndex, surface);
+		return supported.result == Vk::Result::eSuccess && supported.value == VK_TRUE;
 	}
 }
 

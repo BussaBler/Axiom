@@ -11,61 +11,59 @@ namespace Axiom {
 	}
 
 	void VulkanCommandBuffer::begin(bool isSingleUse, bool isRenderPassCont, bool isSimultaneous) {
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = 0;
+		Vk::CommandBufferUsageFlags usageFlags = Vk::CommandBufferUsageFlags();
 		if (isSingleUse) {
-			beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+			usageFlags |= Vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 		}
 		if (isRenderPassCont) {
-			beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+			usageFlags |= Vk::CommandBufferUsageFlagBits::eRenderPassContinue;
 		}
 		if (isSimultaneous) {
-			beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+			usageFlags |= Vk::CommandBufferUsageFlagBits::eSimultaneousUse;
 		}
-		AX_CORE_ASSERT(vkBeginCommandBuffer(commandBuffer, &beginInfo) == VK_SUCCESS, "Failed to begin recording command buffer!");
+
+		Vk::CommandBufferBeginInfo beginInfo(usageFlags);
+		AX_CORE_ASSERT(commandBuffer.begin(beginInfo) == Vk::Result::eSuccess, "Failed to begin recording command buffer!");
 		state = CommandBufferState::RECORDING;
 	}
 
 	void VulkanCommandBuffer::end() {
-		AX_CORE_ASSERT(vkEndCommandBuffer(commandBuffer) == VK_SUCCESS, "Failed to end recording command buffer!");
+		AX_CORE_ASSERT(commandBuffer.end() == Vk::Result::eSuccess, "Failed to end recording command buffer!");
 		state = CommandBufferState::RECORDING_ENDED;
 	}
 
 	void VulkanCommandBuffer::reset() {
-		AX_CORE_ASSERT(vkResetCommandBuffer(commandBuffer, 0) == VK_SUCCESS, "Failed to reset command buffer!");
+		AX_CORE_ASSERT(commandBuffer.reset() == Vk::Result::eSuccess, "Failed to reset command buffer!");
 		state = CommandBufferState::READY;
 	}
 
-	void VulkanCommandBuffer::allocate(VkCommandPool commandPool, bool isPrimary) {
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
-		allocInfo.level = isPrimary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandBufferCount = 1;
-		AX_CORE_ASSERT(vkAllocateCommandBuffers(device.getHandle(), &allocInfo, &commandBuffer) == VK_SUCCESS, "Failed to allocate command buffers!");
+	void VulkanCommandBuffer::allocate(Vk::CommandPool commandPool, bool isPrimary) {
+		Vk::CommandBufferLevel level = isPrimary ? Vk::CommandBufferLevel::ePrimary : Vk::CommandBufferLevel::eSecondary;
+		Vk::CommandBufferAllocateInfo allocInfo(commandPool, level, 1);
+
+		Vk::ResultValue<std::vector<Vk::CommandBuffer>> allocResult = device.getHandle().allocateCommandBuffers(allocInfo);
+
+		AX_CORE_ASSERT(allocResult.result == Vk::Result::eSuccess, "Failed to allocate command buffers!");
+		commandBuffer = allocResult.value[0];
 		state = CommandBufferState::READY;
 	}
 
-	void VulkanCommandBuffer::free(VkCommandPool commandPool) {
-		vkFreeCommandBuffers(device.getHandle(), commandPool, 1, &commandBuffer);
+	void VulkanCommandBuffer::free(Vk::CommandPool commandPool) {
+		device.getHandle().freeCommandBuffers(commandPool, commandBuffer);
 		commandBuffer = VK_NULL_HANDLE;
 		state = CommandBufferState::NOT_ALLOCATED;
 	}
 
-	void VulkanCommandBuffer::allocateAndBeginSingleUse(VkCommandPool commandPool, bool isPrimary) {
+	void VulkanCommandBuffer::allocateAndBeginSingleUse(Vk::CommandPool commandPool, bool isPrimary) {
 		allocate(commandPool, isPrimary);
 		begin(true, false, false);
 	}
 
-	void VulkanCommandBuffer::endSingleUse(VkQueue queue, VkCommandPool commandPool, VkFence fence) {
+	void VulkanCommandBuffer::endSingleUse(Vk::Queue queue, Vk::CommandPool commandPool, Vk::Fence fence) {
 		end();
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-		AX_CORE_ASSERT(vkQueueSubmit(queue, 1, &submitInfo, fence) == VK_SUCCESS, "Failed to submit command buffer!");
-		vkQueueWaitIdle(queue);
+		Vk::SubmitInfo submitInfo({}, {}, commandBuffer);
+		AX_CORE_ASSERT(queue.submit(submitInfo, fence) == Vk::Result::eSuccess, "Failed to submit command buffer!");
+		AX_CORE_ASSERT(queue.waitIdle() == Vk::Result::eSuccess, "Failed to wait for queue idle after submitting command buffer!");
 		free(commandPool);
 	}
 }

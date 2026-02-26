@@ -1,7 +1,7 @@
 #pragma once
 #include "Renderer/Shader.h"
 #include "VulkanPipeline.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
@@ -9,9 +9,9 @@ namespace Axiom {
 	class VulkanBuffer;
 
 	struct VulkanShaderStage {
-		VkShaderModuleCreateInfo createInfo{};
-		VkShaderModule module = VK_NULL_HANDLE;
-		VkPipelineShaderStageCreateInfo stageInfo{};
+		Vk::ShaderModuleCreateInfo createInfo{};
+		Vk::ShaderModule module = nullptr;
+		Vk::PipelineShaderStageCreateInfo stageInfo{};
 	};
 
 	class VulkanShader : public Shader {
@@ -19,12 +19,12 @@ namespace Axiom {
 		VulkanShader(VulkanDevice& vkDevice, std::string fileName) : device(vkDevice), shaderName(fileName) {}
 		~VulkanShader() override;
 
-		void init(VkRenderPass vkRenderPass);
+		void init(Vk::RenderPass vkRenderPass);
 		void bind(CommandBuffer& commandBuffer) const override;
 
 	protected:
 		void createShaderModules();
-		virtual void createPipeline(VkRenderPass vkRenderPass) {};
+		virtual void createPipeline(Vk::RenderPass vkRenderPass) {};
 		virtual void createDescriptors() {};
 
 	protected:

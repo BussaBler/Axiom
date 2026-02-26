@@ -1,6 +1,6 @@
 #pragma once
 #include "Renderer/Resource.h"
-#include <vulkan/vulkan.h>
+#include "VulkanInclude.h"
 
 namespace Axiom {
 	class VulkanDevice;
@@ -13,15 +13,15 @@ namespace Axiom {
 
 		uint32_t generateId() override;
 
-		static VkFormat getVkFormat(ResourceFormat format);
-		static ResourceFormat getResourceFormat(VkFormat format);
-		static VkMemoryPropertyFlags getMemoryPropertyFlags(uint32_t memoryUsage);
+		static Vk::Format getVkFormat(ResourceFormat format);
+		static ResourceFormat getResourceFormat(Vk::Format format);
+		static Vk::MemoryPropertyFlags getMemoryPropertyFlags(uint32_t memoryUsage);
 
 	protected:
 		VulkanDevice& device;
-		VkDeviceMemory memory;
-		VkAccessFlags currentAccessFlags;
-		VkDeviceSize memorySize;
+		Vk::DeviceMemory memory;
+		Vk::AccessFlags currentAccessFlags;
+		Vk::DeviceSize memorySize;
 		uint32_t id;
 		std::unique_ptr<VulkanView> resourceView;
 
