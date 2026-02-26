@@ -60,7 +60,6 @@ namespace Axiom {
 	void VulkanInstance::init(const InstaceInfo& info) {
 		AX_CORE_ASSERT(linkVulkan(), "Failed to link Vulkan library!");
 		AX_CORE_LOG_INFO("Initializing Vulkan Instance...");
-		AX_CORE_LOG_INFO("Size of Vulkan dispatcher: {} bytes", sizeof(VULKAN_HPP_DEFAULT_DISPATCHER));
 
 		Vk::ApplicationInfo appInfo(
 			info.appName.c_str(), 
@@ -78,6 +77,9 @@ namespace Axiom {
 		AX_CORE_ASSERT(instanceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan instance: {}", Vk::to_string(instanceResult.result));
 		instance = instanceResult.value;
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
+
+		AX_CORE_LOG_TRACE("Queue submit adress {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkQueueSubmit));
+		AX_CORE_LOG_TRACE("ResetCmd address {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkResetCommandBuffer));
 
 #ifdef AX_DEBUG
 		Vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo(
