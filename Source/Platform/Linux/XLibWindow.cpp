@@ -53,7 +53,7 @@ namespace Axiom {
 		if (!window) {
 			AX_CORE_ASSERT(false, "Failed to create X window");
 		}
-		XSetStandardProperties(display, window, data.title.c_str(), data.title.c_str(), None, NULL, 0, NULL);
+		XSetStandardProperties(display, window, data.title.c_str(), data.title.c_str(), Empty, NULL, 0, NULL);
 		XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
 		XkbSetDetectableAutoRepeat(display, true, nullptr);
 		XMapWindow(display, window);

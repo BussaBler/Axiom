@@ -10,6 +10,6 @@
 #define AX_CORE_ASSERT(x, ...) { if (!(x)) { Axiom::AX_CORE_LOG_ERROR("Assertion failed: " #x, __VA_ARGS__); __builtin_trap(); } }
 #endif
 #else
-#define AX_ASSERT(x, ...) if(!x);
-#define AX_CORE_ASSERT(x, ...) if(!x);
+#define AX_ASSERT(x, ...) if(!(x));
+#define AX_CORE_ASSERT(x, ...) if(!(x));
 #endif // AX_ENABLE_ASSERTS

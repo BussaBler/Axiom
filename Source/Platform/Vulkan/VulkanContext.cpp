@@ -121,7 +121,7 @@ namespace Axiom {
 		for (uint32_t i = 0; i < frameCount; i++) {
 			VulkanContextFrame frame{};
 
-			Vk::SemaphoreCreateInfo semaphoreInfo({});
+			Vk::SemaphoreCreateInfo semaphoreInfo{};
 			Vk::ResultValue<Vk::Semaphore> imageAvailableSemaphoreResult = device.getHandle().createSemaphore(semaphoreInfo);
 			Vk::ResultValue<Vk::Semaphore> renderFinishedSemaphoreResult = device.getHandle().createSemaphore(semaphoreInfo);
 

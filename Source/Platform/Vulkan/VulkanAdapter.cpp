@@ -49,27 +49,27 @@ namespace Axiom {
 				return i;
 			}
 		}
-		AX_CORE_LOG_ERROR("Failed to find suitable memory type for device: {}", getProperties().deviceName);
+		AX_CORE_LOG_ERROR("Failed to find suitable memory type for device: {}", std::string_view(getProperties().deviceName));
 		return 0;
 	}
 
 	std::vector<Vk::SurfaceFormatKHR> VulkanAdapter::getSurfaceFormats(Vk::SurfaceKHR surface) const {
 		Vk::ResultValue<std::vector<Vk::SurfaceFormatKHR>> surfaceFormatsResult = physicalDevice.getSurfaceFormatsKHR(surface);
-		AX_CORE_ASSERT(surfaceFormatsResult.result == Vk::Result::eSuccess, "Failed to get surface formats for device: {}", getProperties().deviceName);
+		AX_CORE_ASSERT(surfaceFormatsResult.result == Vk::Result::eSuccess, "Failed to get surface formats for device: {}", std::string_view(getProperties().deviceName));
 
 		return surfaceFormatsResult.value;
 	}
 
 	std::vector<Vk::PresentModeKHR> VulkanAdapter::getPresentModes(Vk::SurfaceKHR surface) const {
 		Vk::ResultValue<std::vector<Vk::PresentModeKHR>> presentModesResult = physicalDevice.getSurfacePresentModesKHR(surface);
-		AX_CORE_ASSERT(presentModesResult.result == Vk::Result::eSuccess, "Failed to get present modes for device: {}", getProperties().deviceName);
+		AX_CORE_ASSERT(presentModesResult.result == Vk::Result::eSuccess, "Failed to get present modes for device: {}", std::string_view(getProperties().deviceName));
 
 		return presentModesResult.value;
 	}
 
 	Vk::SurfaceCapabilitiesKHR VulkanAdapter::getSurfaceCapabilities(Vk::SurfaceKHR surface) const {
 		Vk::ResultValue<Vk::SurfaceCapabilitiesKHR> surfaceCapabilitiesResult = physicalDevice.getSurfaceCapabilitiesKHR(surface);
-		AX_CORE_ASSERT(surfaceCapabilitiesResult.result == Vk::Result::eSuccess, "Failed to get surface capabilities for device: {}", getProperties().deviceName);
+		AX_CORE_ASSERT(surfaceCapabilitiesResult.result == Vk::Result::eSuccess, "Failed to get surface capabilities for device: {}", std::string_view(getProperties().deviceName));
 
 		return surfaceCapabilitiesResult.value;
 	}
@@ -96,7 +96,7 @@ namespace Axiom {
 
 	bool VulkanAdapter::checkAvailableDeviceExtensions() const {
 		Vk::ResultValue<std::vector<Vk::ExtensionProperties>> availableExtensionsResult = physicalDevice.enumerateDeviceExtensionProperties();
-		AX_CORE_ASSERT(availableExtensionsResult.result == Vk::Result::eSuccess, "Failed to enumerate device extensions for device: {}", getProperties().deviceName);
+		AX_CORE_ASSERT(availableExtensionsResult.result == Vk::Result::eSuccess, "Failed to enumerate device extensions for device: {}", std::string_view(getProperties().deviceName));
 		const auto& availableExtensions = availableExtensionsResult.value;
 		
 		std::vector<const char*> requiredExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
@@ -109,7 +109,7 @@ namespace Axiom {
 				}
 			}
 			if (!found) {
-				AX_CORE_LOG_ERROR("Required Vulkan Device Extension not found for device: {} {}", required, getProperties().deviceName);
+				AX_CORE_LOG_ERROR("Required Vulkan Device Extension not found for device: {} {}", required, std::string_view(getProperties().deviceName));
 				return false;
 			}
 		}

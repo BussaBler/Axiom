@@ -3,7 +3,7 @@
 
 namespace Axiom {
 	enum class EventType {
-		None = 0,
+		Empty = 0,
 		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMoved,
 		AppTick, AppUpdate, AppRender,
 		KeyPressed, KeyReleased, KeyTyped,
@@ -11,7 +11,7 @@ namespace Axiom {
 	};
 
 	enum EventCategory {
-		None = 0,
+		Empty = 0,
 		EventCategoryApplication = 1 << 0,
 		EventCategoryApplicationInput = 1 << 1,
 		EventCategoryKeyboard = 1 << 2,
