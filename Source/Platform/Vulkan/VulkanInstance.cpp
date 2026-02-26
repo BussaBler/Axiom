@@ -78,8 +78,8 @@ namespace Axiom {
 		instance = instanceResult.value;
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
 
-		AX_CORE_LOG_TRACE("Queue submit adress {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkQueueSubmit));
-		AX_CORE_LOG_TRACE("ResetCmd address {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkResetCommandBuffer));
+		AX_CORE_LOG_TRACE("INIT Queue submit adress {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkQueueSubmit));
+		AX_CORE_LOG_TRACE("INIT ResetCmd address {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkResetCommandBuffer));
 
 #ifdef AX_DEBUG
 		Vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo(
