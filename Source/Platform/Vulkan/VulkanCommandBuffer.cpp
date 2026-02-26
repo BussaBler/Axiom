@@ -62,8 +62,7 @@ namespace Axiom {
 	void VulkanCommandBuffer::endSingleUse(Vk::Queue queue, Vk::CommandPool commandPool, Vk::Fence fence) {
 		end();
 		Vk::SubmitInfo submitInfo({}, {}, commandBuffer);
-		VULKAN_HPP_DEFAULT_DISPATCHER.vkQueueSubmit(static_cast<VkQueue>(queue), 1, reinterpret_cast<VkSubmitInfo*>(&submitInfo), static_cast<VkFence>(fence));
-		//AX_CORE_ASSERT(queue.submit({ submitInfo }, fence) == Vk::Result::eSuccess, "Failed to submit command buffer!");
+		AX_CORE_ASSERT(queue.submit({ submitInfo }, fence) == Vk::Result::eSuccess, "Failed to submit command buffer!");
 		
 		AX_CORE_ASSERT(queue.waitIdle() == Vk::Result::eSuccess, "Failed to wait for queue idle after submitting command buffer!");
 		free(commandPool);
