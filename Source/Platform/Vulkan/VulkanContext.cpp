@@ -38,8 +38,8 @@ namespace Axiom {
 		std::array<Vk::CommandBuffer, 1> commandBuffers = { commandBuffer.getHandle() };
 
 		Vk::SubmitInfo submitInfo(waitSemaphores, waitStages, commandBuffers, signalSemaphores);
-
-		AX_CORE_ASSERT(queue.getHandle().submit(1, &submitInfo, frameResources[currentFrameIndex].inFlightFence) == Vk::Result::eSuccess, "Failed to submit command buffer!");
+		VULKAN_HPP_DEFAULT_DISPATCHER.vkQueueSubmit(static_cast<VkQueue>(queue.getHandle()), 1, reinterpret_cast<VkSubmitInfo*>(&submitInfo), static_cast<VkFence>(frameResources[currentFrameIndex].inFlightFence));
+		//AX_CORE_ASSERT(queue.getHandle().submit({ submitInfo }, frameResources[currentFrameIndex].inFlightFence) == Vk::Result::eSuccess, "Failed to submit command buffer!");
 	}
 
 	bool VulkanContext::begin(Swapchain& swapchain) {
