@@ -64,9 +64,6 @@ namespace Axiom {
 		}
 		inFlightFences[imageIndex] = frameResources[currentFrameIndex].inFlightFence;
 
-		AX_CORE_LOG_TRACE("CONTEXT Queue submit adress {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkQueueSubmit));
-		AX_CORE_LOG_TRACE("CONTEXT ResetCmd address {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkResetCommandBuffer));
-
 		mainCommandBuffers[imageIndex]->reset();
 		mainCommandBuffers[imageIndex]->begin(false, false, false);
 

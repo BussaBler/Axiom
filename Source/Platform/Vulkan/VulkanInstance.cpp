@@ -77,10 +77,6 @@ namespace Axiom {
 		AX_CORE_ASSERT(instanceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan instance: {}", Vk::to_string(instanceResult.result));
 		instance = instanceResult.value;
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
-
-		AX_CORE_LOG_TRACE("INIT Queue submit adress {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkQueueSubmit));
-		AX_CORE_LOG_TRACE("INIT ResetCmd address {}", reinterpret_cast<void*>(VULKAN_HPP_DEFAULT_DISPATCHER.vkResetCommandBuffer));
-
 #ifdef AX_DEBUG
 		Vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo(
 			{},

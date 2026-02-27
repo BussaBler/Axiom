@@ -14,8 +14,8 @@ localEnv = (debugEnv if config.lower() == 'debug' else releaseEnv).Clone()
 
 def configurePlatform(env, platformName):
     platformMap = {
-        'windows': {'define': 'AX_PLATFORM_WINDOWS', 'path': 'Source/Platform/Windows/*.cpp'},
-        'linux': {'define': 'AX_PLATFORM_LINUX', 'path': 'Source/Platform/Linux/*.cpp'},
+        'windows': {'define': ['AX_PLATFORM_WINDOWS', 'VK_USE_PLATFORM_WIN32_KHR'], 'path': 'Source/Platform/Windows/*.cpp'},
+        'linux': {'define': ['AX_PLATFORM_LINUX', 'VK_USE_PLATFORM_XLIB_KHR'], 'path': 'Source/Platform/Linux/*.cpp'},
         'darwin': {'define': 'AX_PLATFORM_MACOS', 'path': 'Source/Platform/MacOS/*.cpp'}
     }
 
