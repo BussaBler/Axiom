@@ -60,22 +60,20 @@ namespace Axiom {
 		
 		uint32_t imageIndex = vkSwapchain.getCurrentImageIndex();
 		if (inFlightFences[imageIndex]) {
-			AX_CORE_ASSERT(device.getHandle().waitForFences(currentFrame.inFlightFence, Vk::True, UINT64_MAX) == Vk::Result::eSuccess, "Failed to wait for fences");
+			AX_CORE_ASSERT(device.getHandle().waitForFences(inFlightFences[imageIndex], Vk::True, UINT64_MAX) == Vk::Result::eSuccess, "Failed to wait for fences");
 		}
-		inFlightFences[imageIndex] = frameResources[currentFrameIndex].inFlightFence;
+		inFlightFences[imageIndex] = currentFrame.inFlightFence;
 
-		AX_CORE_ASSERT(imageIndex < mainCommandBuffers.size(), "Image index out of bounds!");
-
-		mainCommandBuffers[imageIndex]->reset();
-		mainCommandBuffers[imageIndex]->begin(false, false, false);
+		mainCommandBuffers[currentFrameIndex]->reset();
+		mainCommandBuffers[currentFrameIndex]->begin(false, false, false);
 
 		Math::uVec2 extent = vkSwapchain.getExtent();
 		Math::Vec2 fExtent = { static_cast<float>(extent.x()), static_cast<float>(extent.y()) };
 		Vk::Viewport viewport(0.0f, fExtent.y(), fExtent.x(), -fExtent.y(), 0.0f, 1.0f);
-		mainCommandBuffers[imageIndex]->getHandle().setViewport(0, viewport);
+		mainCommandBuffers[currentFrameIndex]->getHandle().setViewport(0, viewport);
 
 		Vk::Rect2D scissor({ 0, 0 }, { extent.x(), extent.y() });
-		mainCommandBuffers[imageIndex]->getHandle().setScissor(0, scissor);
+		mainCommandBuffers[currentFrameIndex]->getHandle().setScissor(0, scissor);
 
 		currentImageIndex = imageIndex;
 		return true;
