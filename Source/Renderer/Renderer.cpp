@@ -88,7 +88,7 @@ namespace Axiom {
 	void Renderer::draw() {
 		if (context->begin(*swapchain)) {
 			RenderPassCreateInfo renderPassInfo{};
-			renderPassInfo.clearColor = { 0.0f, 1.0f, 0.0f, 1.0f };
+			renderPassInfo.clearColor = { 0.2f, 0.2f, 1.0f, 1.0f };
 			auto mainRender = renderPassCache->get(renderPassInfo);
 			mainRender.begin(context->getMainCommandBuffer());
 			

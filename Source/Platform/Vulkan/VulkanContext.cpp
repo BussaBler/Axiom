@@ -64,6 +64,8 @@ namespace Axiom {
 		}
 		inFlightFences[imageIndex] = frameResources[currentFrameIndex].inFlightFence;
 
+		AX_CORE_ASSERT(imageIndex < mainCommandBuffers.size(), "Image index out of bounds!");
+
 		mainCommandBuffers[imageIndex]->reset();
 		mainCommandBuffers[imageIndex]->begin(false, false, false);
 
