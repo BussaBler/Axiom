@@ -22,7 +22,7 @@ def configurePlatform(env, platformName):
     key = next((k for k in platformMap if platformName.startswith(k)), None)
     
     if key:
-        env.Append(CPPDEFINES=[platformMap[key]['define']])
+        env.Append(CPPDEFINES=platformMap[key]['define'])
         return Glob(platformMap[key]['path'])
     return []
 
