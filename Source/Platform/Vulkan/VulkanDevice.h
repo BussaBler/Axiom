@@ -36,7 +36,7 @@ namespace Axiom {
 		std::vector<const char*> getRequiredExtensions();
 		std::vector<const char*> getValidationLayers();
 		void createDebugMessenger();
-		void createSurface(void* windowObjPtr);
+		void createSurface(Window* windowObjPtr);
 		void pickPhysicalDevice();
 		static bool checkPhysicalDeviceExtensions(const Vk::PhysicalDevice& device);
 		QueueFamilyIndices findQueueFamilies(const Vk::PhysicalDevice& device) const;

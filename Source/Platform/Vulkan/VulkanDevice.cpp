@@ -207,7 +207,7 @@ namespace Axiom {
 		debugMessenger = debugMessengerResult.value;
 	}
 
-	void VulkanDevice::createSurface(void* windowObjPtr) {
+	void VulkanDevice::createSurface(Window* windowObjPtr) {
 #if defined(AX_PLATFORM_WINDOWS)
 		Win32Window* win32Window = reinterpret_cast<Win32Window*>(windowObjPtr);
 
@@ -217,7 +217,7 @@ namespace Axiom {
 		AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan Win32 surface: {}", Vk::to_string(surfaceResult.result));
 		surface = surfaceResult.value;
 #elif defined(AX_PLATFORM_LINUX)
-		XLibWindow* xLibWindow = reinterpret_cast<XLibWindow*>(windowHandle);
+		XLibWindow* xLibWindow = reinterpret_cast<XLibWindow*>(windowObjPtr);
 		
 		Vk::XlibSurfaceCreateInfoKHR createInfo({}, static_cast<Display*>(xLibWindow->getNativeDisplay()), *static_cast<::Window*>(xLibWindow->getNativeWindow()));
 		Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createXlibSurfaceKHR(createInfo);
