@@ -1,119 +1,371 @@
-#include "axpch.h"
 #include "VulkanDevice.h"
-#include "VulkanContext.h"
-#include "VulkanSwapchain.h"
-#include "VulkanRenderPass.h"
-#include "VulkanRenderPassCache.h"
-#include "VulkanBuffer.h"
-#include "VulkanTexture.h"
-// temp
-#include "VulkanMaterialShader.h"
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace Axiom {
+	static VKAPI_ATTR Vk::Bool32 VKAPI_CALL debugCallback(Vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, Vk::DebugUtilsMessageTypeFlagsEXT messageType, const Vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+		switch (messageSeverity) {
+		case Vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
+			AX_CORE_LOG_TRACE("Vulkan validation layer: {0}", pCallbackData->pMessage);
+			break;
+		case Vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
+			AX_CORE_LOG_INFO("Vulkan validation layer: {0}", pCallbackData->pMessage);
+			break;
+		case Vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
+			AX_CORE_LOG_WARN("Vulkan validation layer: {0}", pCallbackData->pMessage);
+			break;
+		case Vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
+			AX_CORE_LOG_ERROR("Vulkan validation layer: {0}", pCallbackData->pMessage);
+			break;
+		default:
+			break;
+		}
+		return Vk::False;
+	}
+
+	VulkanDevice::VulkanDevice(const Device::CreateInfo& createInfo) {
+		AX_CORE_LOG_INFO("Initializing Vulkan Device...");
+		AX_CORE_ASSERT(linkVulkanLib(), "Failed to link Vulkan library!");
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(vkInstanceProcAddr);
+
+		Vk::ApplicationInfo appInfo(
+			createInfo.appName.c_str(),
+			Vk::makeVersion(createInfo.appVersionMajor, createInfo.appVersionMinor, createInfo.appVersionPatch),
+			createInfo.engineName.c_str(),
+			Vk::makeVersion(createInfo.engineVersionMajor, createInfo.engineVersionMinor, createInfo.engineVersionPatch),
+			Vk::ApiVersion14
+		);
+
+		std::vector<const char*> extensions = getRequiredExtensions();
+		std::vector<const char*> layers = getValidationLayers();
+
+		Vk::InstanceCreateInfo instanceCreateInfo({}, &appInfo, layers, extensions);
+		Vk::ResultValue<Vk::Instance> instanceResult = Vk::createInstance(instanceCreateInfo, nullptr, VULKAN_HPP_DEFAULT_DISPATCHER);
+		
+		AX_CORE_ASSERT(instanceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan instance: {}", Vk::to_string(instanceResult.result));
+		instance = instanceResult.value;
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
+
+#if defined (AX_DEBUG) 
+		createDebugMessenger();
+#endif
+		createSurface(createInfo.windowObjPtr);
+		pickPhysicalDevice();
+		createLogicalDevice();
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(logicDevice);
+		createCommandPool();
+	}
+
 	VulkanDevice::~VulkanDevice() {
-		AX_CORE_LOG_INFO("Destroying Vulkan Logical Device...");
-		mainQueue.reset();
-		device.destroy();
-	}
-
-	void VulkanDevice::init(const DeviceCreateInfo& deviceCreateInfo) {
-		AX_CORE_LOG_INFO("Initializing Vulkan Logical Device...");
-		queueFamilies = adapter.findQueueFamilies();
-
-		std::vector<Vk::DeviceQueueCreateInfo> queueCreateInfos(queueFamilies.size());
-		std::array<float, 1> queuePriority = { 1.0f };
-		for (uint32_t i = 0; i < queueFamilies.size(); i++) {
-			queueCreateInfos[i] = Vk::DeviceQueueCreateInfo({}, queueFamilies[i].index, queuePriority);
+		if (commandPool) {
+			logicDevice.destroyCommandPool(commandPool);
 		}
-
-		std::array<const char*, 0> enabledLayerNames = {};
-		std::array<const char*, 1> enabledExtensionsNames = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
-		Vk::PhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.setSamplerAnisotropy(Vk::True);
-
-		Vk::DeviceCreateInfo createInfo({}, queueCreateInfos, enabledLayerNames, enabledExtensionsNames, &deviceFeatures);
-		Vk::ResultValue<Vk::Device> deviceResult = adapter.getHandle().createDevice(createInfo);
-
-		AX_CORE_ASSERT(deviceResult.result == Vk::Result::eSuccess, "Failed to create logical device!");
-		device = deviceResult.value;
-		VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
-	
-		mainQueue = createQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute);
-		if (mainQueue) {
-			queues[Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute] = mainQueue.get();
-			queues[Vk::QueueFlagBits::eGraphics] = mainQueue.get();
-			queues[Vk::QueueFlagBits::eTransfer] = mainQueue.get();
-			queues[Vk::QueueFlagBits::eCompute] = mainQueue.get();
-		} else {
-			AX_CORE_LOG_ERROR("Failed to create Main Vulkan Queue!");
+		if (logicDevice) {
+			logicDevice.destroy();
+		}
+		if (surface) {
+			instance.destroySurfaceKHR(surface);
+		}
+		if (debugMessenger) {
+			instance.destroyDebugUtilsMessengerEXT(debugMessenger);
+		}
+		if (instance) {
+			instance.destroy();
 		}
 	}
 
-	std::unique_ptr<Context> VulkanDevice::createContext() {
-		std::unique_ptr<VulkanContext> context = std::make_unique<VulkanContext>(*this, *getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute));
-		context->init(3);
-		return std::move(context);
+	std::unique_ptr<SwapChain> VulkanDevice::createSwapchain(uint32_t width, uint32_t height) {
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+		VulkanSwapChain::CreateInfo createInfo{ logicDevice, surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height) };
+		return std::make_unique<VulkanSwapChain>(createInfo);
 	}
 
-	std::unique_ptr<Swapchain> VulkanDevice::createSwapchain(SwapchainCreateInfo& swapchainCreateInfo) {
-		std::unique_ptr<VulkanSwapchain> swapchain = std::make_unique<VulkanSwapchain>(swapchainCreateInfo, *this, *getQueue(Vk::QueueFlagBits::eGraphics | Vk::QueueFlagBits::eTransfer | Vk::QueueFlagBits::eCompute));
-		swapchain->build();
-		return std::move(swapchain);
+	std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
+		return std::make_unique<VulkanPipeline>(pipelineCreateInfo, logicDevice);
 	}
 
-	std::unique_ptr<RenderPassCache> VulkanDevice::createRenderPassCache(Swapchain& swapchain) {
-		return std::make_unique<VulkanRenderPassCache>(*this, static_cast<VulkanSwapchain&>(swapchain));
+	std::unique_ptr<CommandBuffer> VulkanDevice::createCommandBuffer() {
+		return std::make_unique<VulkanCommandBuffer>(logicDevice, commandPool);
 	}
 
-	std::unique_ptr<Shader> VulkanDevice::createShader(RenderPassToken& token) {
-		auto renderPass = static_cast<VulkanRenderPass*>(token.get());
-		auto shader = std::make_unique<VulkanMaterialShader>(*this);
-		shader->init(renderPass->getHandle());
-		return std::move(shader);
+	std::unique_ptr<Semaphore> VulkanDevice::createSemaphore() {
+		return std::make_unique<VulkanSemaphore>(logicDevice);
 	}
 
-	std::unique_ptr<Resource> VulkanDevice::createResource(ResourceCreateInfo& resourceCreateInfo) {
-		switch (resourceCreateInfo.type) {
-			case ResourceType::Buffer: {
-				auto buffer = std::make_unique<VulkanBuffer>(*this);
-				buffer->init(resourceCreateInfo);
-				return std::move(buffer);
-				break;
-			}
-			default:
-				AX_CORE_LOG_ERROR("Unsupported resource type!");
-				return nullptr;
-				break;
+	std::unique_ptr<Fence> VulkanDevice::createFence(bool isSignaled) {
+		return std::make_unique<VulkanFence>(logicDevice, isSignaled);
+	}
+
+	std::unique_ptr<Buffer> VulkanDevice::createBuffer() {
+		return std::unique_ptr<Buffer>();
+	}
+
+	std::unique_ptr<Texture> VulkanDevice::createTexture() {
+		return std::unique_ptr<Texture>();
+	}
+
+	void VulkanDevice::submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores, const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) {
+		std::vector<Vk::CommandBuffer> vkCommandBuffers(commandBuffers.size());
+		for (size_t i = 0; i < commandBuffers.size(); i++) {
+			vkCommandBuffers[i] = static_cast<VulkanCommandBuffer*>(commandBuffers[i])->getHandle();
 		}
+
+		std::vector<Vk::Semaphore> vkWaitSemaphores(waitSemaphores.size());
+		for (size_t i = 0; i < waitSemaphores.size(); i++) {
+			vkWaitSemaphores[i] = static_cast<VulkanSemaphore*>(waitSemaphores[i])->getHandle();
+		}
+
+		std::vector<Vk::Semaphore> vkSignalSemaphores(signalSemaphores.size());
+		for (size_t i = 0; i < signalSemaphores.size(); i++) {
+			vkSignalSemaphores[i] = static_cast<VulkanSemaphore*>(signalSemaphores[i])->getHandle();
+		}
+
+		Vk::Fence vkSignalFence = signalFence ? static_cast<VulkanFence*>(signalFence)->getHandle() : Vk::Fence();
+
+		std::array<Vk::PipelineStageFlags, 1> waitStages = { Vk::PipelineStageFlagBits::eColorAttachmentOutput };
+
+		Vk::SubmitInfo submitInfo(vkWaitSemaphores, waitStages, vkCommandBuffers, vkSignalSemaphores);
+
+		AX_CORE_ASSERT(graphicsQueue.submit(submitInfo, vkSignalFence) == Vk::Result::eSuccess, "Failed to submit command buffers to Vulkan graphics queue: {}", Vk::to_string(graphicsQueue.submit(submitInfo, vkSignalFence)));
 	}
 
-	std::unique_ptr<Texture> VulkanDevice::createTexture(TextureCreateInfo& textureCreateInfo) {
-		std::unique_ptr<VulkanTexture> texture = std::make_unique<VulkanTexture>(*this);
-		texture->init(textureCreateInfo);
-		return std::move(texture);
+	void VulkanDevice::waitIdle() {
+		AX_CORE_ASSERT(logicDevice.waitIdle() == Vk::Result::eSuccess, "Failed to wait for Vulkan device idle: {}", Vk::to_string(logicDevice.waitIdle()));
 	}
 
-	void VulkanDevice::waitIdle() const {
-		AX_CORE_ASSERT(device.waitIdle() == Vk::Result::eSuccess, "Failed to wait for device idle!");
+	bool VulkanDevice::linkVulkanLib() {
+#if defined(AX_PLATFORM_WINDOWS) 
+		HMODULE vulkanLib = LoadLibraryA("vulkan-1.dll");
+		if (vulkanLib == nullptr) {
+			AX_CORE_LOG_ERROR("Failed to load Vulkan library!");
+			return false;
+		}
+		vkInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(GetProcAddress(vulkanLib, "vkGetInstanceProcAddr"));
+#elif defined(AX_PLATFORM_LINUX)
+		void* vulkanLib = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
+		if (vulkanLib == nullptr) {
+			AX_CORE_LOG_ERROR("Failed to load Vulkan library: {}", dlerror());
+			return false;
+		}
+		vkInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(vulkanLib, "vkGetInstanceProcAddr"));
+#endif
+		return vkInstanceProcAddr != nullptr;
 	}
 
-	std::unique_ptr<VulkanQueue> VulkanDevice::createQueue(Vk::QueueFlags flags) {
-		uint32_t index = -1;
-		for (uint32_t i = 0; i < queueFamilies.size(); i++) {
-			if (queueFamilies[i].flags & flags) {
-				if (queueFamilies[i].availableIndex < queueFamilies[i].maxQueues) {
-					index = i;
+	std::vector<const char*> VulkanDevice::getRequiredExtensions() {
+		std::vector<const char*> extensions{};
+		extensions.push_back(Vk::KHRSurfaceExtensionName);
+#if defined (AX_DEBUG)
+		extensions.push_back(Vk::EXTDebugUtilsExtensionName);
+#endif
+#if defined(AX_PLATFORM_WINDOWS)
+		extensions.push_back(Vk::KHRWin32SurfaceExtensionName);
+#elif defined(AX_PLATFORM_LINUX)
+		extensions.push_back(Vk::KHRXlibSurfaceExtensionName);
+#endif
+		for (const char* ext : extensions) {
+			AX_CORE_LOG_DEBUG("Required Vulkan Device Extension: {}", ext);
+		}
+		return extensions;
+	}
+
+	std::vector<const char*> VulkanDevice::getValidationLayers() {
+		std::vector<const char*> layers{};
+#if defined (AX_DEBUG)
+		layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+		Vk::ResultValue<std::vector<Vk::LayerProperties>> availableLayersResult = Vk::enumerateInstanceLayerProperties();
+
+		AX_CORE_ASSERT(availableLayersResult.result == Vk::Result::eSuccess, "Failed to enumerate Vulkan instance layers: {}", Vk::to_string(availableLayersResult.result));
+		std::vector<Vk::LayerProperties> availableLayers = availableLayersResult.value;
+
+		for (size_t i = 0; i < layers.size(); i++) {
+			bool layerFound = false;
+			for (const auto& layer : availableLayers) {
+				if (layers[i] == std::string_view(layer.layerName.data())) {
+					layerFound = true;
 					break;
 				}
 			}
+			AX_CORE_ASSERT(layerFound, "Validation layer not found: {}", layers[i]);
 		}
 
-		if (index == -1) {
-			AX_CORE_LOG_ERROR("Failed to find a suitable queue family!");
-			return nullptr;
+		return layers;
+	}
+
+	void VulkanDevice::createDebugMessenger() {
+		Vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo(
+			{},
+			Vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | Vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | Vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+			Vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | Vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | Vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+			debugCallback
+		);
+		Vk::ResultValue<Vk::DebugUtilsMessengerEXT> debugMessengerResult = instance.createDebugUtilsMessengerEXT(debugMessengerCreateInfo);
+
+		AX_CORE_ASSERT(debugMessengerResult.result == Vk::Result::eSuccess, "Failed to create Vulkan debug messenger: {}", Vk::to_string(debugMessengerResult.result));
+		debugMessenger = debugMessengerResult.value;
+	}
+
+	void VulkanDevice::createSurface(void* windowObjPtr) {
+#if defined(AX_PLATFORM_WINDOWS)
+		Win32Window* win32Window = reinterpret_cast<Win32Window*>(windowObjPtr);
+
+		Vk::Win32SurfaceCreateInfoKHR surfaceCreateInfo({}, reinterpret_cast<HINSTANCE>(win32Window->getNativeDisplay()), reinterpret_cast<HWND>(win32Window->getNativeWindow()));
+		Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createWin32SurfaceKHR(surfaceCreateInfo);
+
+		AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan Win32 surface: {}", Vk::to_string(surfaceResult.result));
+		surface = surfaceResult.value;
+#elif defined(AX_PLATFORM_LINUX)
+		XLibWindow* xLibWindow = reinterpret_cast<XLibWindow*>(windowHandle);
+		
+		Vk::XlibSurfaceCreateInfoKHR createInfo({}, static_cast<Display*>(xLibWindow->getNativeDisplay()), *static_cast<::Window*>(xLibWindow->getNativeWindow()));
+		Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createXlibSurfaceKHR(createInfo);
+
+		AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Failed to create window surface!");
+		surface = surfaceResult.value;
+#endif
+	}
+
+	void VulkanDevice::pickPhysicalDevice() {
+		Vk::ResultValue<std::vector<Vk::PhysicalDevice>> physicalDevicesResult = instance.enumeratePhysicalDevices();
+
+		AX_CORE_ASSERT(physicalDevicesResult.result == Vk::Result::eSuccess, "Failed to enumerate Vulkan physical devices: {}", Vk::to_string(physicalDevicesResult.result));
+		std::vector<Vk::PhysicalDevice> physicalDevices = physicalDevicesResult.value;
+
+		for (const auto& device : physicalDevices) {
+			Vk::PhysicalDeviceProperties deviceProperties = device.getProperties();
+			AX_CORE_LOG_DEBUG(
+				"Found Vulkan Adapter: {} (API Version: {}.{}.{} | Driver Version: {} | Vendor ID: {} | Device ID: {})",
+				std::string_view(deviceProperties.deviceName.data()),
+				Vk::versionMajor(deviceProperties.apiVersion),
+				Vk::versionMinor(deviceProperties.apiVersion),
+				Vk::versionPatch(deviceProperties.apiVersion),
+				deviceProperties.driverVersion,
+				deviceProperties.vendorID,
+				deviceProperties.deviceID
+			);
+
+			bool extensionsSupported = checkPhysicalDeviceExtensions(device);
+			QueueFamilyIndices indices = findQueueFamilies(device);
+			bool swapChainAdequate = false;
+			if (extensionsSupported) {
+				SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+				swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+			}
+
+			if (extensionsSupported && indices.isComplete() && swapChainAdequate) {
+				AX_CORE_LOG_DEBUG("Selected Vulkan Adapter: {}", std::string_view(deviceProperties.deviceName.data()));
+				physicalDevice = device;
+				break;
+			}
+		}
+	}
+
+	bool VulkanDevice::checkPhysicalDeviceExtensions(const Vk::PhysicalDevice& device) {
+		Vk::ResultValue<std::vector<Vk::ExtensionProperties>> availableExtensionsResult = device.enumerateDeviceExtensionProperties();
+		
+		AX_CORE_ASSERT(availableExtensionsResult.result == Vk::Result::eSuccess, "Failed to enumerate device extensions for device: {}", std::string_view(device.getProperties().deviceName));
+		std::vector<Vk::ExtensionProperties> availableExtensions = availableExtensionsResult.value;
+		std::vector<const char*> requiredExtensions = { Vk::KHRSwapchainExtensionName, Vk::KHRDynamicRenderingExtensionName, Vk::KHRSynchronization2ExtensionName };
+
+		for (const char* requiredExt : requiredExtensions) {
+			bool extensionFound = false;
+			for (const auto& ext : availableExtensions) {
+				if (requiredExt == std::string_view(ext.extensionName.data())) {
+					extensionFound = true;
+					break;
+				}
+			}
+			if (!extensionFound) {
+				AX_CORE_LOG_WARN("Physical device {} is missing required extension: {}", std::string_view(device.getProperties().deviceName), requiredExt);
+				return false;
+			}
 		}
 
-		return std::make_unique<VulkanQueue>(*this, index, queueFamilies[index].availableIndex++);
+		return true;
+	}
+
+	QueueFamilyIndices VulkanDevice::findQueueFamilies(const Vk::PhysicalDevice& device) const  {
+		QueueFamilyIndices indices{};
+
+		std::vector<Vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
+		for (size_t i = 0; i < queueFamilies.size(); i++) {
+			if (queueFamilies[i].queueFlags & Vk::QueueFlagBits::eGraphics) {
+				indices.graphicsFamily = static_cast<uint32_t>(i);
+			}
+
+			Vk::ResultValue<Vk::Bool32> presentSupportResult = device.getSurfaceSupportKHR(i, surface);
+			AX_CORE_ASSERT(presentSupportResult.result == Vk::Result::eSuccess, "Failed to query surface support for device: {}", std::string_view(device.getProperties().deviceName));
+
+			if (presentSupportResult.value) {
+				indices.presentFamily = static_cast<uint32_t>(i);
+			}
+
+			if (indices.isComplete()) {
+				break;
+			}
+		}
+
+		return indices;
+	}
+
+	SwapChainSupportDetails VulkanDevice::querySwapChainSupport(const Vk::PhysicalDevice& device) const  {
+		SwapChainSupportDetails details{};
+
+		Vk::ResultValue<Vk::SurfaceCapabilitiesKHR> capabilitiesResult = device.getSurfaceCapabilitiesKHR(surface);
+		
+		AX_CORE_ASSERT(capabilitiesResult.result == Vk::Result::eSuccess, "Failed to query surface capabilities for device: {}", std::string_view(device.getProperties().deviceName));
+		details.capabilities = capabilitiesResult.value;
+
+		Vk::ResultValue<std::vector<Vk::SurfaceFormatKHR>> formatsResult = device.getSurfaceFormatsKHR(surface);
+
+		AX_CORE_ASSERT(formatsResult.result == Vk::Result::eSuccess, "Failed to query surface formats for device: {}", std::string_view(device.getProperties().deviceName));
+		details.formats = formatsResult.value;
+
+		Vk::ResultValue<std::vector<Vk::PresentModeKHR>> presentModesResult = device.getSurfacePresentModesKHR(surface);
+		AX_CORE_ASSERT(presentModesResult.result == Vk::Result::eSuccess, "Failed to query surface present modes for device: {}", std::string_view(device.getProperties().deviceName));
+		details.presentModes = presentModesResult.value;
+
+		return details;
+	}
+
+	void VulkanDevice::createLogicalDevice() {
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		
+		std::vector<Vk::DeviceQueueCreateInfo> queueCreateInfos;
+		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+		std::array<float, 1> queuePriorities = { 1.0f };
+
+		for (uint32_t queueFamilyIndex : uniqueQueueFamilies) {
+			queueCreateInfos.emplace_back(Vk::DeviceQueueCreateFlags{}, queueFamilyIndex, queuePriorities);
+		}
+
+		Vk::PhysicalDeviceFeatures deviceFeatures{};
+		deviceFeatures.setSamplerAnisotropy(Vk::True);
+		Vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
+		dynamicRenderingFeatures.setDynamicRendering(Vk::True);
+		Vk::PhysicalDeviceSynchronization2Features synchronization2Features{};
+		synchronization2Features.setSynchronization2(Vk::True);
+
+		dynamicRenderingFeatures.setPNext(&synchronization2Features);
+
+		Vk::DeviceCreateInfo deviceCreateInfo({}, queueCreateInfos, {}, { Vk::KHRSwapchainExtensionName }, &deviceFeatures, &dynamicRenderingFeatures);
+		Vk::ResultValue<Vk::Device> logicalDeviceResult = physicalDevice.createDevice(deviceCreateInfo);
+
+		AX_CORE_ASSERT(logicalDeviceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan logical device: {}", Vk::to_string(logicalDeviceResult.result));
+		logicDevice = logicalDeviceResult.value;
+
+		graphicsQueue = logicDevice.getQueue(indices.graphicsFamily.value(), 0);
+		presentQueue = logicDevice.getQueue(indices.presentFamily.value(), 0);
+	}
+
+	void VulkanDevice::createCommandPool() {
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		Vk::CommandPoolCreateInfo poolCreateInfo(Vk::CommandPoolCreateFlagBits::eResetCommandBuffer, indices.graphicsFamily.value());
+		Vk::ResultValue<Vk::CommandPool> commandPoolResult = logicDevice.createCommandPool(poolCreateInfo);
+		
+		AX_CORE_ASSERT(commandPoolResult.result == Vk::Result::eSuccess, "Failed to create Vulkan command pool: {}", Vk::to_string(commandPoolResult.result));
+		commandPool = commandPoolResult.value;
 	}
 }

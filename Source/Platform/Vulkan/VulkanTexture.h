@@ -3,24 +3,24 @@
 #include "Core/Assert.h"
 #include "VulkanInclude.h"
 
-namespace Axiom {
-	class VulkanDevice;
-	class VulkanImage;
 
+namespace Axiom {
 	class VulkanTexture : public Texture {
 	public:
-		VulkanTexture(VulkanDevice& vkDevice);
+		VulkanTexture(Vk::Device logicDevice, Vk::Image existingImage);
 		~VulkanTexture() override;
 
-		void init(TextureCreateInfo& createInfo);
+		void createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags);
 
-		Vk::Sampler getHandle() const { return sampler; }
-		Vk::ImageView getImageView() const;
+		inline Vk::Image getImage() const { return image; }
+		inline Vk::ImageView getImageView() const { return imageView; }
 
 	private:
-		VulkanDevice& device;
-		std::unique_ptr<VulkanImage> image;
-		ResourceViewCreateInfo imageViewCreateInfo;
-		Vk::Sampler sampler = nullptr;
+		Vk::Device device = nullptr;
+		Vk::Image image = nullptr;
+		Vk::DeviceMemory imageMemory = nullptr;
+		Vk::ImageView imageView = nullptr;
+		bool ownsImage = false;
 	};
 }
+

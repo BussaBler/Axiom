@@ -1,31 +1,33 @@
 #pragma once
-#include "Core/Log.h"
 #include "Renderer/CommandBuffer.h"
-#include "VulkanInclude.h"
+#include "Core/Assert.h"
+#include "VulkanUtils.h"
+#include "VulkanTexture.h"
 
 namespace Axiom {
-	class VulkanDevice;
-
 	class VulkanCommandBuffer : public CommandBuffer {
 	public:
-		VulkanCommandBuffer(VulkanDevice& vkDevice) : device(vkDevice), commandBuffer(VK_NULL_HANDLE) {}
+		VulkanCommandBuffer(Vk::Device logicDevice, Vk::CommandPool commandPool);
 		~VulkanCommandBuffer() override;
-
-		void begin(bool isSingleUse, bool isRenderPassCont, bool isSimultaneous) override;
+		void begin() override;
 		void end() override;
-		void reset() override;
+		void beginRendering(const RenderPass& renderPass) override;
+		void endRendering() override;
+		void bindPipeline() override; // TODO: parameters
+		void bindResources() override; // TODO: parameters
+		void bindVertexBuffers() override; // TODO: parameters
+		void bindIndexBuffer() override; // TODO: parameters
+		void draw() override; // TODO: parameters
+		void drawIndexed() override; // TODO: parameters
+		void pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) override; // TODO: parameters
 
-		void allocate(Vk::CommandPool commandPool, bool isPrimary = true);
-		void free(Vk::CommandPool commandPool);
-
-		void allocateAndBeginSingleUse(Vk::CommandPool commandPool, bool isPrimary = true);
-		void endSingleUse(Vk::Queue queue, Vk::CommandPool commandPool, Vk::Fence fence = VK_NULL_HANDLE);
-
-		Vk::CommandBuffer getHandle() const { return commandBuffer; }
-		Vk::CommandBuffer* getHandlePtr() { return &commandBuffer; }
+		inline Vk::CommandBuffer getHandle() const { return commandBuffer; }
 
 	private:
-		VulkanDevice& device;
+
+	private:
+		Vk::Device device;
+		Vk::CommandPool commandPool;
 		Vk::CommandBuffer commandBuffer;
 	};
 }

@@ -1,26 +1,22 @@
 #pragma once
+#include "RenderPass.h"
 
 namespace Axiom {
-	enum class CommandBufferState {
-		READY,
-		RECORDING,
-		IN_RENDER_PASS,
-		RECORDING_ENDED,
-		SUBMITTED,
-		NOT_ALLOCATED
-	};
-
 	class CommandBuffer {
 	public:
+		CommandBuffer() = default;
 		virtual ~CommandBuffer() = default;
 
-		virtual void begin(bool isSingleUse, bool isRenderPassCont, bool isSimultaneous) = 0;
+		virtual void begin() = 0;
 		virtual void end() = 0;
-		virtual void reset() = 0;
-
-		void setState(CommandBufferState newState) { state = newState; }
-		
-	protected:
-		CommandBufferState state = CommandBufferState::NOT_ALLOCATED;
+		virtual void beginRendering(const RenderPass& renderPass) = 0;
+		virtual void endRendering() = 0;
+		virtual void bindPipeline() = 0; // TODO: parameters
+		virtual void bindResources() = 0; // TODO: parameters
+		virtual void bindVertexBuffers() = 0; // TODO: parameters
+		virtual void bindIndexBuffer() = 0; // TODO: parameters
+		virtual void draw() = 0; // TODO: parameters
+		virtual void drawIndexed() = 0; // TODO: parameters
+		virtual void pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) = 0; // TODO: parameters
 	};
 }

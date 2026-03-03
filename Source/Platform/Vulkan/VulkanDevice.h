@@ -1,44 +1,59 @@
 #pragma once
+#include "axpch.h"
 #include "Core/Assert.h"
 #include "Renderer/Device.h"
-#include "VulkanAdapter.h"
-#include "VulkanQueue.h"
+#include "VulkanInclude.h"
+#include "VulkanUtils.h"
+#include "VulkanSwapChain.h"
+#include "VulkanPipeline.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanFence.h"
+
+#if defined(AX_PLATFORM_WINDOWS)
+	#include "Platform/Windows/Win32Window.h"
+#elif defined(AX_PLATFORM_LINUX)
+	#include "Platform/Linux/XLibWindow.h"
+#endif
 
 namespace Axiom {
-    class VulkanDevice : public Device {
-    public:
-		VulkanDevice(VulkanAdapter& vkAdapter) : device(VK_NULL_HANDLE), adapter(vkAdapter) {}
+	class VulkanDevice : public Device {
+	public:
+		VulkanDevice(const Device::CreateInfo& createInfo);
 		~VulkanDevice() override;
 
-		void init(const DeviceCreateInfo& deviceCreateInfo) override;
-		std::unique_ptr<Context> createContext() override;
-		std::unique_ptr<Swapchain> createSwapchain(SwapchainCreateInfo& swapchainCreateInfo) override;
-		std::unique_ptr<RenderPassCache> createRenderPassCache(Swapchain& swapchain) override;
-		std::unique_ptr<Shader> createShader(RenderPassToken& token) override;
-		std::unique_ptr<Resource> createResource(ResourceCreateInfo& resourceCreateInfo) override;
-		std::unique_ptr<Texture> createTexture(TextureCreateInfo& textureCreateInfo) override;
+		std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) override;
+		std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) override;
+		std::unique_ptr<CommandBuffer> createCommandBuffer() override;
+		std::unique_ptr<Semaphore> createSemaphore() override;
+		std::unique_ptr<Fence> createFence(bool isSignaled) override;
+		std::unique_ptr<Buffer> createBuffer() override;
+		std::unique_ptr<Texture> createTexture() override;
+		void submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores, const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) override;
+		void waitIdle() override;
 
-		void waitIdle() const;
-
-		Vk::Device getHandle() const { return device; }
-		VulkanAdapter& getAdapter() const { return adapter; }
-		VulkanQueue* getQueue(Vk::QueueFlags flags) {
-			auto it = queues.find(flags);
-			if (it != queues.end()) {
-				return it->second;
-			}
-			AX_CORE_LOG_ERROR("Requested Vulkan Queue not found!");
-			return nullptr;
-		}
 	private:
-		std::unique_ptr<VulkanQueue> createQueue(Vk::QueueFlags flags);
+		bool linkVulkanLib();
+		std::vector<const char*> getRequiredExtensions();
+		std::vector<const char*> getValidationLayers();
+		void createDebugMessenger();
+		void createSurface(void* windowObjPtr);
+		void pickPhysicalDevice();
+		static bool checkPhysicalDeviceExtensions(const Vk::PhysicalDevice& device);
+		QueueFamilyIndices findQueueFamilies(const Vk::PhysicalDevice& device) const;
+		SwapChainSupportDetails querySwapChainSupport(const Vk::PhysicalDevice& device) const;
+		void createLogicalDevice();
+		void createCommandPool();
 
-    private:
-		Vk::Device device;
-		VulkanAdapter& adapter;
-		std::vector<QueueFamily> queueFamilies;
-		std::unique_ptr<VulkanQueue> mainQueue;
-		std::map<Vk::QueueFlags, VulkanQueue*> queues;
-    };
+	private:
+		PFN_vkGetInstanceProcAddr vkInstanceProcAddr = nullptr;
+		Vk::Instance instance = nullptr;
+		Vk::DebugUtilsMessengerEXT debugMessenger = nullptr;
+		Vk::SurfaceKHR surface = nullptr;
+		Vk::PhysicalDevice physicalDevice = nullptr;
+		Vk::Device logicDevice = nullptr;
+		Vk::Queue graphicsQueue = nullptr;
+		Vk::Queue presentQueue = nullptr;
+		Vk::CommandPool commandPool = nullptr;
+	};
 }
 

@@ -1,28 +1,19 @@
 #pragma once
-#include "Context.h"
+#include "axpch.h"
+#include "Semaphore.h"
+#include "Texture.h"
 
 namespace Axiom {
-	struct SwapchainCreateInfo {
-		uint32_t desiredFrameCount = 3;
-		uint32_t width = 1280;
-		uint32_t height = 720;
-		void* windowHandle = nullptr;
-	};
-
-	class Swapchain {
+	class SwapChain {
 	public:
-		Swapchain(const SwapchainCreateInfo& swapchainCreateInfo) : swapchainCreateInfo(swapchainCreateInfo) {}
-		virtual ~Swapchain() = default;
+		SwapChain() = default;
+		virtual ~SwapChain() = default;
 
-		virtual void rebuild(const SwapchainCreateInfo& swapchainCreateInfo) = 0;
-		//virtual void destroy() = 0;
-		virtual void present(Context& context) = 0;
-		virtual void prepare(Context& context) = 0;
-
-		const SwapchainCreateInfo& getSwapchainCreateInfo() const { return swapchainCreateInfo; }
-
-	protected:
-		SwapchainCreateInfo swapchainCreateInfo;
+		virtual uint32_t acquireNextImage(Semaphore* imageAvailableSemaphore) = 0;
+		virtual std::shared_ptr<Texture> getImageTexture(uint32_t index) = 0;
+		virtual bool present(uint32_t imageIndex, Semaphore* waitSemaphore) = 0;
+		virtual uint32_t getImageCount() const = 0;
+		virtual uint32_t getWidth() const = 0;
+		virtual uint32_t getHeight() const = 0;
 	};
 }
-

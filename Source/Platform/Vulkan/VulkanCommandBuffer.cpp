@@ -1,70 +1,193 @@
-#include "axpch.h"
 #include "VulkanCommandBuffer.h"
-#include "VulkanDevice.h"
-#include "VulkanQueue.h"
 
 namespace Axiom {
+	VulkanCommandBuffer::VulkanCommandBuffer(Vk::Device logicDevice, Vk::CommandPool commandPool) : device(logicDevice), commandPool(commandPool)  {
+		Vk::CommandBufferAllocateInfo allocInfo(commandPool, Vk::CommandBufferLevel::ePrimary, 1);
+		Vk::ResultValue<std::vector<Vk::CommandBuffer>> commandBufferResult = device.allocateCommandBuffers(allocInfo);
+
+		AX_CORE_ASSERT(commandBufferResult.result == Vk::Result::eSuccess, "Failed to allocate Vulkan command buffer: {}", Vk::to_string(commandBufferResult.result));
+		commandBuffer = commandBufferResult.value[0];
+	}
+
 	VulkanCommandBuffer::~VulkanCommandBuffer() {
-		if (state != CommandBufferState::NOT_ALLOCATED) {
-			AX_CORE_LOG_ERROR("Destroying a command buffer that is still allocated!");
+		if (commandBuffer) {
+			device.freeCommandBuffers(commandPool, commandBuffer);
 		}
 	}
 
-	void VulkanCommandBuffer::begin(bool isSingleUse, bool isRenderPassCont, bool isSimultaneous) {
-		Vk::CommandBufferUsageFlags usageFlags = Vk::CommandBufferUsageFlags();
-		if (isSingleUse) {
-			usageFlags |= Vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-		}
-		if (isRenderPassCont) {
-			usageFlags |= Vk::CommandBufferUsageFlagBits::eRenderPassContinue;
-		}
-		if (isSimultaneous) {
-			usageFlags |= Vk::CommandBufferUsageFlagBits::eSimultaneousUse;
-		}
-
-		Vk::CommandBufferBeginInfo beginInfo(usageFlags);
-		AX_CORE_ASSERT(commandBuffer.begin(beginInfo) == Vk::Result::eSuccess, "Failed to begin recording command buffer!");
-		state = CommandBufferState::RECORDING;
+	void VulkanCommandBuffer::begin() {
+		Vk::CommandBufferBeginInfo beginInfo(Vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		AX_CORE_ASSERT(commandBuffer.begin(beginInfo) == Vk::Result::eSuccess, "Failed to begin recording Vulkan command buffer");
 	}
 
 	void VulkanCommandBuffer::end() {
-		AX_CORE_ASSERT(commandBuffer.end() == Vk::Result::eSuccess, "Failed to end recording command buffer!");
-		state = CommandBufferState::RECORDING_ENDED;
+		AX_CORE_ASSERT(commandBuffer.end() == Vk::Result::eSuccess, "Failed to end recording Vulkan command buffer");
 	}
 
-	void VulkanCommandBuffer::reset() {
-		AX_CORE_ASSERT(commandBuffer.reset() == Vk::Result::eSuccess, "Failed to reset command buffer!");
-		state = CommandBufferState::READY;
+	void VulkanCommandBuffer::beginRendering(const RenderPass& renderPass) {
+		std::vector<Vk::RenderingAttachmentInfo> colorAttachments;
+		colorAttachments.reserve(renderPass.colorAttachmentCount);
+
+		for (size_t i = 0; i < renderPass.colorAttachmentCount; i++) {
+			const auto& attachment = renderPass.colorAttachments[i];
+			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.get());
+			Vk::ClearValue clearValue{};
+			clearValue.setColor(Vk::ClearColorValue(std::array<float, 4>{attachment.clearColor.x(), attachment.clearColor.y(), attachment.clearColor.z(), attachment.clearColor.w()}));
+			Vk::RenderingAttachmentInfo attachmentInfo{};
+			attachmentInfo.setImageView(vulkanTexture->getImageView());
+			attachmentInfo.setImageLayout(Vk::ImageLayout::eColorAttachmentOptimal);
+			attachmentInfo.setLoadOp(AxToVkLoadOp(attachment.loadOp));
+			attachmentInfo.setStoreOp(AxToVkStoreOp(attachment.storeOp));
+			attachmentInfo.setClearValue(clearValue);
+
+			colorAttachments.push_back(attachmentInfo);
+		}
+
+		Vk::RenderingAttachmentInfo depthAttachmentInfo{};
+		if (renderPass.hasDepthAttachment) {
+			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(renderPass.depthAttachment.texture.get());
+			Vk::ClearValue clearValue{};
+			clearValue.setDepthStencil(Vk::ClearDepthStencilValue{ renderPass.depthAttachment.clearDepth, renderPass.depthAttachment.clearStencil });
+			depthAttachmentInfo.setImageView(vulkanTexture->getImageView());
+			depthAttachmentInfo.setImageLayout(Vk::ImageLayout::eDepthStencilAttachmentOptimal);
+			depthAttachmentInfo.setLoadOp(AxToVkLoadOp(renderPass.depthAttachment.loadOp));
+			depthAttachmentInfo.setStoreOp(AxToVkStoreOp(renderPass.depthAttachment.storeOp));
+			depthAttachmentInfo.setClearValue(clearValue);
+		}
+
+		Vk::Rect2D renderArea{ {0, 0}, {renderPass.width, renderPass.height} };
+		Vk::RenderingInfo renderingInfo{};
+		renderingInfo.setRenderArea(renderArea);
+		renderingInfo.setLayerCount(1);
+		renderingInfo.setColorAttachments(colorAttachments);
+		if (renderPass.hasDepthAttachment) {
+			renderingInfo.setPDepthAttachment(&depthAttachmentInfo);
+		}
+
+		commandBuffer.beginRendering(renderingInfo);
 	}
 
-	void VulkanCommandBuffer::allocate(Vk::CommandPool commandPool, bool isPrimary) {
-		Vk::CommandBufferLevel level = isPrimary ? Vk::CommandBufferLevel::ePrimary : Vk::CommandBufferLevel::eSecondary;
-		Vk::CommandBufferAllocateInfo allocInfo(commandPool, level, 1);
-
-		Vk::ResultValue<std::vector<Vk::CommandBuffer>> allocResult = device.getHandle().allocateCommandBuffers(allocInfo);
-
-		AX_CORE_ASSERT(allocResult.result == Vk::Result::eSuccess, "Failed to allocate command buffers!");
-		commandBuffer = allocResult.value[0];
-		state = CommandBufferState::READY;
+	void VulkanCommandBuffer::endRendering() {
+		commandBuffer.endRendering();
 	}
 
-	void VulkanCommandBuffer::free(Vk::CommandPool commandPool) {
-		device.getHandle().freeCommandBuffers(commandPool, commandBuffer);
-		commandBuffer = VK_NULL_HANDLE;
-		state = CommandBufferState::NOT_ALLOCATED;
+	void VulkanCommandBuffer::bindPipeline() {
 	}
 
-	void VulkanCommandBuffer::allocateAndBeginSingleUse(Vk::CommandPool commandPool, bool isPrimary) {
-		allocate(commandPool, isPrimary);
-		begin(true, false, false);
+	void VulkanCommandBuffer::bindResources() {
 	}
 
-	void VulkanCommandBuffer::endSingleUse(Vk::Queue queue, Vk::CommandPool commandPool, Vk::Fence fence) {
-		end();
-		Vk::SubmitInfo submitInfo({}, {}, commandBuffer);
-		AX_CORE_ASSERT(queue.submit({ submitInfo }, fence) == Vk::Result::eSuccess, "Failed to submit command buffer!");
-		
-		AX_CORE_ASSERT(queue.waitIdle() == Vk::Result::eSuccess, "Failed to wait for queue idle after submitting command buffer!");
-		free(commandPool);
+	void VulkanCommandBuffer::bindVertexBuffers() {
+	}
+
+	void VulkanCommandBuffer::bindIndexBuffer() {
+	}
+
+	void VulkanCommandBuffer::draw() {
+	}
+
+	void VulkanCommandBuffer::drawIndexed() {
+	}
+
+	void VulkanCommandBuffer::pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) {
+		std::vector<Vk::ImageMemoryBarrier2> imageBarriers(textureBarries.size());
+
+		for (size_t i = 0; i < textureBarries.size(); i++) {
+			const auto& barrier = textureBarries[i];
+			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(barrier.texture.get());
+			imageBarriers[i].setImage(vulkanTexture->getImage());
+			imageBarriers[i].setSrcQueueFamilyIndex(Vk::QueueFamilyIgnored);
+			imageBarriers[i].setDstQueueFamilyIndex(Vk::QueueFamilyIgnored);
+			imageBarriers[i].setSubresourceRange({
+				Vk::ImageAspectFlagBits::eColor, // TODO: support depth/stencil aspects
+				0,
+				barrier.mipLevelCount,
+				0,
+				barrier.arrayLayerCount
+				}
+			);
+
+			switch (barrier.oldState) {
+				case TextureState::Undefined:
+					imageBarriers[i].setOldLayout(Vk::ImageLayout::eUndefined);
+					imageBarriers[i].setSrcAccessMask({});
+					imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eTopOfPipe);
+				break;
+				case TextureState::RenderTarget:
+					imageBarriers[i].setOldLayout(Vk::ImageLayout::eColorAttachmentOptimal);
+					imageBarriers[i].setSrcAccessMask(Vk::AccessFlagBits2::eColorAttachmentWrite);
+					imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+					break;
+				case TextureState::DepthStencilTarget:
+					imageBarriers[i].setOldLayout(Vk::ImageLayout::eDepthStencilAttachmentOptimal);
+					imageBarriers[i].setSrcAccessMask(Vk::AccessFlagBits2::eDepthStencilAttachmentWrite);
+					imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eEarlyFragmentTests);
+					break;
+				case TextureState::ShaderResource:
+					imageBarriers[i].setOldLayout(Vk::ImageLayout::eShaderReadOnlyOptimal);
+					imageBarriers[i].setSrcAccessMask(Vk::AccessFlagBits2::eShaderRead);
+					imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eFragmentShader);
+					break;
+				case TextureState::TransferDst:
+					imageBarriers[i].setOldLayout(Vk::ImageLayout::eTransferDstOptimal);
+					imageBarriers[i].setSrcAccessMask(Vk::AccessFlagBits2::eTransferWrite);
+					imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eTransfer);
+					break;
+				case TextureState::TransferSrc:
+					imageBarriers[i].setOldLayout(Vk::ImageLayout::eTransferSrcOptimal);
+					imageBarriers[i].setSrcAccessMask(Vk::AccessFlagBits2::eTransferRead);
+					imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eTransfer);
+					break;
+			default:
+				break;
+			}
+
+			switch (barrier.newState) {
+			case TextureState::RenderTarget:
+				imageBarriers[i].setNewLayout(Vk::ImageLayout::eColorAttachmentOptimal);
+				imageBarriers[i].setDstAccessMask(Vk::AccessFlagBits2::eColorAttachmentWrite | Vk::AccessFlagBits2::eColorAttachmentRead);
+				imageBarriers[i].setDstStageMask(Vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+				break;
+
+			case TextureState::DepthStencilTarget:
+				imageBarriers[i].setNewLayout(Vk::ImageLayout::eDepthStencilAttachmentOptimal);
+				imageBarriers[i].setDstAccessMask(Vk::AccessFlagBits2::eDepthStencilAttachmentWrite | Vk::AccessFlagBits2::eDepthStencilAttachmentRead);
+				imageBarriers[i].setDstStageMask(Vk::PipelineStageFlagBits2::eEarlyFragmentTests | Vk::PipelineStageFlagBits2::eLateFragmentTests);
+				break;
+
+			case TextureState::ShaderResource:
+				imageBarriers[i].setNewLayout(Vk::ImageLayout::eShaderReadOnlyOptimal);
+				imageBarriers[i].setDstAccessMask(Vk::AccessFlagBits2::eShaderRead);
+				// If needed to read textures in the vertex shader might need to OR this with eVertexShader
+				imageBarriers[i].setDstStageMask(Vk::PipelineStageFlagBits2::eFragmentShader);
+				break;
+
+			case TextureState::TransferDst:
+				imageBarriers[i].setNewLayout(Vk::ImageLayout::eTransferDstOptimal);
+				imageBarriers[i].setDstAccessMask(Vk::AccessFlagBits2::eTransferWrite);
+				imageBarriers[i].setDstStageMask(Vk::PipelineStageFlagBits2::eTransfer);
+				break;
+
+			case TextureState::TransferSrc:
+				imageBarriers[i].setNewLayout(Vk::ImageLayout::eTransferSrcOptimal);
+				imageBarriers[i].setDstAccessMask(Vk::AccessFlagBits2::eTransferRead);
+				imageBarriers[i].setDstStageMask(Vk::PipelineStageFlagBits2::eTransfer);
+				break;
+
+			case TextureState::Present:
+				imageBarriers[i].setNewLayout(Vk::ImageLayout::ePresentSrcKHR);
+				imageBarriers[i].setDstAccessMask({});
+				imageBarriers[i].setDstStageMask(Vk::PipelineStageFlagBits2::eBottomOfPipe);
+				break;
+
+			default:
+				break;
+			}
+		}
+
+		Vk::DependencyInfo dependencyInfo{};
+		dependencyInfo.setImageMemoryBarriers(imageBarriers);
+
+		commandBuffer.pipelineBarrier2(dependencyInfo);
 	}
 }

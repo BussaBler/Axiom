@@ -1,34 +1,23 @@
 #pragma once
-#include "VulkanInclude.h"
+#include "Renderer/Pipeline.h"
+#include "Core/Assert.h"
+#include "VulkanUtils.h"
 
 namespace Axiom {
-	class VulkanDevice;
-
-	struct VulkanPipelineCreateInfo {
-		Vk::RenderPass renderPass{};
-		std::vector<Vk::VertexInputAttributeDescription> vertexAttributes;
-		std::vector<Vk::DescriptorSetLayout> descriptorSetLayouts;
-		std::vector<Vk::PipelineShaderStageCreateInfo> shaderStages;
-		std::vector<Vk::PushConstantRange> pushConstantRanges;
-		bool isWireframe = false;
-	};
-
-	class VulkanPipeline {
+	class VulkanPipeline : public Pipeline {
 	public:
-		VulkanPipeline(VulkanDevice& vkDevice) : device(vkDevice), pipeline(nullptr), pipelineLayout(nullptr) {}
-		~VulkanPipeline();
-
-		void init(VulkanPipelineCreateInfo& createInfo);
-		void bind(Vk::CommandBuffer commandBuffer, Vk::PipelineBindPoint bindPoint) const;
-
-		Vk::Pipeline getHandle() const { return pipeline; }
-		Vk::PipelineLayout getLayout() const { return pipelineLayout; }
+		VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice);
+		~VulkanPipeline() override;
 
 	private:
-		VulkanDevice& device;
-		Vk::Pipeline pipeline;
-		Vk::PipelineLayout pipelineLayout;
+		Vk::ShaderModule createShaderModule(std::filesystem::path shaderPath);
+		Vk::PolygonMode AxPolygonToVkPolygon(PolygonMode mode);
+		Vk::CullModeFlags AxCullModeToVkCullMode(CullMode mode);
 
+	private:
+		Vk::Device device = nullptr;
+		Vk::Pipeline pipeline = nullptr;
+		Vk::PipelineLayout pipelineLayout = nullptr;
 	};
 }
 

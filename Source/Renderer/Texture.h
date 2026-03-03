@@ -1,20 +1,32 @@
 #pragma once
+#include "axpch.h"
 
 namespace Axiom {
-	struct TextureCreateInfo {
-		uint32_t width = 1;
-		uint32_t height = 1;
-		uint32_t channels = 1;
-		void* data = nullptr;
-
-		// TODO: Add sampler settings
-	};;
+	enum class TextureState {
+		Undefined,
+		RenderTarget,
+		DepthStencilTarget,
+		ShaderResource,
+		TransferDst,
+		TransferSrc,
+		Present
+	};
 
 	class Texture {
 	public:
+		Texture() = default;
 		virtual ~Texture() = default;
 
-	protected:
+	public:
+		struct Barrier {
+			std::shared_ptr<Texture> texture;
+			TextureState oldState;
+			TextureState newState;
 
+			uint32_t baseMipLevel = 0;
+			uint32_t mipLevelCount = 1;
+			uint32_t baseArrayLayer = 0;
+			uint32_t arrayLayerCount = 1;
+		};
 	};
 }

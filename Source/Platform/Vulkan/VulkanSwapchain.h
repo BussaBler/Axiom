@@ -1,45 +1,42 @@
 #pragma once
-#include "Renderer/Swapchain.h"
-#include "VulkanContext.h"
-#include "VulkanImage.h"
-#include "Math/AxMath.h"
-#include "VulkanInclude.h"
+#include "Renderer/SwapChain.h"
+#include "VulkanUtils.h"
+#include "VulkanSemaphore.h"
+#include "VulkanTexture.h"
 
 namespace Axiom {
-	class VulkanDevice;
-	class VulkanQueue;
-
-	class VulkanSwapchain : public Swapchain {
+	class VulkanSwapChain : public SwapChain {
 	public:
-		VulkanSwapchain(const SwapchainCreateInfo& swapchainCreateInfo, VulkanDevice& vkDevice, VulkanQueue& presentQueue);
-		~VulkanSwapchain() override;
+		struct CreateInfo {
+			Vk::Device logicDevice;
+			Vk::SurfaceKHR surface;
+			Vk::Queue presentQueue;
+			SwapChainSupportDetails swapChainDetails;
+			QueueFamilyIndices queueFamilyIndices;
+			Vk::Extent2D windowSize;
+		};
 
-		void build();
-
-		void rebuild(const SwapchainCreateInfo& swapchainCreateInfo) override;
-		void present(Context& context) override;
-		void prepare(Context& context) override;
-
-		Vk::SwapchainKHR getHandle() const { return swapchain; }
-		Vk::Format getImageFormat() const { return swapChainImageFormat; }
-		uint32_t getImageCount() const { return static_cast<uint32_t>(frames.size()); }
-		VulkanImage& getImage(uint32_t index) { return *frameImages[index]; }
-		VulkanImage& getDepthImage() { return *depthImage; }
-		uint32_t getCurrentImageIndex() const { return currentImageIndex; }
-		bool getIsRecreating() const { return isRecreating; }
-		Math::uVec2 getExtent() const { return { swapchainCreateInfo.width, swapchainCreateInfo.height }; }
+		VulkanSwapChain(const CreateInfo& createInfo);
+		~VulkanSwapChain() override;
+		uint32_t acquireNextImage(Semaphore* imageAvailableSemaphore) override;
+		std::shared_ptr<Texture> getImageTexture(uint32_t index) override;
+		bool present(uint32_t imageIndex, Semaphore* waitSemaphore) override;
+		uint32_t getImageCount() const override;
+		uint32_t getWidth() const override;
+		uint32_t getHeight() const override;
 
 	private:
-		VulkanDevice& device;
-		VulkanQueue& presentQueue;
-		Vk::SwapchainKHR swapchain;
-		Vk::SurfaceKHR surface;
-		Vk::Format swapChainImageFormat;
-		std::vector<Vk::Image> frames;
-		std::vector<std::unique_ptr<VulkanImage>> frameImages;
-		uint32_t currentImageIndex = 0;
-		std::unique_ptr<VulkanImage> depthImage;
-		bool isRecreating = false;
+		Vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<Vk::SurfaceFormatKHR>& availableFormats);
+		Vk::PresentModeKHR chooseSwapPresentMode(const std::vector<Vk::PresentModeKHR>& availablePresentModes);
+		Vk::Extent2D chooseSwapExtent(const Vk::SurfaceCapabilitiesKHR& capabilities, Vk::Extent2D windowSize) const;
+
+	private:
+		Vk::Device device = nullptr;
+		Vk::SwapchainKHR swapChain = nullptr;
+		Vk::Queue presentQueue = nullptr;
+		std::vector<std::shared_ptr<VulkanTexture>> swapChainTextures;
+		Vk::Extent2D swapChainExtent = { 0, 0 };
+		Vk::Format swapChainImageFormat = Vk::Format::eUndefined;
 	};
 }
 
