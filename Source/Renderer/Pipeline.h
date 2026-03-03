@@ -23,7 +23,7 @@ namespace Axiom {
 	};
 
 	enum class CullMode {
-		None,
+		Disabled,
 		Front,
 		Back
 	};

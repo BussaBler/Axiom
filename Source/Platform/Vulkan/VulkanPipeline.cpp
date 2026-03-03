@@ -104,7 +104,7 @@ namespace Axiom {
 
 	Vk::CullModeFlags VulkanPipeline::AxCullModeToVkCullMode(CullMode mode) {
 		switch (mode) {
-			case Axiom::CullMode::None: return Vk::CullModeFlagBits::eNone;
+			case Axiom::CullMode::Disabled: return Vk::CullModeFlagBits::eNone;
 			case Axiom::CullMode::Front: return Vk::CullModeFlagBits::eFront;
 			case Axiom::CullMode::Back: return Vk::CullModeFlagBits::eBack;
 			default: return Vk::CullModeFlagBits::eBack;
