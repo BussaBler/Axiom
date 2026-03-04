@@ -71,22 +71,46 @@ namespace Axiom {
 		commandBuffer.endRendering();
 	}
 
-	void VulkanCommandBuffer::bindPipeline() {
+	void VulkanCommandBuffer::bindPipeline(Pipeline* pipeline) {
+		Vk::Pipeline vkPipeline = static_cast<VulkanPipeline*>(pipeline)->getHandle();
+
+		commandBuffer.bindPipeline(Vk::PipelineBindPoint::eGraphics, vkPipeline);
+	}
+
+	void VulkanCommandBuffer::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth) {
+		Vk::Viewport viewport(x, y, width, height, minDepth, maxDepth);
+		commandBuffer.setViewport(0, viewport);
+	}
+
+	void VulkanCommandBuffer::setScissor(int32_t x, int32_t y, uint32_t width, uint32_t height) {
+		Vk::Rect2D scissor({ x, y }, { width, height });
+		commandBuffer.setScissor(0, scissor);
 	}
 
 	void VulkanCommandBuffer::bindResources() {
 	}
 
-	void VulkanCommandBuffer::bindVertexBuffers() {
+	void VulkanCommandBuffer::bindVertexBuffers(const std::vector<Buffer*>& vertexBuffers) {
+		std::vector<Vk::Buffer> vkBuffers(vertexBuffers.size());
+		std::vector<Vk::DeviceSize> offsets(vertexBuffers.size(), 0);
+
+		for (size_t i = 0; i < vertexBuffers.size(); i++) {
+			vkBuffers[i] = static_cast<VulkanBuffer*>(vertexBuffers[i])->getHandle();
+		}
+		commandBuffer.bindVertexBuffers(0, vkBuffers, offsets);
 	}
 
-	void VulkanCommandBuffer::bindIndexBuffer() {
+	void VulkanCommandBuffer::bindIndexBuffer(Buffer* indexBuffer) {
+		Vk::Buffer vkBuffer = static_cast<VulkanBuffer*>(indexBuffer)->getHandle();
+		commandBuffer.bindIndexBuffer(vkBuffer, 0, Vk::IndexType::eUint32); // TODO: support uint16 indices
 	}
 
-	void VulkanCommandBuffer::draw() {
+	void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
+		commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
-	void VulkanCommandBuffer::drawIndexed() {
+	void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
+		commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 	}
 
 	void VulkanCommandBuffer::pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) {

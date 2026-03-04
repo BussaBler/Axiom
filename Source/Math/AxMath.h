@@ -1,4 +1,5 @@
 #pragma once
+#include "axpch.h"
 
 namespace Math {
 	// ------- Axiom Math Constants -------

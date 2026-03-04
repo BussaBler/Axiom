@@ -9,6 +9,8 @@ namespace Axiom {
 		VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice);
 		~VulkanPipeline() override;
 
+		inline Vk::Pipeline getHandle() const { return pipeline; }
+
 	private:
 		Vk::ShaderModule createShaderModule(std::filesystem::path shaderPath);
 		Vk::PolygonMode AxPolygonToVkPolygon(PolygonMode mode);

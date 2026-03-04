@@ -13,7 +13,12 @@ namespace Math {
 		template <typename... Scalars, typename = std::enable_if_t< (sizeof...(Scalars) == N) && (std::conjunction_v<std::is_convertible<Scalars, T>...>)>>
 		Vec(Scalars... s) : data{ { static_cast<T>(s)... } } {}
 		// Constructs from a string of the form "x,y,z,..."
-		Vec(std::string str) {
+		Vec(T value) {
+			for (size_t i = 0; i < N; ++i) {
+				data[i] = value;
+			}
+		}
+		Vec(const std::string& str) {
 			std::stringstream ss(str);
 			char comma;
 			for (size_t i = 0; i < N; ++i) {

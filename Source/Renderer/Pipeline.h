@@ -1,11 +1,14 @@
 #pragma once
 #include "axpch.h"
+#include "Vertex.h"
 
 namespace Axiom {
 	enum class Format {
 		Undefined,
 		B8G8R8A8Unorm,
 		R8G8B8A8Unorm,
+		B8G8R8A8Srgb,
+		R8G8B8A8Srgb,
 		D24UnormS8Uint,
 		D32sFloat
 	};

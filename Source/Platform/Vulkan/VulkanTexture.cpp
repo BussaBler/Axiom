@@ -19,7 +19,12 @@ namespace Axiom {
 		}
 	}
 
+	Format VulkanTexture::getFormat() const {
+		return VkFormatToAxFormat(imageFormat);
+	}
+
 	void VulkanTexture::createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags) {
+		imageFormat = format;
 		Vk::ImageViewCreateInfo createInfo(
 			{},
 			image,

@@ -81,8 +81,8 @@ namespace Axiom {
 		return std::make_unique<VulkanSwapChain>(createInfo);
 	}
 
-	std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
-		return std::make_unique<VulkanPipeline>(pipelineCreateInfo, logicDevice);
+	std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& createInfo) {
+		return std::make_unique<VulkanPipeline>(createInfo, logicDevice);
 	}
 
 	std::unique_ptr<CommandBuffer> VulkanDevice::createCommandBuffer() {
@@ -97,8 +97,8 @@ namespace Axiom {
 		return std::make_unique<VulkanFence>(logicDevice, isSignaled);
 	}
 
-	std::unique_ptr<Buffer> VulkanDevice::createBuffer() {
-		return std::unique_ptr<Buffer>();
+	std::unique_ptr<Buffer> VulkanDevice::createBuffer(const Buffer::CreateInfo& createInfo) {
+		return std::make_unique<VulkanBuffer>(logicDevice, physicalDevice, createInfo);
 	}
 
 	std::unique_ptr<Texture> VulkanDevice::createTexture() {

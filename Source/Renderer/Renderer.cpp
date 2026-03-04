@@ -25,6 +25,32 @@ namespace Axiom {
 		for (size_t i = 0; i < swapChain->getImageCount(); i++) {
 			renderFinishedSemaphores[i] = device->createSemaphore();
 		}
+
+		Pipeline::CreateInfo pipelineCreateInfo = {
+			.vertexShaderPath = "Assets/Shaders/shader.vert",
+			.fragmentShaderPath = "Assets/Shaders/shader.frag",
+			.topology = PrimitiveTopology::TriangleList,
+			.polygonMode = PolygonMode::Fill,
+			.cullMode = CullMode::Disabled,
+			.frontFaceClockwise = true,
+			.enableBlending = false,
+			.enableDepthTest = false,
+			.enableDepthWrite = false,
+			.colorAttachmentFormats = { swapChain->getImageTexture(0)->getFormat() },
+			.depthAttachmentFormat = Format::Undefined
+		};
+
+		pipeline = device->createPipeline(pipelineCreateInfo);
+
+		Buffer::CreateInfo vertexBufferCreateInfo = {
+			.size = sizeof(Vertex) * vertices.size(),
+			.usage = BufferUsage::Vertex,
+			.memoryUsage = MemoryUsage::GPUandCPU
+		};
+		vertexBuffer = device->createBuffer(vertexBufferCreateInfo);
+		void* vertexData = vertexBuffer->map();
+		memcpy(vertexData, vertices.data(), sizeof(Vertex) * vertices.size());
+		vertexBuffer->unmap();
 	}
 
 	Renderer::~Renderer() {
@@ -63,6 +89,11 @@ namespace Axiom {
 			.height = swapChain->getHeight()
 		};
 		commandBuffers[currentFrameIndex]->beginRendering(renderPass);
+		commandBuffers[currentFrameIndex]->bindPipeline(pipeline.get());
+		commandBuffers[currentFrameIndex]->setViewport(0.0f, 0.0f, static_cast<float>(swapChain->getWidth()), static_cast<float>(swapChain->getHeight()));
+		commandBuffers[currentFrameIndex]->setScissor(0, 0, swapChain->getWidth(), swapChain->getHeight());
+		commandBuffers[currentFrameIndex]->bindVertexBuffers({ vertexBuffer.get() });
+		commandBuffers[currentFrameIndex]->draw(static_cast<uint32_t>(vertices.size()), 1);
 		commandBuffers[currentFrameIndex]->endRendering();
 		Texture::Barrier presentBarrier{
 			.texture = swapChain->getImageTexture(imageIndex),

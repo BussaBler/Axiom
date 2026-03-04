@@ -44,7 +44,7 @@ namespace Axiom {
 		virtual std::unique_ptr<CommandBuffer> createCommandBuffer() = 0;
 		virtual std::unique_ptr<Semaphore> createSemaphore() = 0;
 		virtual std::unique_ptr<Fence> createFence(bool isSignaled) = 0;
-		virtual std::unique_ptr<Buffer> createBuffer() = 0;
+		virtual std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& createInfo) = 0;
 		virtual std::unique_ptr<Texture> createTexture() = 0;
 		virtual void submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores, const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) = 0;
 		virtual void waitIdle() = 0;

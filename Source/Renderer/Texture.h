@@ -1,5 +1,6 @@
 #pragma once
 #include "axpch.h"
+#include "Pipeline.h"
 
 namespace Axiom {
 	enum class TextureState {
@@ -16,6 +17,8 @@ namespace Axiom {
 	public:
 		Texture() = default;
 		virtual ~Texture() = default;
+
+		virtual Format getFormat() const = 0;
 
 	public:
 		struct Barrier {

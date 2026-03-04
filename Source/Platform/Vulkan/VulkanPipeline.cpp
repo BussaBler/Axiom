@@ -1,5 +1,6 @@
 #include "VulkanPipeline.h"
 #include "Utils/FileSystem.h"
+#include <shaderc/shaderc.hpp>
 
 namespace Axiom {
 	VulkanPipeline::VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice) : device(logicDevice) {
@@ -10,7 +11,11 @@ namespace Axiom {
 		Vk::PipelineShaderStageCreateInfo fragShaderStageInfo({}, Vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main");
 		std::array<Vk::PipelineShaderStageCreateInfo, 2> shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
-		Vk::PipelineVertexInputStateCreateInfo vertexInputInfo({}, {}, {});
+		Vk::VertexInputBindingDescription bindingDescription(0, sizeof(Vertex), Vk::VertexInputRate::eVertex);
+		Vk::VertexInputAttributeDescription positionAttribute(0, 0, Vk::Format::eR32G32B32A32Sfloat, offsetof(Vertex, position));
+		Vk::VertexInputAttributeDescription normalAttribute(1, 0, Vk::Format::eR32G32B32A32Sfloat, offsetof(Vertex, normal));
+		std::array<Vk::VertexInputAttributeDescription, 2> attributeDescriptions = { positionAttribute, normalAttribute };
+		Vk::PipelineVertexInputStateCreateInfo vertexInputInfo({}, bindingDescription, attributeDescriptions);
 
 		Vk::PrimitiveTopology vkTopology = (createInfo.topology == Axiom::PrimitiveTopology::LineList) ? Vk::PrimitiveTopology::eLineList : Vk::PrimitiveTopology::eTriangleList;
 		Vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vkTopology, Vk::False);
@@ -84,9 +89,21 @@ namespace Axiom {
 	}
 
 	Vk::ShaderModule VulkanPipeline::createShaderModule(std::filesystem::path shaderPath) {
-		std::vector<uint8_t> shaderCode = FileSystem::readFile(shaderPath);
+		std::vector<uint8_t> shaderSource = FileSystem::readFile(shaderPath);
 
-		Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, static_cast<uint32_t>(shaderCode.size()), reinterpret_cast<const uint32_t*>(shaderCode.data()));
+		shaderc::Compiler compiler = {};
+		shaderc::CompileOptions options = {};
+		shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv(
+			reinterpret_cast<const char*>(shaderSource.data()), shaderSource.size(),
+			shaderc_shader_kind::shaderc_glsl_infer_from_source, shaderPath.string().c_str(), "main", options
+		);
+
+		AX_CORE_ASSERT(compilationResult.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader: {0}", compilationResult.GetErrorMessage());
+		
+		size_t codeSize = std::distance(compilationResult.cbegin(), compilationResult.cend()) * sizeof(uint32_t);
+		const uint32_t* shaderCode = compilationResult.cbegin();
+
+		Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, codeSize, shaderCode);
 		Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = device.createShaderModule(shaderModuleCreateInfo);
 
 		AX_CORE_ASSERT(shaderModuleResult.result == Vk::Result::eSuccess, "Failed to create shader module!");

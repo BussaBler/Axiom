@@ -1,7 +1,7 @@
 #pragma once
 #include "Renderer/Texture.h"
 #include "Core/Assert.h"
-#include "VulkanInclude.h"
+#include "VulkanUtils.h"
 
 
 namespace Axiom {
@@ -9,6 +9,8 @@ namespace Axiom {
 	public:
 		VulkanTexture(Vk::Device logicDevice, Vk::Image existingImage);
 		~VulkanTexture() override;
+
+		Format getFormat() const override;
 
 		void createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags);
 
@@ -20,6 +22,7 @@ namespace Axiom {
 		Vk::Image image = nullptr;
 		Vk::DeviceMemory imageMemory = nullptr;
 		Vk::ImageView imageView = nullptr;
+		Vk::Format imageFormat = Vk::Format::eUndefined;
 		bool ownsImage = false;
 	};
 }

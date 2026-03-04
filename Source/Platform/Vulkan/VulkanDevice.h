@@ -2,12 +2,13 @@
 #include "axpch.h"
 #include "Core/Assert.h"
 #include "Renderer/Device.h"
-#include "VulkanInclude.h"
-#include "VulkanUtils.h"
-#include "VulkanSwapChain.h"
-#include "VulkanPipeline.h"
+#include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanFence.h"
+#include "VulkanInclude.h"
+#include "VulkanPipeline.h"
+#include "VulkanSwapChain.h"
+#include "VulkanUtils.h"
 
 #if defined(AX_PLATFORM_WINDOWS)
 	#include "Platform/Windows/Win32Window.h"
@@ -22,11 +23,11 @@ namespace Axiom {
 		~VulkanDevice() override;
 
 		std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) override;
-		std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) override;
+		std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& createInfo) override;
 		std::unique_ptr<CommandBuffer> createCommandBuffer() override;
 		std::unique_ptr<Semaphore> createSemaphore() override;
 		std::unique_ptr<Fence> createFence(bool isSignaled) override;
-		std::unique_ptr<Buffer> createBuffer() override;
+		std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& createInfo) override;
 		std::unique_ptr<Texture> createTexture() override;
 		void submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores, const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) override;
 		void waitIdle() override;

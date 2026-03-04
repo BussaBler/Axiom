@@ -23,6 +23,13 @@ namespace Axiom {
 		std::vector<std::unique_ptr<Semaphore>> imageAvailableSemaphores;
 		std::vector<std::unique_ptr<Semaphore>> renderFinishedSemaphores;
 		std::vector<std::unique_ptr<Fence>> inFlightFences;
+		std::unique_ptr<Pipeline> pipeline = nullptr;
+		std::unique_ptr<Buffer> vertexBuffer = nullptr;
+		std::array<Vertex, 3> vertices{
+			Vertex({ 0.0f, -0.5f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }),
+			Vertex({ 0.5f, 0.5f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }),
+			Vertex({ -0.5f, 0.5f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 0.0f })
+		};
 	};
 }
 
