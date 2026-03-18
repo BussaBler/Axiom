@@ -1,6 +1,7 @@
 #pragma once
 #include "axpch.h"
 #include "Vertex.h"
+#include "ResourceLayout.h"
 
 namespace Axiom {
 	enum class Format {
@@ -10,7 +11,15 @@ namespace Axiom {
 		B8G8R8A8Srgb,
 		R8G8B8A8Srgb,
 		D24UnormS8Uint,
-		D32sFloat
+		D32sFloat,
+		R32G32Sfloat,
+		R32G32B32Sfloat,
+		R32G32B32A32Sfloat
+	};
+
+	enum class VertexInputRate {
+		Vertex,
+		Instance
 	};
 
 	enum class PrimitiveTopology {
@@ -26,9 +35,22 @@ namespace Axiom {
 	};
 
 	enum class CullMode {
-		Disabled,
+		None,
 		Front,
 		Back
+	};
+
+	struct VertexBindingDescription {
+		uint32_t binding = 0;
+		uint32_t stride = 0;
+		VertexInputRate inputRate = VertexInputRate::Vertex;
+	};
+
+	struct VertexAttributeDescription {
+		uint32_t location = 0;
+		uint32_t binding = 0;
+		Format format = Format::Undefined;
+		uint32_t offset = 0;
 	};
 
 	class Pipeline {
@@ -36,6 +58,9 @@ namespace Axiom {
 		struct CreateInfo {
 			std::filesystem::path vertexShaderPath;
 			std::filesystem::path fragmentShaderPath;
+
+			std::vector<VertexBindingDescription> vertexBindings;
+			std::vector<VertexAttributeDescription> vertexAttributes;
 
 			PrimitiveTopology topology = PrimitiveTopology::TriangleList;
 			PolygonMode polygonMode = PolygonMode::Fill;
@@ -48,6 +73,8 @@ namespace Axiom {
 
 			std::vector<Format> colorAttachmentFormats;
 			Format depthAttachmentFormat = Format::Undefined;
+
+			std::vector<ResourceLayout*> resourceLayouts;
 		};
 
 		Pipeline() = default;

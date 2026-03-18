@@ -1,6 +1,7 @@
 #pragma once
 #include "axpch.h"
 #include "Event.h"
+#include "KeyCodes.h"
 
 namespace Axiom {
 	class MouseMovedEvent : public Event {
@@ -16,7 +17,7 @@ namespace Axiom {
 		}
 
 		EVENT_CLASS_TYPE(MouseMoved)
-		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryApplicationInput)
+		EVENT_CLASS_CATEGORY(EventCategory::EventCategoryMouse | EventCategory::EventCategoryApplicationInput)
 	private:
 		float mouseX, mouseY;
 	};
@@ -34,30 +35,30 @@ namespace Axiom {
 		}
 
 		EVENT_CLASS_TYPE(MouseScrolled)
-		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryApplicationInput)
+		EVENT_CLASS_CATEGORY(EventCategory::EventCategoryMouse | EventCategory::EventCategoryApplicationInput)
 	private:
 		float xOffset, yOffset;
 	};
 
 	class MouseButtonEvent : public Event {
 	public:
-		int getMouseButton() const { return button; }
+		KeyCode getMouseButton() const { return button; }
 
-		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryApplicationInput)
+		EVENT_CLASS_CATEGORY(EventCategory::EventCategoryMouse | EventCategory::EventCategoryApplicationInput)
 	protected:
-		MouseButtonEvent(int button) : button(button) {}
+		MouseButtonEvent(KeyCode button) : button(button) {}
 
 	protected:
-		int button;
+		KeyCode button;
 	};
 
 	class MouseButtonPressedEvent : public MouseButtonEvent {
 	public:
-		MouseButtonPressedEvent(int button) : MouseButtonEvent(button) {}
+		MouseButtonPressedEvent(KeyCode button) : MouseButtonEvent(button) {}
 
 		std::string toString() const override {
 			std::stringstream ss;
-			ss << "MouseButtonPressedEvent: " << button;
+			ss << "MouseButtonPressedEvent: " << static_cast<uint32_t>(button);
 			return ss.str();
 		}
 
@@ -66,11 +67,11 @@ namespace Axiom {
 
 	class MouseButtonReleasedEvent : public MouseButtonEvent {
 	public:
-		MouseButtonReleasedEvent(int button) : MouseButtonEvent(button) {}
+		MouseButtonReleasedEvent(KeyCode button) : MouseButtonEvent(button) {}
 
 		std::string toString() const override {
 			std::stringstream ss;
-			ss << "MouseButtonReleased: " << button;
+			ss << "MouseButtonReleased: " << static_cast<uint32_t>(button);
 			return ss.str();
 		}
 

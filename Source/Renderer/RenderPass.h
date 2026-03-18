@@ -16,7 +16,7 @@ namespace Axiom {
 	};
 
 	struct RenderAttachment {
-		std::shared_ptr<Texture> texture;
+		Texture* texture = nullptr;
 		LoadOp loadOp = LoadOp::DontCare;
 		StoreOp storeOp = StoreOp::DontCare;
 		Math::Vec4 clearColor = Math::Vec4(0.0f, 0.0f, 0.0f, 0.0f);

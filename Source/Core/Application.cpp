@@ -15,24 +15,28 @@ namespace Axiom {
 		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
-		renderer = std::make_unique<Renderer>(window.get());
+		Renderer::init(window.get());
+
+		uiLayer = new UILayer();
+		pushOverlay(uiLayer);
 	}
 
 	Application::~Application() {
-
+		popOverlay(uiLayer);
+		delete uiLayer;
+		Renderer::shutdown();
 	}
 
 	void Application::onEvent(Event& event) {
 		EventDispatcher dispatcher(event);
-		//AX_CORE_LOG_TRACE("Event: {0}", event.toString());
 		dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
 		dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
 
-		for (Layer* layer : layerStack) {
+		for (auto it = layerStack.rbegin(); it != layerStack.rend(); it++) {
 			if (event.isHandled()) {
 				break;
 			}
-			layer->onEvent(event);
+			(*it)->onEvent(event);
 		}
 	}
 
@@ -42,6 +46,14 @@ namespace Axiom {
 
 	void Application::pushOverlay(Layer* overlay) {
 		layerStack.pushOverlay(overlay);
+	}
+
+	void Application::popLayer(Layer* layer) {
+		layerStack.popLayer(layer);
+	}
+
+	void Application::popOverlay(Layer* overlay) {
+		layerStack.popOverlay(overlay);
 	}
 
 	bool Application::onWindowClose(WindowCloseEvent& e) {
@@ -62,8 +74,20 @@ namespace Axiom {
 			for (Layer* layer : layerStack) {
 				layer->onUpdate();
 			}
-			renderer->drawFrame();
+			uiLayer->begin();
+			for (Layer* layer : layerStack) {
+				layer->onUIRender();
+			}
+			uiLayer->end();
+
+			CommandBuffer* commandBuffer = Renderer::beginFrame();
+			for (Layer* layer : layerStack) {
+				layer->onRender(commandBuffer);
+			}
+			Renderer::endFrame();
+
 			window->onUpdate();
 		}
+		Renderer::waitIdle();
 	}
 }

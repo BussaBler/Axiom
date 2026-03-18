@@ -1,29 +1,21 @@
 #include "VulkanBuffer.h"
 
 namespace Axiom {
-	VulkanBuffer::VulkanBuffer(Vk::Device logicDevice, Vk::PhysicalDevice physicalDevice, const CreateInfo& createInfo) : device(logicDevice), size(createInfo.size) {
-		Vk::BufferCreateInfo bufferCreateInfo({}, size, AxToVkBufferUsage(createInfo.usage), Vk::SharingMode::eExclusive);
+	VulkanBuffer::VulkanBuffer(Vk::Device logicalDevice, const CreateInfo& createInfo) : device(logicalDevice), size(createInfo.size) {
+		Vk::BufferCreateInfo bufferCreateInfo({}, size, axToVkBufferUsage(createInfo.usage), Vk::SharingMode::eExclusive);
 		Vk::ResultValue<Vk::Buffer> bufferResult = device.createBuffer(bufferCreateInfo);
 
 		AX_CORE_ASSERT(bufferResult.result == Vk::Result::eSuccess, "Failed to create buffer!");
 		buffer = bufferResult.value;
 
-		Vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(buffer);
-		uint32_t memoryTypeIndex = findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, AxToVkMemProperty(createInfo.memoryUsage));
-		Vk::MemoryAllocateInfo memoryAllocateInfo(memoryRequirements.size, memoryTypeIndex);
-		Vk::ResultValue<Vk::DeviceMemory> memoryAllocResult = device.allocateMemory(memoryAllocateInfo);
+		allocation = VulkanAllocator::allocate(buffer, axToVkMemProperty(createInfo.memoryUsage));
 
-		AX_CORE_ASSERT(memoryAllocResult.result == Vk::Result::eSuccess, "Failed to allocate buffer memory");
-		bufferMemory = memoryAllocResult.value;
-
-		Vk::Result result = device.bindBufferMemory(buffer, bufferMemory, 0);
+		Vk::Result result = device.bindBufferMemory(buffer, allocation.memory, allocation.offset);
 		AX_CORE_ASSERT(result == Vk::Result::eSuccess, "Failed to bind buffer memory");
 	}
 
 	VulkanBuffer::~VulkanBuffer() {
-		if (bufferMemory) {
-			device.freeMemory(bufferMemory);
-		}
+		VulkanAllocator::free(allocation);
 		if (buffer) {
 			device.destroyBuffer(buffer);
 		}
@@ -33,26 +25,15 @@ namespace Axiom {
 		return size;
 	}
 
-	void* VulkanBuffer::map() {
-		Vk::ResultValue<void*> mapResult = device.mapMemory(bufferMemory, 0, size);
+	void VulkanBuffer::setData(const void* data, uint64_t size, uint64_t offset) {
+		AX_CORE_ASSERT(offset + size <= this->size, "Data size exceeds buffer size");
+		Vk::ResultValue<void*> mapResult = device.mapMemory(allocation.memory, allocation.offset + offset, size);
 
 		AX_CORE_ASSERT(mapResult.result == Vk::Result::eSuccess, "Failed to map buffer memory");
-		return mapResult.value;
-	}
+		void* mappedData = mapResult.value;
 
-	void VulkanBuffer::unmap() {
-		device.unmapMemory(bufferMemory);
-	}
+		std::memcpy(mappedData, data, size);
 
-	uint32_t VulkanBuffer::findMemoryType(Vk::PhysicalDevice physicalDevice, uint32_t typeFilter, Vk::MemoryPropertyFlags properties) {
-		Vk::PhysicalDeviceMemoryProperties memoryPropertiesResult = physicalDevice.getMemoryProperties();
-
-		for (uint32_t i = 0; i < memoryPropertiesResult.memoryTypeCount; i++) {
-			if ((typeFilter & (1 << i)) && (memoryPropertiesResult.memoryTypes[i].propertyFlags & properties) == properties) {
-				return i;
-			}
-		}
-
-		return 0;
+		device.unmapMemory(allocation.memory);
 	}
 }

@@ -22,17 +22,32 @@ namespace Axiom {
 		case WM_KEYDOWN: {
 			bool isRepeat = (lParam & (1 << 30)) != 0;
 			if (isRepeat) {
-				KeyPressedEvent e(wParam, 1);
+				KeyPressedEvent e(static_cast<KeyCode>(wParam), 1);
 				wData->eventCallback(e);
 			}
 			else {
-				KeyPressedEvent e(wParam, 0);
+				KeyPressedEvent e(static_cast<KeyCode>(wParam), 0);
 				wData->eventCallback(e);
 			}
 			break;
 		}
 		case WM_KEYUP: {
-			KeyReleassedEvent e(wParam);
+			KeyReleassedEvent e(static_cast<KeyCode>(wParam));
+			wData->eventCallback(e);
+			break;
+		}
+		case WM_LBUTTONDOWN: {
+			MouseButtonPressedEvent e(KeyCode::LeftButton);
+			wData->eventCallback(e);
+			break;
+		}
+		case WM_LBUTTONUP: {
+			MouseButtonReleasedEvent e(KeyCode::LeftButton);
+			wData->eventCallback(e);
+			break;
+		}
+		case WM_MOUSEMOVE: {
+			MouseMovedEvent e(LOWORD(lParam), HIWORD(lParam));
 			wData->eventCallback(e);
 			break;
 		}

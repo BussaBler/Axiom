@@ -1,6 +1,8 @@
 #include "Renderer.h"
 
 namespace Axiom {
+	Renderer* Renderer::instance = nullptr;
+
 	Renderer::Renderer(Window* windowPtr) : window(windowPtr) {
 		Device::CreateInfo deviceCreateInfo{};
 		deviceCreateInfo.api = GraphicsApi::Vulkan;
@@ -26,91 +28,98 @@ namespace Axiom {
 			renderFinishedSemaphores[i] = device->createSemaphore();
 		}
 
-		Pipeline::CreateInfo pipelineCreateInfo = {
-			.vertexShaderPath = "Assets/Shaders/shader.vert",
-			.fragmentShaderPath = "Assets/Shaders/shader.frag",
-			.topology = PrimitiveTopology::TriangleList,
-			.polygonMode = PolygonMode::Fill,
-			.cullMode = CullMode::Disabled,
-			.frontFaceClockwise = true,
-			.enableBlending = false,
-			.enableDepthTest = false,
-			.enableDepthWrite = false,
-			.colorAttachmentFormats = { swapChain->getImageTexture(0)->getFormat() },
-			.depthAttachmentFormat = Format::Undefined
+		renderTargetBarrier = {
+			.oldState = TextureState::Undefined,
+			.newState = TextureState::RenderTarget,
+			.aspect = TextureAspect::Color
+		};
+		presentBarrier = {
+			.oldState = TextureState::RenderTarget,
+			.newState = TextureState::Present,
+			.aspect = TextureAspect::Color
 		};
 
-		pipeline = device->createPipeline(pipelineCreateInfo);
-
-		Buffer::CreateInfo vertexBufferCreateInfo = {
-			.size = sizeof(Vertex) * vertices.size(),
-			.usage = BufferUsage::Vertex,
-			.memoryUsage = MemoryUsage::GPUandCPU
-		};
-		vertexBuffer = device->createBuffer(vertexBufferCreateInfo);
-		void* vertexData = vertexBuffer->map();
-		memcpy(vertexData, vertices.data(), sizeof(Vertex) * vertices.size());
-		vertexBuffer->unmap();
+		createDefaultTexture();
 	}
 
 	Renderer::~Renderer() {
 		device->waitIdle();
 	}
 
-	void Renderer::drawFrame() {
-		inFlightFences[currentFrameIndex]->wait();
+	void Renderer::init(Window* windowPtr) {
+		if (!instance) {
+			instance = new Renderer(windowPtr);
+		}
+	}
 
-		uint32_t imageIndex = swapChain->acquireNextImage(imageAvailableSemaphores[currentFrameIndex].get());
+	void Renderer::shutdown() {
+		delete instance;
+		instance = nullptr;
+	}
 
-		if (imageIndex == std::numeric_limits<uint32_t>::max()) {
-			recreateSwapChain();
-			return;
+	void Renderer::waitIdle() {
+		instance->device->waitIdle();
+	}
+
+	CommandBuffer* Renderer::beginFrame() {
+		instance->inFlightFences[instance->currentFrameIndex]->wait();
+
+		instance->currentImageIndex = instance->swapChain->acquireNextImage(instance->imageAvailableSemaphores[instance->currentFrameIndex].get());
+		if (instance->currentImageIndex == std::numeric_limits<uint32_t>::max()) {
+			instance->recreateSwapChain();
+			return nullptr;
 		}
 
-		inFlightFences[currentFrameIndex]->reset();
+		instance->inFlightFences[instance->currentFrameIndex]->reset();
+		CommandBuffer* commandBuffer = instance->commandBuffers[instance->currentFrameIndex].get();
+		commandBuffer->begin();
+		instance->renderTargetBarrier.texture = instance->swapChain->getImageTexture(instance->currentImageIndex);
+		commandBuffer->pipelineBarrier({ instance->renderTargetBarrier });
+		return commandBuffer;
+	}
 
-		commandBuffers[currentFrameIndex]->begin();
-		Texture::Barrier imageBarrier{
-			.texture = swapChain->getImageTexture(imageIndex),
-			.oldState = TextureState::Undefined,
-			.newState = TextureState::RenderTarget
-		};
-		commandBuffers[currentFrameIndex]->pipelineBarrier({ imageBarrier });
-		RenderAttachment renderAttachment{
-			.texture = swapChain->getImageTexture(imageIndex),
-			.loadOp = LoadOp::Clear,
-			.storeOp = StoreOp::Store,
-			.clearColor = Math::Vec4(1.0f, 0.0f, 0.0f, 1.0f)
-		};
-		RenderPass renderPass{
-			.colorAttachments = { renderAttachment },
-			.colorAttachmentCount = 1,
-			.width = swapChain->getWidth(),
-			.height = swapChain->getHeight()
-		};
-		commandBuffers[currentFrameIndex]->beginRendering(renderPass);
-		commandBuffers[currentFrameIndex]->bindPipeline(pipeline.get());
-		commandBuffers[currentFrameIndex]->setViewport(0.0f, 0.0f, static_cast<float>(swapChain->getWidth()), static_cast<float>(swapChain->getHeight()));
-		commandBuffers[currentFrameIndex]->setScissor(0, 0, swapChain->getWidth(), swapChain->getHeight());
-		commandBuffers[currentFrameIndex]->bindVertexBuffers({ vertexBuffer.get() });
-		commandBuffers[currentFrameIndex]->draw(static_cast<uint32_t>(vertices.size()), 1);
-		commandBuffers[currentFrameIndex]->endRendering();
-		Texture::Barrier presentBarrier{
-			.texture = swapChain->getImageTexture(imageIndex),
-			.oldState = TextureState::RenderTarget,
-			.newState = TextureState::Present
-		};
-		commandBuffers[currentFrameIndex]->pipelineBarrier({ presentBarrier });
-		commandBuffers[currentFrameIndex]->end();
+	void Renderer::endFrame() {
+		CommandBuffer* commandBuffer = instance->commandBuffers[instance->currentFrameIndex].get();
+		instance->presentBarrier.texture = instance->renderTargetBarrier.texture;
+		commandBuffer->pipelineBarrier({ instance->presentBarrier });
+		commandBuffer->end();
 
-		device->submitCommandBuffers({ commandBuffers[currentFrameIndex].get() }, { imageAvailableSemaphores[currentFrameIndex].get() }, { renderFinishedSemaphores[imageIndex].get() }, inFlightFences[currentFrameIndex].get());
-		bool presentResult = swapChain->present(imageIndex, renderFinishedSemaphores[imageIndex].get());
+		instance->device->submitCommandBuffers({ commandBuffer }, { instance->imageAvailableSemaphores[instance->currentFrameIndex].get() }, { instance->renderFinishedSemaphores[instance->currentImageIndex].get() }, instance->inFlightFences[instance->currentFrameIndex].get());
+		bool presentResult = instance->swapChain->present(instance->currentImageIndex, instance->renderFinishedSemaphores[instance->currentImageIndex].get());
 
 		if (!presentResult) {
-			recreateSwapChain();
+			instance->recreateSwapChain();
 		}
 
-		currentFrameIndex = (currentFrameIndex + 1) % maxFramesInFlight;
+		instance->currentFrameIndex = (instance->currentFrameIndex + 1) % instance->maxFramesInFlight;
+	}
+
+	std::unique_ptr<Pipeline> Renderer::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
+		return instance->device->createPipeline(pipelineCreateInfo);
+	}
+
+	std::unique_ptr<Buffer> Renderer::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
+		return instance->device->createBuffer(bufferCreateInfo);
+	}
+
+	std::shared_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo& textureCreateInfo) {
+		return instance->device->createTexture(textureCreateInfo);
+	}
+
+	std::unique_ptr<ResourceLayout> Renderer::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
+		return instance->device->createResourceLayout(bindings);
+	}
+
+	std::unique_ptr<ResourceSet> Renderer::createResourceSet(ResourceLayout* resourceLayout) {
+		return instance->device->createResourceSet(resourceLayout);
+	}
+
+	std::unique_ptr<CommandBuffer> Renderer::beginSingleTimeCommands() {
+		return instance->device->beginSingleTimeCommands();
+	}
+
+	void Renderer::endSingleTimeCommands(CommandBuffer* commandBuffer) {
+		instance->device->endSingleTimeCommands(commandBuffer);
 	}
 
 	void Renderer::recreateSwapChain() {
@@ -132,5 +141,52 @@ namespace Axiom {
 		for (size_t i = 0; i < swapChain->getImageCount(); i++) {
 			renderFinishedSemaphores[i] = device->createSemaphore();
 		}
+	}
+
+	void Renderer::createDefaultTexture() {
+		const uint32_t defaultTextureSize = 4;
+
+		Texture::CreateInfo textureCreateInfo = {
+			.width = defaultTextureSize,
+			.height = defaultTextureSize,
+			.mipLevels = 1,
+			.arrayLayers = 1,
+			.format = Format::R8G8B8A8Unorm,
+			.usage = TextureUsage::Sampled | TextureUsage::TransferDst,
+			.aspect = TextureAspect::Color,
+			.initialState = TextureState::Undefined,
+			.memoryUsage = MemoryUsage::GPUOnly
+		};
+		defaultTexture = device->createTexture(textureCreateInfo);
+
+
+		Buffer::CreateInfo stagingBufferCreateInfo = {
+			.size = defaultTextureSize * defaultTextureSize * sizeof(uint32_t),
+			.usage = BufferUsage::TransferSrc,
+			.memoryUsage = MemoryUsage::GPUandCPU
+		};
+		std::unique_ptr<Buffer> stagingBuffer = device->createBuffer(stagingBufferCreateInfo);
+
+		// Magenta: R=255, G=0, B=255, A=255
+		// Black:   R=0,   G=0, B=0,   A=255
+		const uint32_t magenta = 0xFF00FFFF; // AABBGGRR (check your API's expected byte order)
+		const uint32_t black = 0xFF000000;
+
+		std::array<uint32_t, defaultTextureSize* defaultTextureSize> defaultTextureData;
+		for (uint32_t y = 0; y < defaultTextureSize; y++) {
+			for (uint32_t x = 0; x < defaultTextureSize; x++) {
+				if ((x + y) % 2 == 0) {
+					defaultTextureData[y * defaultTextureSize + x] = magenta;
+				}
+				else {
+					defaultTextureData[y * defaultTextureSize + x] = black;
+				}
+			}
+		}
+
+		std::unique_ptr<CommandBuffer> commandBuffer = device->beginSingleTimeCommands();
+		stagingBuffer->setData<uint32_t>(defaultTextureData);
+		commandBuffer->copyBufferToTexture(stagingBuffer.get(), defaultTexture.get(), defaultTextureSize, defaultTextureSize);
+		device->endSingleTimeCommands(commandBuffer.get());
 	}
 }

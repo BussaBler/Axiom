@@ -1,5 +1,6 @@
 #pragma once
 #include "Event/Event.h"
+#include "Renderer/CommandBuffer.h"
 
 namespace Axiom {
 	class Layer {
@@ -10,7 +11,8 @@ namespace Axiom {
 		virtual void onDetach() {}
 		virtual void onUpdate() {}
 		virtual void onEvent(Event& event) {}
-		virtual void onRender() {}
+		virtual void onUIRender() {}
+		virtual void onRender(CommandBuffer* commandBuffer) {}
 		const std::string& getName() const { return debugName; }
 
 	protected:

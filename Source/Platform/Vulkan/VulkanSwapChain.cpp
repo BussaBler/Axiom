@@ -2,129 +2,137 @@
 #include "Math/AxMath.h"
 
 namespace Axiom {
-	VulkanSwapChain::VulkanSwapChain(const CreateInfo& createInfo) : device(createInfo.logicDevice), presentQueue(createInfo.presentQueue) {
-		Vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(createInfo.swapChainDetails.formats);
-		Vk::PresentModeKHR presentMode = chooseSwapPresentMode(createInfo.swapChainDetails.presentModes);
-		Vk::Extent2D extent = chooseSwapExtent(createInfo.swapChainDetails.capabilities, createInfo.windowSize);
+    VulkanSwapChain::VulkanSwapChain(const CreateInfo& createInfo)
+        : device(createInfo.logicDevice), presentQueue(createInfo.presentQueue) {
+        Vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(createInfo.swapChainDetails.formats);
+        Vk::PresentModeKHR presentMode = chooseSwapPresentMode(createInfo.swapChainDetails.presentModes);
+        Vk::Extent2D extent = chooseSwapExtent(createInfo.swapChainDetails.capabilities, createInfo.windowSize);
 
-		uint32_t imageCount = createInfo.swapChainDetails.capabilities.minImageCount + 1;
-		if (createInfo.swapChainDetails.capabilities.maxImageCount > 0 && imageCount > createInfo.swapChainDetails.capabilities.maxImageCount) {
-			imageCount = createInfo.swapChainDetails.capabilities.maxImageCount;
-		}
-		
-		Vk::SwapchainCreateInfoKHR swapChainCreateInfo({}, createInfo.surface, imageCount, surfaceFormat.format, surfaceFormat.colorSpace, extent, 1, Vk::ImageUsageFlagBits::eColorAttachment);
-	
-		std::array<uint32_t, 2> queueFamilyIndices = { createInfo.queueFamilyIndices.graphicsFamily.value(), createInfo.queueFamilyIndices.presentFamily.value() };
-		if (createInfo.queueFamilyIndices.graphicsFamily != createInfo.queueFamilyIndices.presentFamily) {
-			swapChainCreateInfo.setImageSharingMode(Vk::SharingMode::eConcurrent);
-			swapChainCreateInfo.setQueueFamilyIndices(queueFamilyIndices);
-		}
-		else {
-			swapChainCreateInfo.setImageSharingMode(Vk::SharingMode::eExclusive);
-		}
+        uint32_t imageCount = createInfo.swapChainDetails.capabilities.minImageCount + 1;
+        if (createInfo.swapChainDetails.capabilities.maxImageCount > 0 &&
+            imageCount > createInfo.swapChainDetails.capabilities.maxImageCount) {
+            imageCount = createInfo.swapChainDetails.capabilities.maxImageCount;
+        }
 
-		swapChainCreateInfo.setPreTransform(createInfo.swapChainDetails.capabilities.currentTransform);
-		swapChainCreateInfo.setCompositeAlpha(Vk::CompositeAlphaFlagBitsKHR::eOpaque);
-		swapChainCreateInfo.setPresentMode(presentMode);
-		swapChainCreateInfo.setClipped(Vk::True);
-		Vk::ResultValue<Vk::SwapchainKHR> swapChainResult = device.createSwapchainKHR(swapChainCreateInfo);
+        Vk::SwapchainCreateInfoKHR swapChainCreateInfo({}, createInfo.surface, imageCount, surfaceFormat.format,
+                                                       surfaceFormat.colorSpace, extent, 1,
+                                                       Vk::ImageUsageFlagBits::eColorAttachment);
 
-		AX_CORE_ASSERT(swapChainResult.result == Vk::Result::eSuccess, "Failed to create swap chain!");
-		swapChain = swapChainResult.value;
+        std::array<uint32_t, 2> queueFamilyIndices = {createInfo.queueFamilyIndices.graphicsFamily.value(),
+                                                      createInfo.queueFamilyIndices.presentFamily.value()};
+        if (createInfo.queueFamilyIndices.graphicsFamily != createInfo.queueFamilyIndices.presentFamily) {
+            swapChainCreateInfo.setImageSharingMode(Vk::SharingMode::eConcurrent);
+            swapChainCreateInfo.setQueueFamilyIndices(queueFamilyIndices);
+        } else {
+            swapChainCreateInfo.setImageSharingMode(Vk::SharingMode::eExclusive);
+        }
 
-		Vk::ResultValue<std::vector<Vk::Image>> swapChainImagesResult = device.getSwapchainImagesKHR(swapChain);
-		AX_CORE_ASSERT(swapChainImagesResult.result == Vk::Result::eSuccess, "Failed to get swap chain images!");
-		swapChainExtent = extent;
-		swapChainImageFormat = surfaceFormat.format;
+        swapChainCreateInfo.setPreTransform(createInfo.swapChainDetails.capabilities.currentTransform);
+        swapChainCreateInfo.setCompositeAlpha(Vk::CompositeAlphaFlagBitsKHR::eOpaque);
+        swapChainCreateInfo.setPresentMode(presentMode);
+        swapChainCreateInfo.setClipped(Vk::True);
+        Vk::ResultValue<Vk::SwapchainKHR> swapChainResult = device.createSwapchainKHR(swapChainCreateInfo);
 
-		swapChainTextures.reserve(swapChainImagesResult.value.size());
-		for (size_t i = 0; i < swapChainImagesResult.value.size(); i++) {
-			swapChainTextures.push_back(std::make_shared<VulkanTexture>(device, swapChainImagesResult.value[i]));
-			swapChainTextures[i]->createImageView(swapChainImageFormat, Vk::ImageAspectFlagBits::eColor);
-		}
-	}
+        AX_CORE_ASSERT(swapChainResult.result == Vk::Result::eSuccess, "Failed to create swap chain!");
+        swapChain = swapChainResult.value;
 
-	VulkanSwapChain::~VulkanSwapChain() {
-		device.destroySwapchainKHR(swapChain);
-	}
+        Vk::ResultValue<std::vector<Vk::Image>> swapChainImagesResult = device.getSwapchainImagesKHR(swapChain);
+        AX_CORE_ASSERT(swapChainImagesResult.result == Vk::Result::eSuccess, "Failed to get swap chain images!");
+        swapChainExtent = extent;
+        swapChainImageFormat = surfaceFormat.format;
 
-	uint32_t VulkanSwapChain::acquireNextImage(Semaphore* imageAvailableSemaphore) {
-		Vk::Semaphore vkSignal = static_cast<VulkanSemaphore*>(imageAvailableSemaphore)->getHandle();
-		Vk::ResultValue<uint32_t> acquireResult = device.acquireNextImageKHR(swapChain, (std::numeric_limits<uint64_t>::max)(), vkSignal, nullptr);
+        swapChainTextures.reserve(swapChainImagesResult.value.size());
+        for (size_t i = 0; i < swapChainImagesResult.value.size(); i++) {
+            swapChainTextures.push_back(std::make_unique<VulkanTexture>(device, swapChainImagesResult.value[i]));
+            swapChainTextures[i]->createImageView(swapChainImageFormat, Vk::ImageAspectFlagBits::eColor);
+        }
+    }
 
-		if (acquireResult.result == Vk::Result::eErrorOutOfDateKHR) {
-			return -1;
-		}
-		else if (acquireResult.result != Vk::Result::eSuccess && acquireResult.result != Vk::Result::eSuboptimalKHR) {
-			AX_CORE_ASSERT(false, "Failed to acquire swap chain image!");
-			return -1;
-		}
+    VulkanSwapChain::~VulkanSwapChain() {
+        device.destroySwapchainKHR(swapChain);
+    }
 
-		return acquireResult.value;
-	}
+    uint32_t VulkanSwapChain::acquireNextImage(Semaphore* imageAvailableSemaphore) {
+        Vk::Semaphore vkSignal = static_cast<VulkanSemaphore*>(imageAvailableSemaphore)->getHandle();
+        Vk::ResultValue<uint32_t> acquireResult =
+            device.acquireNextImageKHR(swapChain, (std::numeric_limits<uint64_t>::max)(), vkSignal, nullptr);
 
-	std::shared_ptr<Texture> VulkanSwapChain::getImageTexture(uint32_t index) {
-		return swapChainTextures[index];
-	}
+        if (acquireResult.result == Vk::Result::eErrorOutOfDateKHR) {
+            return -1;
+        } else if (acquireResult.result != Vk::Result::eSuccess && acquireResult.result != Vk::Result::eSuboptimalKHR) {
+            AX_CORE_ASSERT(false, "Failed to acquire swap chain image!");
+            return -1;
+        }
 
-	bool VulkanSwapChain::present(uint32_t imageIndex, Semaphore* waitSemaphore) {
-		Vk::Semaphore vkWait = static_cast<VulkanSemaphore*>(waitSemaphore)->getHandle();
-		Vk::PresentInfoKHR presentInfo(vkWait, swapChain, imageIndex);
-		
-		Vk::Result presentResult = presentQueue.presentKHR(presentInfo);
+        return acquireResult.value;
+    }
 
-		if (presentResult == Vk::Result::eErrorOutOfDateKHR || presentResult == Vk::Result::eSuboptimalKHR) {
-			return false;
-		}
-		else if (presentResult != Vk::Result::eSuccess) {
-			AX_CORE_ASSERT(false, "Failed to present swap chain image!");
-			return false;
-		}
+    Texture* VulkanSwapChain::getImageTexture(uint32_t index) {
+        return swapChainTextures[index].get();
+    }
 
-		return true;
-	}
+    bool VulkanSwapChain::present(uint32_t imageIndex, Semaphore* waitSemaphore) {
+        Vk::Semaphore vkWait = static_cast<VulkanSemaphore*>(waitSemaphore)->getHandle();
+        Vk::PresentInfoKHR presentInfo(vkWait, swapChain, imageIndex);
 
-	uint32_t VulkanSwapChain::getImageCount() const {
-		return static_cast<uint32_t>(swapChainTextures.size());
-	}
+        Vk::Result presentResult = presentQueue.presentKHR(presentInfo);
 
-	uint32_t VulkanSwapChain::getWidth() const {
-		return swapChainExtent.width;
-	}
+        if (presentResult == Vk::Result::eErrorOutOfDateKHR || presentResult == Vk::Result::eSuboptimalKHR) {
+            return false;
+        } else if (presentResult != Vk::Result::eSuccess) {
+            AX_CORE_ASSERT(false, "Failed to present swap chain image!");
+            return false;
+        }
 
-	uint32_t VulkanSwapChain::getHeight() const {
-		return swapChainExtent.height;
-	}
+        return true;
+    }
 
-	Vk::SurfaceFormatKHR VulkanSwapChain::chooseSwapSurfaceFormat(const std::vector<Vk::SurfaceFormatKHR>& availableFormats) {
-		for (const auto& availableFormat : availableFormats) {
-			if (availableFormat.format == Vk::Format::eB8G8R8A8Srgb && availableFormat.colorSpace == Vk::ColorSpaceKHR::eSrgbNonlinear) {
-				return availableFormat;
-			}
-		}
+    uint32_t VulkanSwapChain::getImageCount() const {
+        return static_cast<uint32_t>(swapChainTextures.size());
+    }
 
-		return availableFormats[0];
-	}
+    uint32_t VulkanSwapChain::getWidth() const {
+        return swapChainExtent.width;
+    }
 
-	Vk::PresentModeKHR VulkanSwapChain::chooseSwapPresentMode(const std::vector<Vk::PresentModeKHR>& availablePresentModes) {
-		for (const auto& availablePresentMode : availablePresentModes) {
-			if (availablePresentMode == Vk::PresentModeKHR::eMailbox) {
-				return availablePresentMode;
-			}
-		}
+    uint32_t VulkanSwapChain::getHeight() const {
+        return swapChainExtent.height;
+    }
 
-		return Vk::PresentModeKHR::eFifo;
-	}
+    Vk::SurfaceFormatKHR VulkanSwapChain::chooseSwapSurfaceFormat(
+        const std::vector<Vk::SurfaceFormatKHR>& availableFormats) {
+        for (const auto& availableFormat : availableFormats) {
+            if (availableFormat.format == Vk::Format::eB8G8R8A8Srgb &&
+                availableFormat.colorSpace == Vk::ColorSpaceKHR::eSrgbNonlinear) {
+                return availableFormat;
+            }
+        }
 
-	Vk::Extent2D VulkanSwapChain::chooseSwapExtent(const Vk::SurfaceCapabilitiesKHR& capabilities, Vk::Extent2D windowSize) const {
-		if (capabilities.currentExtent.width != (std::numeric_limits<uint32_t>::max)()) {
-			return capabilities.currentExtent;
-		}
-		else {
-			Vk::Extent2D actualExtent = windowSize;
-			actualExtent.width = Math::axClamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-			actualExtent.height = Math::axClamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-			return actualExtent;
-		}
-	}
-}
+        return availableFormats[0];
+    }
+
+    Vk::PresentModeKHR VulkanSwapChain::chooseSwapPresentMode(
+        const std::vector<Vk::PresentModeKHR>& availablePresentModes) {
+        for (const auto& availablePresentMode : availablePresentModes) {
+            if (availablePresentMode == Vk::PresentModeKHR::eMailbox) {
+                return availablePresentMode;
+            }
+        }
+
+        return Vk::PresentModeKHR::eFifo;
+    }
+
+    Vk::Extent2D VulkanSwapChain::chooseSwapExtent(const Vk::SurfaceCapabilitiesKHR& capabilities,
+                                                   Vk::Extent2D windowSize) const {
+        if (capabilities.currentExtent.width != (std::numeric_limits<uint32_t>::max)()) {
+            return capabilities.currentExtent;
+        } else {
+            Vk::Extent2D actualExtent = windowSize;
+            actualExtent.width =
+                Math::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+            actualExtent.height = Math::clamp(actualExtent.height, capabilities.minImageExtent.height,
+                                              capabilities.maxImageExtent.height);
+            return actualExtent;
+        }
+    }
+} // namespace Axiom

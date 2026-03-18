@@ -11,11 +11,17 @@ namespace Axiom {
 		Vk::PipelineShaderStageCreateInfo fragShaderStageInfo({}, Vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main");
 		std::array<Vk::PipelineShaderStageCreateInfo, 2> shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
 
-		Vk::VertexInputBindingDescription bindingDescription(0, sizeof(Vertex), Vk::VertexInputRate::eVertex);
-		Vk::VertexInputAttributeDescription positionAttribute(0, 0, Vk::Format::eR32G32B32A32Sfloat, offsetof(Vertex, position));
-		Vk::VertexInputAttributeDescription normalAttribute(1, 0, Vk::Format::eR32G32B32A32Sfloat, offsetof(Vertex, normal));
-		std::array<Vk::VertexInputAttributeDescription, 2> attributeDescriptions = { positionAttribute, normalAttribute };
-		Vk::PipelineVertexInputStateCreateInfo vertexInputInfo({}, bindingDescription, attributeDescriptions);
+		std::vector<Vk::VertexInputBindingDescription> bindingDescriptions(createInfo.vertexBindings.size());
+		for (size_t i = 0; i < createInfo.vertexBindings.size(); i++) {
+			const auto& binding = createInfo.vertexBindings[i];
+			bindingDescriptions[i] = Vk::VertexInputBindingDescription(binding.binding, binding.stride, (binding.inputRate == VertexInputRate::Vertex) ? Vk::VertexInputRate::eVertex : Vk::VertexInputRate::eInstance);
+		}
+		std::vector<Vk::VertexInputAttributeDescription> attributeDescriptions(createInfo.vertexAttributes.size());
+		for (size_t i = 0; i < createInfo.vertexAttributes.size(); i++) {
+			const auto& attribute = createInfo.vertexAttributes[i];
+			attributeDescriptions[i] = Vk::VertexInputAttributeDescription(attribute.location, attribute.binding, axToVkFormat(attribute.format), attribute.offset);
+		}
+		Vk::PipelineVertexInputStateCreateInfo vertexInputInfo({}, bindingDescriptions, attributeDescriptions);
 
 		Vk::PrimitiveTopology vkTopology = (createInfo.topology == Axiom::PrimitiveTopology::LineList) ? Vk::PrimitiveTopology::eLineList : Vk::PrimitiveTopology::eTriangleList;
 		Vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vkTopology, Vk::False);
@@ -25,7 +31,7 @@ namespace Axiom {
 		Vk::PipelineDynamicStateCreateInfo dynamicState({}, dynamicStates);
 
 		Vk::FrontFace vkFrontFace = createInfo.frontFaceClockwise ? Vk::FrontFace::eClockwise : Vk::FrontFace::eCounterClockwise;
-		Vk::PipelineRasterizationStateCreateInfo rasterizer({}, Vk::False, Vk::False, AxPolygonToVkPolygon(createInfo.polygonMode), AxCullModeToVkCullMode(createInfo.cullMode), vkFrontFace);
+		Vk::PipelineRasterizationStateCreateInfo rasterizer({}, Vk::False, Vk::False, axPolygonToVkPolygon(createInfo.polygonMode), axCullModeToVkCullMode(createInfo.cullMode), vkFrontFace);
 		rasterizer.setLineWidth(1.0f);
 
 		Vk::PipelineMultisampleStateCreateInfo multisampling({}, Vk::SampleCountFlagBits::e1);
@@ -50,7 +56,14 @@ namespace Axiom {
 		Vk::PipelineColorBlendStateCreateInfo colorBlending({}, Vk::False, Vk::LogicOp::eCopy, 1, &colorBlendAttachment);
 		colorBlending.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
 
-		Vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, {}, {});
+		std::vector<Vk::DescriptorSetLayout> vkDescriptorSetLayouts;
+		for (auto layout : createInfo.resourceLayouts) {
+			auto vulkanLayout = static_cast<VulkanResourceLayout*>(layout);
+			vkDescriptorSetLayouts.push_back(vulkanLayout->getHandle());
+		}
+		std::array<Vk::PushConstantRange, 1> pushConstantRanges = { Vk::PushConstantRange(Vk::ShaderStageFlagBits::eVertex | Vk::ShaderStageFlagBits::eFragment, 0, sizeof(Math::Mat4)) };
+
+		Vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, vkDescriptorSetLayouts, pushConstantRanges);
 		Vk::ResultValue<Vk::PipelineLayout> pipelineLayoutResult = device.createPipelineLayout(pipelineLayoutInfo);
 
 		AX_CORE_ASSERT(pipelineLayoutResult.result == Vk::Result::eSuccess, "Failed to create pipeline layout!");
@@ -58,9 +71,9 @@ namespace Axiom {
 
 		std::vector<Vk::Format> vkColorFormats;
 		for (auto fmt : createInfo.colorAttachmentFormats) {
-			vkColorFormats.push_back(AxFormatToVkFormat(fmt));
+			vkColorFormats.push_back(axToVkFormat(fmt));
 		}
-		Vk::Format vkDepthFormat = AxFormatToVkFormat(createInfo.depthAttachmentFormat);
+		Vk::Format vkDepthFormat = axToVkFormat(createInfo.depthAttachmentFormat);
 
 		Vk::PipelineRenderingCreateInfo renderingInfo({}, vkColorFormats, vkDepthFormat, Vk::Format::eUndefined);
 	
@@ -110,7 +123,7 @@ namespace Axiom {
 		return shaderModuleResult.value;
 	}
 
-	Vk::PolygonMode VulkanPipeline::AxPolygonToVkPolygon(PolygonMode mode) {
+	Vk::PolygonMode VulkanPipeline::axPolygonToVkPolygon(PolygonMode mode) {
 		switch (mode) {
 			case Axiom::PolygonMode::Fill: return Vk::PolygonMode::eFill;
 			case Axiom::PolygonMode::Line: return Vk::PolygonMode::eLine;
@@ -119,9 +132,9 @@ namespace Axiom {
 		}
 	}
 
-	Vk::CullModeFlags VulkanPipeline::AxCullModeToVkCullMode(CullMode mode) {
+	Vk::CullModeFlags VulkanPipeline::axCullModeToVkCullMode(CullMode mode) {
 		switch (mode) {
-			case Axiom::CullMode::Disabled: return Vk::CullModeFlagBits::eNone;
+			case Axiom::CullMode::None: return Vk::CullModeFlagBits::eNone;
 			case Axiom::CullMode::Front: return Vk::CullModeFlagBits::eFront;
 			case Axiom::CullMode::Back: return Vk::CullModeFlagBits::eBack;
 			default: return Vk::CullModeFlagBits::eBack;

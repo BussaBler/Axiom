@@ -2,13 +2,17 @@
 #include "axpch.h"
 #include "Core/Assert.h"
 #include "Renderer/Device.h"
+#include "VulkanAllocator.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanFence.h"
 #include "VulkanInclude.h"
 #include "VulkanPipeline.h"
 #include "VulkanSwapChain.h"
+#include "VulkanTexture.h"
 #include "VulkanUtils.h"
+#include "VulkanResourceLayout.h"
+#include "VulkanResourceSet.h"
 
 #if defined(AX_PLATFORM_WINDOWS)
 	#include "Platform/Windows/Win32Window.h"
@@ -23,12 +27,16 @@ namespace Axiom {
 		~VulkanDevice() override;
 
 		std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) override;
-		std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& createInfo) override;
+		std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) override;
 		std::unique_ptr<CommandBuffer> createCommandBuffer() override;
 		std::unique_ptr<Semaphore> createSemaphore() override;
 		std::unique_ptr<Fence> createFence(bool isSignaled) override;
-		std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& createInfo) override;
-		std::unique_ptr<Texture> createTexture() override;
+		std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) override;
+		std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) override;
+		std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) override;
+		std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) override;
+		std::unique_ptr<CommandBuffer> beginSingleTimeCommands() override;
+		void endSingleTimeCommands(CommandBuffer* commandBuffer) override;
 		void submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores, const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) override;
 		void waitIdle() override;
 
@@ -44,6 +52,7 @@ namespace Axiom {
 		SwapChainSupportDetails querySwapChainSupport(const Vk::PhysicalDevice& device) const;
 		void createLogicalDevice();
 		void createCommandPool();
+		void createDescriptorPool();
 
 	private:
 		PFN_vkGetInstanceProcAddr vkInstanceProcAddr = nullptr;
@@ -55,6 +64,7 @@ namespace Axiom {
 		Vk::Queue graphicsQueue = nullptr;
 		Vk::Queue presentQueue = nullptr;
 		Vk::CommandPool commandPool = nullptr;
+		Vk::DescriptorPool descriptorPool = nullptr;
 	};
 }
 

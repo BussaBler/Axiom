@@ -3,6 +3,8 @@
 #include "Renderer/Buffer.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
+#include "Renderer/ResourceLayout.h"
+#include "Renderer/Texture.h"
 #include "VulkanInclude.h"
 
 namespace Axiom {
@@ -20,7 +22,7 @@ namespace Axiom {
 		std::vector<Vk::PresentModeKHR> presentModes;
 	};
 
-	inline Vk::Format AxFormatToVkFormat(Format format) {
+	inline Vk::Format axToVkFormat(Format format) {
 		switch (format) {
 			case Format::Undefined: return Vk::Format::eUndefined;
 			case Format::B8G8R8A8Unorm: return Vk::Format::eB8G8R8A8Unorm;
@@ -29,11 +31,14 @@ namespace Axiom {
 			case Format::R8G8B8A8Srgb: return Vk::Format::eR8G8B8A8Srgb;
 			case Format::D24UnormS8Uint: return Vk::Format::eD24UnormS8Uint;
 			case Format::D32sFloat: return Vk::Format::eD32Sfloat;
+			case Format::R32G32Sfloat: return Vk::Format::eR32G32Sfloat;
+			case Format::R32G32B32Sfloat: return Vk::Format::eR32G32B32Sfloat;
+			case Format::R32G32B32A32Sfloat: return Vk::Format::eR32G32B32A32Sfloat;
 			default: return Vk::Format::eUndefined;
 		}
 	}
 
-	inline Format VkFormatToAxFormat(Vk::Format format) {
+	inline Format vkToAxFormat(Vk::Format format) {
 		switch (format) {
 			case Vk::Format::eUndefined: return Format::Undefined;
 			case Vk::Format::eB8G8R8A8Unorm: return Format::B8G8R8A8Unorm;
@@ -46,7 +51,7 @@ namespace Axiom {
 		}
 	}
 
-	inline Vk::AttachmentLoadOp AxToVkLoadOp(Axiom::LoadOp op) {
+	inline Vk::AttachmentLoadOp axToVkLoadOp(Axiom::LoadOp op) {
 		switch (op) {
 			case Axiom::LoadOp::Load: return Vk::AttachmentLoadOp::eLoad;
 			case Axiom::LoadOp::Clear: return Vk::AttachmentLoadOp::eClear;
@@ -55,7 +60,7 @@ namespace Axiom {
 		}
 	}
 
-	inline Vk::AttachmentStoreOp AxToVkStoreOp(Axiom::StoreOp op) {
+	inline Vk::AttachmentStoreOp axToVkStoreOp(Axiom::StoreOp op) {
 		switch (op) {
 			case Axiom::StoreOp::Store: return Vk::AttachmentStoreOp::eStore;
 			case Axiom::StoreOp::DontCare: return Vk::AttachmentStoreOp::eDontCare;
@@ -63,21 +68,72 @@ namespace Axiom {
 		}
 	}
 
-	inline Vk::BufferUsageFlags AxToVkBufferUsage(BufferUsage usage) {
+	inline Vk::BufferUsageFlags axToVkBufferUsage(BufferUsage usage) {
 		Vk::BufferUsageFlags flags = {};
-		if (usage & BufferUsage::Vertex) flags |= Vk::BufferUsageFlagBits::eVertexBuffer;
-		if (usage & BufferUsage::Index) flags |= Vk::BufferUsageFlagBits::eIndexBuffer;
-		if (usage & BufferUsage::Uniform) flags |= Vk::BufferUsageFlagBits::eUniformBuffer;
-		if (usage & BufferUsage::Storage) flags |= Vk::BufferUsageFlagBits::eStorageBuffer;
+		if ((usage & BufferUsage::Vertex) != BufferUsage::None) flags |= Vk::BufferUsageFlagBits::eVertexBuffer;
+		if ((usage & BufferUsage::Index) != BufferUsage::None) flags |= Vk::BufferUsageFlagBits::eIndexBuffer;
+		if ((usage & BufferUsage::Uniform) != BufferUsage::None) flags |= Vk::BufferUsageFlagBits::eUniformBuffer;
+		if ((usage & BufferUsage::Storage) != BufferUsage::None) flags |= Vk::BufferUsageFlagBits::eStorageBuffer;
+		if ((usage & BufferUsage::TransferSrc) != BufferUsage::None) flags |= Vk::BufferUsageFlagBits::eTransferSrc;
+		if ((usage & BufferUsage::TransferDst) != BufferUsage::None) flags |= Vk::BufferUsageFlagBits::eTransferDst;
 
 		return flags;
 	}
 
-	inline Vk::MemoryPropertyFlags AxToVkMemProperty(MemoryUsage usage) {
+	inline Vk::MemoryPropertyFlags axToVkMemProperty(MemoryUsage usage) {
 		Vk::MemoryPropertyFlags flags = {};
-		if (usage & MemoryUsage::GPUOnly) flags |= Vk::MemoryPropertyFlagBits::eDeviceLocal;
-		if (usage & MemoryUsage::GPUandCPU) flags |= Vk::MemoryPropertyFlagBits::eHostVisible | Vk::MemoryPropertyFlagBits::eHostCoherent;
+		if ((usage & MemoryUsage::GPUOnly) != MemoryUsage::None) flags |= Vk::MemoryPropertyFlagBits::eDeviceLocal;
+		if ((usage & MemoryUsage::GPUandCPU) != MemoryUsage::None) flags |= Vk::MemoryPropertyFlagBits::eHostVisible | Vk::MemoryPropertyFlagBits::eHostCoherent;
 		
+		return flags;
+	}
+
+	inline Vk::DescriptorType axToVkDescriptorType(ResourceType type) {
+		switch (type) {
+			case ResourceType::UniformBuffer: return Vk::DescriptorType::eUniformBuffer;
+			case ResourceType::StorageBuffer: return Vk::DescriptorType::eStorageBuffer;
+			case ResourceType::TextureSampler: return Vk::DescriptorType::eCombinedImageSampler;
+			default: return Vk::DescriptorType::eUniformBuffer;
+		}
+	}
+
+	inline Vk::ShaderStageFlags axToVkShaderStageFlags(ShaderStage stage) {
+		Vk::ShaderStageFlags flags = {};
+		if ((stage & ShaderStage::Vertex) != ShaderStage::None) flags |= Vk::ShaderStageFlagBits::eVertex;
+		if ((stage & ShaderStage::Fragment) != ShaderStage::None) flags |= Vk::ShaderStageFlagBits::eFragment;
+		if ((stage & ShaderStage::Compute) != ShaderStage::None) flags |= Vk::ShaderStageFlagBits::eCompute;
+		return flags;
+	}
+
+	inline Vk::ImageLayout axToVkImageLayout(TextureState state) {
+		switch (state) {
+			case TextureState::Undefined: return Vk::ImageLayout::eUndefined;
+			case TextureState::RenderTarget: return Vk::ImageLayout::eColorAttachmentOptimal;
+			case TextureState::DepthStencilTarget: return Vk::ImageLayout::eDepthStencilAttachmentOptimal;
+			case TextureState::ShaderResource: return Vk::ImageLayout::eShaderReadOnlyOptimal;
+			case TextureState::TransferSrc: return Vk::ImageLayout::eTransferSrcOptimal;
+			case TextureState::TransferDst: return Vk::ImageLayout::eTransferDstOptimal;
+			case TextureState::Present: return Vk::ImageLayout::ePresentSrcKHR;
+			default: return Vk::ImageLayout::eUndefined;
+		}
+	}
+	
+	inline Vk::ImageUsageFlags axToVkImageUsage(TextureUsage usage) {
+		Vk::ImageUsageFlags flags = {};
+		if ((usage & TextureUsage::TransferSrc) != TextureUsage::None) flags |= Vk::ImageUsageFlagBits::eTransferSrc;
+		if ((usage & TextureUsage::TransferDst) != TextureUsage::None) flags |= Vk::ImageUsageFlagBits::eTransferDst;
+		if ((usage & TextureUsage::Sampled) != TextureUsage::None) flags |= Vk::ImageUsageFlagBits::eSampled;
+		if ((usage & TextureUsage::Storage) != TextureUsage::None) flags |= Vk::ImageUsageFlagBits::eStorage;
+		if ((usage & TextureUsage::ColorAttachment) != TextureUsage::None) flags |= Vk::ImageUsageFlagBits::eColorAttachment;
+		if ((usage & TextureUsage::DepthStencilAttachment) != TextureUsage::None) flags |= Vk::ImageUsageFlagBits::eDepthStencilAttachment;
+		return flags;
+	}
+
+	inline Vk::ImageAspectFlags axToVkImageAspectFlags(TextureAspect aspect) {
+		Vk::ImageAspectFlags flags = {};
+		if ((aspect & TextureAspect::Color) != TextureAspect::None) flags |= Vk::ImageAspectFlagBits::eColor;
+		if ((aspect & TextureAspect::Depth) != TextureAspect::None) flags |= Vk::ImageAspectFlagBits::eDepth;
+		if ((aspect & TextureAspect::Stencil) != TextureAspect::None) flags |= Vk::ImageAspectFlagBits::eStencil;
 		return flags;
 	}
 }

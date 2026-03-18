@@ -1,8 +1,10 @@
 #pragma once
 #include "axpch.h"
+#include "Utils/BitMaskEnum.h"
 
 namespace Axiom {
-	enum class BufferUsage : uint8_t {
+	enum class BufferUsage {
+		None = 0,
 		Vertex = 1 << 0,
 		Index = 1 << 1,
 		Storage = 1 << 2,
@@ -11,18 +13,16 @@ namespace Axiom {
 		TransferDst = 1 << 5,
 	};
 
-	inline uint8_t operator&(BufferUsage left, BufferUsage right) {
-		return static_cast<uint8_t>(left) & static_cast<uint8_t>(right);
-	}
-
 	enum class MemoryUsage {
+		None = 0,
 		GPUOnly = 1 << 0,
 		GPUandCPU = 1 << 1,
 	};
 
-	inline uint8_t operator&(MemoryUsage left, MemoryUsage right) {
-		return static_cast<uint8_t>(left) & static_cast<uint8_t>(right);
-	}
+	template<>
+	struct EnableBitMaskOperators<BufferUsage> : std::true_type {};
+	template<>
+	struct EnableBitMaskOperators<MemoryUsage> : std::true_type {};
 
 	class Buffer {
 	public:
@@ -37,8 +37,9 @@ namespace Axiom {
 		virtual ~Buffer() = default;
 
 		virtual uint32_t getSize() const = 0;
-		virtual void* map() = 0;
-		virtual void unmap() = 0;
-
+		virtual void setData(const void* data, uint64_t size, uint64_t offset = 0) = 0;
+		template<typename T> void setData(std::span<T> data, uint64_t offset = 0) {
+			setData(data.data(), data.size() * sizeof(T), offset);
+		}
 	};
 }

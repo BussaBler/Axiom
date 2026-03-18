@@ -8,6 +8,7 @@
 #include "Renderer/Renderer.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
+#include "UI/UILayer.h"
 
 namespace Axiom {
 	struct ApplicationInfo {
@@ -26,6 +27,8 @@ namespace Axiom {
 
 		void pushLayer(Layer* layer);
 		void pushOverlay(Layer* overlay);
+		void popLayer(Layer* layer);
+		void popOverlay(Layer* overlay);
 
 		static Application& get() { return *instance; }
 		Window& getWindow() const { return *window.get(); }
@@ -36,9 +39,9 @@ namespace Axiom {
 
 	private:
 		std::unique_ptr<Window> window;
-		std::unique_ptr<Renderer> renderer;
 		bool running = true;
 		LayerStack layerStack;
+		UILayer* uiLayer = nullptr;
 
 	private:
 		static Application* instance;

@@ -19,7 +19,7 @@ namespace Axiom {
 		VulkanSwapChain(const CreateInfo& createInfo);
 		~VulkanSwapChain() override;
 		uint32_t acquireNextImage(Semaphore* imageAvailableSemaphore) override;
-		std::shared_ptr<Texture> getImageTexture(uint32_t index) override;
+		Texture* getImageTexture(uint32_t index) override;
 		bool present(uint32_t imageIndex, Semaphore* waitSemaphore) override;
 		uint32_t getImageCount() const override;
 		uint32_t getWidth() const override;
@@ -34,7 +34,7 @@ namespace Axiom {
 		Vk::Device device = nullptr;
 		Vk::SwapchainKHR swapChain = nullptr;
 		Vk::Queue presentQueue = nullptr;
-		std::vector<std::shared_ptr<VulkanTexture>> swapChainTextures;
+		std::vector<std::unique_ptr<VulkanTexture>> swapChainTextures;
 		Vk::Extent2D swapChainExtent = { 0, 0 };
 		Vk::Format swapChainImageFormat = Vk::Format::eUndefined;
 	};

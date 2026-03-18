@@ -10,7 +10,7 @@ namespace Axiom {
 		virtual ~SwapChain() = default;
 
 		virtual uint32_t acquireNextImage(Semaphore* imageAvailableSemaphore) = 0;
-		virtual std::shared_ptr<Texture> getImageTexture(uint32_t index) = 0;
+		virtual Texture* getImageTexture(uint32_t index) = 0;
 		virtual bool present(uint32_t imageIndex, Semaphore* waitSemaphore) = 0;
 		virtual uint32_t getImageCount() const = 0;
 		virtual uint32_t getWidth() const = 0;

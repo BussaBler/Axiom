@@ -1,4 +1,5 @@
 #pragma once
+#include "axpch.h"
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #define VULKAN_HPP_NAMESPACE Vk

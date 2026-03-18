@@ -30,14 +30,14 @@ namespace Axiom {
 
 		for (size_t i = 0; i < renderPass.colorAttachmentCount; i++) {
 			const auto& attachment = renderPass.colorAttachments[i];
-			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture.get());
+			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture);
 			Vk::ClearValue clearValue{};
 			clearValue.setColor(Vk::ClearColorValue(std::array<float, 4>{attachment.clearColor.x(), attachment.clearColor.y(), attachment.clearColor.z(), attachment.clearColor.w()}));
 			Vk::RenderingAttachmentInfo attachmentInfo{};
 			attachmentInfo.setImageView(vulkanTexture->getImageView());
 			attachmentInfo.setImageLayout(Vk::ImageLayout::eColorAttachmentOptimal);
-			attachmentInfo.setLoadOp(AxToVkLoadOp(attachment.loadOp));
-			attachmentInfo.setStoreOp(AxToVkStoreOp(attachment.storeOp));
+			attachmentInfo.setLoadOp(axToVkLoadOp(attachment.loadOp));
+			attachmentInfo.setStoreOp(axToVkStoreOp(attachment.storeOp));
 			attachmentInfo.setClearValue(clearValue);
 
 			colorAttachments.push_back(attachmentInfo);
@@ -45,13 +45,13 @@ namespace Axiom {
 
 		Vk::RenderingAttachmentInfo depthAttachmentInfo{};
 		if (renderPass.hasDepthAttachment) {
-			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(renderPass.depthAttachment.texture.get());
+			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(renderPass.depthAttachment.texture);
 			Vk::ClearValue clearValue{};
 			clearValue.setDepthStencil(Vk::ClearDepthStencilValue{ renderPass.depthAttachment.clearDepth, renderPass.depthAttachment.clearStencil });
 			depthAttachmentInfo.setImageView(vulkanTexture->getImageView());
 			depthAttachmentInfo.setImageLayout(Vk::ImageLayout::eDepthStencilAttachmentOptimal);
-			depthAttachmentInfo.setLoadOp(AxToVkLoadOp(renderPass.depthAttachment.loadOp));
-			depthAttachmentInfo.setStoreOp(AxToVkStoreOp(renderPass.depthAttachment.storeOp));
+			depthAttachmentInfo.setLoadOp(axToVkLoadOp(renderPass.depthAttachment.loadOp));
+			depthAttachmentInfo.setStoreOp(axToVkStoreOp(renderPass.depthAttachment.storeOp));
 			depthAttachmentInfo.setClearValue(clearValue);
 		}
 
@@ -73,6 +73,7 @@ namespace Axiom {
 
 	void VulkanCommandBuffer::bindPipeline(Pipeline* pipeline) {
 		Vk::Pipeline vkPipeline = static_cast<VulkanPipeline*>(pipeline)->getHandle();
+		currentPipelineLayout = static_cast<VulkanPipeline*>(pipeline)->getPipelineLayout();
 
 		commandBuffer.bindPipeline(Vk::PipelineBindPoint::eGraphics, vkPipeline);
 	}
@@ -87,7 +88,17 @@ namespace Axiom {
 		commandBuffer.setScissor(0, scissor);
 	}
 
-	void VulkanCommandBuffer::bindResources() {
+	void VulkanCommandBuffer::bindResources(const std::vector<ResourceSet*>& resourceSets, uint32_t firstSet) {
+		std::vector<Vk::DescriptorSet> vkDescriptorSets(resourceSets.size());
+
+		for (size_t i = 0; i < resourceSets.size(); i++) {
+			vkDescriptorSets[i] = static_cast<VulkanResourceSet*>(resourceSets[i])->getHandle();
+		}
+		commandBuffer.bindDescriptorSets(Vk::PipelineBindPoint::eGraphics, currentPipelineLayout, firstSet, vkDescriptorSets, {});
+	}
+
+	void VulkanCommandBuffer::bindPushConstants(const void* data, uint32_t size, uint32_t offset) {
+		commandBuffer.pushConstants(currentPipelineLayout, Vk::ShaderStageFlagBits::eVertex | Vk::ShaderStageFlagBits::eFragment, offset, size, data);
 	}
 
 	void VulkanCommandBuffer::bindVertexBuffers(const std::vector<Buffer*>& vertexBuffers) {
@@ -118,12 +129,12 @@ namespace Axiom {
 
 		for (size_t i = 0; i < textureBarries.size(); i++) {
 			const auto& barrier = textureBarries[i];
-			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(barrier.texture.get());
+			VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(barrier.texture);
 			imageBarriers[i].setImage(vulkanTexture->getImage());
 			imageBarriers[i].setSrcQueueFamilyIndex(Vk::QueueFamilyIgnored);
 			imageBarriers[i].setDstQueueFamilyIndex(Vk::QueueFamilyIgnored);
 			imageBarriers[i].setSubresourceRange({
-				Vk::ImageAspectFlagBits::eColor, // TODO: support depth/stencil aspects
+				axToVkImageAspectFlags(barrier.aspect),
 				0,
 				barrier.mipLevelCount,
 				0,
@@ -213,5 +224,61 @@ namespace Axiom {
 		dependencyInfo.setImageMemoryBarriers(imageBarriers);
 
 		commandBuffer.pipelineBarrier2(dependencyInfo);
+	}
+
+	void VulkanCommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, uint64_t size, uint64_t srcOffset, uint64_t dstOffset) {
+		AX_CORE_ASSERT(size + dstOffset <= dstBuffer->getSize(), "Copy will not fit in the destination buffer");
+		
+		Vk::Buffer vkSrcBuffer = static_cast<VulkanBuffer*>(srcBuffer)->getHandle();
+		Vk::Buffer vkDstBuffer = static_cast<VulkanBuffer*>(dstBuffer)->getHandle();
+
+		Vk::BufferCopy copyRegion(srcOffset, dstOffset, size);
+
+		commandBuffer.copyBuffer(vkSrcBuffer, vkDstBuffer, copyRegion);
+	}
+
+	void VulkanCommandBuffer::copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel, uint32_t arrayLayer) {
+		Texture::Barrier transferBarrier = {
+			.texture = dstTexture,
+			.oldState = TextureState::Undefined,
+			.newState = TextureState::TransferDst,
+			.aspect = TextureAspect::Color,
+			.baseMipLevel = mipLevel,
+			.mipLevelCount = 1,
+			.baseArrayLayer = arrayLayer,
+			.arrayLayerCount = 1
+		};
+		pipelineBarrier({ transferBarrier });
+
+		Vk::BufferImageCopy copyRegion{};
+		copyRegion.setBufferOffset(0);
+		copyRegion.setBufferRowLength(0);
+		copyRegion.setBufferImageHeight(0);
+		copyRegion.setImageSubresource({
+			axToVkImageAspectFlags(transferBarrier.aspect),
+			transferBarrier.baseMipLevel,
+			transferBarrier.baseArrayLayer,
+			transferBarrier.arrayLayerCount
+			}
+		);
+		copyRegion.setImageOffset({ 0, 0, 0 });
+		copyRegion.setImageExtent({ width, height, 1 });
+
+		Vk::Buffer vkSrcBuffer = static_cast<VulkanBuffer*>(srcBuffer)->getHandle();
+		Vk::Image vkDstImage = static_cast<VulkanTexture*>(dstTexture)->getImage();
+
+		commandBuffer.copyBufferToImage(vkSrcBuffer, vkDstImage, Vk::ImageLayout::eTransferDstOptimal, copyRegion);
+
+		Texture::Barrier shaderReadBarrier = {
+			.texture = dstTexture,
+			.oldState = TextureState::TransferDst,
+			.newState = TextureState::ShaderResource,
+			.aspect = TextureAspect::Color,
+			.baseMipLevel = mipLevel,
+			.mipLevelCount = 1,
+			.baseArrayLayer = arrayLayer,
+			.arrayLayerCount = 1
+		};
+		pipelineBarrier({ shaderReadBarrier });
 	}
 }

@@ -8,6 +8,7 @@
 #include "Semaphore.h"
 #include "SwapChain.h"
 #include "Texture.h"
+#include "ResourceSet.h"
 
 namespace Axiom {
 	enum class GraphicsApi {
@@ -44,8 +45,12 @@ namespace Axiom {
 		virtual std::unique_ptr<CommandBuffer> createCommandBuffer() = 0;
 		virtual std::unique_ptr<Semaphore> createSemaphore() = 0;
 		virtual std::unique_ptr<Fence> createFence(bool isSignaled) = 0;
-		virtual std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& createInfo) = 0;
-		virtual std::unique_ptr<Texture> createTexture() = 0;
+		virtual std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) = 0;
+		virtual std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) = 0;
+		virtual std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) = 0;
+		virtual std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) = 0;
+		virtual std::unique_ptr<CommandBuffer> beginSingleTimeCommands() = 0;
+		virtual void endSingleTimeCommands(CommandBuffer* commandBuffer) = 0;
 		virtual void submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores, const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) = 0;
 		virtual void waitIdle() = 0;
 	};

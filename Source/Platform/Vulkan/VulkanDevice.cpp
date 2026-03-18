@@ -54,9 +54,16 @@ namespace Axiom {
 		createLogicalDevice();
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(logicDevice);
 		createCommandPool();
+		createDescriptorPool();
+		VulkanAllocator::init(logicDevice, physicalDevice);
 	}
 
 	VulkanDevice::~VulkanDevice() {
+		waitIdle();
+		VulkanAllocator::shutdown();
+		if (descriptorPool) {
+			logicDevice.destroyDescriptorPool(descriptorPool);
+		}
 		if (commandPool) {
 			logicDevice.destroyCommandPool(commandPool);
 		}
@@ -81,8 +88,8 @@ namespace Axiom {
 		return std::make_unique<VulkanSwapChain>(createInfo);
 	}
 
-	std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& createInfo) {
-		return std::make_unique<VulkanPipeline>(createInfo, logicDevice);
+	std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
+		return std::make_unique<VulkanPipeline>(pipelineCreateInfo, logicDevice);
 	}
 
 	std::unique_ptr<CommandBuffer> VulkanDevice::createCommandBuffer() {
@@ -97,12 +104,37 @@ namespace Axiom {
 		return std::make_unique<VulkanFence>(logicDevice, isSignaled);
 	}
 
-	std::unique_ptr<Buffer> VulkanDevice::createBuffer(const Buffer::CreateInfo& createInfo) {
-		return std::make_unique<VulkanBuffer>(logicDevice, physicalDevice, createInfo);
+	std::unique_ptr<Buffer> VulkanDevice::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
+		return std::make_unique<VulkanBuffer>(logicDevice, bufferCreateInfo);
 	}
 
-	std::unique_ptr<Texture> VulkanDevice::createTexture() {
-		return std::unique_ptr<Texture>();
+	std::shared_ptr<Texture> VulkanDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
+		return std::make_shared<VulkanTexture>(logicDevice, textureCreateInfo);
+	}
+
+	std::unique_ptr<ResourceLayout> VulkanDevice::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
+		return std::make_unique<VulkanResourceLayout>(logicDevice, bindings);
+	}
+
+	std::unique_ptr<ResourceSet> VulkanDevice::createResourceSet(ResourceLayout* resourceLayout) {
+		return std::make_unique<VulkanResourceSet>(logicDevice, descriptorPool, static_cast<VulkanResourceLayout*>(resourceLayout)->getHandle());
+	}
+
+	std::unique_ptr<CommandBuffer> VulkanDevice::beginSingleTimeCommands() {
+		VulkanCommandBuffer* commandBuffer = new VulkanCommandBuffer(logicDevice, commandPool);
+		commandBuffer->begin();
+
+		return std::make_unique<VulkanCommandBuffer>(*commandBuffer);
+	}
+
+	void VulkanDevice::endSingleTimeCommands(CommandBuffer* commandBuffer) {
+		commandBuffer->end();
+		std::vector<CommandBuffer*> commandBuffers = { commandBuffer };
+		std::array<Vk::CommandBuffer, 1> vkCommandBuffers = { static_cast<VulkanCommandBuffer*>(commandBuffer)->getHandle() };
+		
+		Vk::SubmitInfo submitInfo({}, {}, vkCommandBuffers, {});
+		AX_CORE_ASSERT(graphicsQueue.submit(submitInfo, nullptr) == Vk::Result::eSuccess, "Failed to submit single time command buffer to Vulkan graphics queue: {}", Vk::to_string(graphicsQueue.submit(submitInfo, nullptr)));
+		AX_CORE_ASSERT(graphicsQueue.waitIdle() == Vk::Result::eSuccess, "Failed to wait for Vulkan graphics queue idle after submitting single time command buffer: {}", Vk::to_string(graphicsQueue.waitIdle()));
 	}
 
 	void VulkanDevice::submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores, const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) {
@@ -367,5 +399,19 @@ namespace Axiom {
 		
 		AX_CORE_ASSERT(commandPoolResult.result == Vk::Result::eSuccess, "Failed to create Vulkan command pool: {}", Vk::to_string(commandPoolResult.result));
 		commandPool = commandPoolResult.value;
+	}
+
+	void VulkanDevice::createDescriptorPool() {
+		std::array<Vk::DescriptorPoolSize, 3> poolSizes = {
+			Vk::DescriptorPoolSize(Vk::DescriptorType::eUniformBuffer, 100),
+			Vk::DescriptorPoolSize(Vk::DescriptorType::eCombinedImageSampler, 100),
+			Vk::DescriptorPoolSize(Vk::DescriptorType::eStorageBuffer, 100)
+		};
+
+		Vk::DescriptorPoolCreateInfo poolCreateInfo(Vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 400, poolSizes);
+		Vk::ResultValue<Vk::DescriptorPool> descriptorPoolResult = logicDevice.createDescriptorPool(poolCreateInfo);
+
+		AX_CORE_ASSERT(descriptorPoolResult.result == Vk::Result::eSuccess, "Failed to create Vulkan descriptor pool: {}", Vk::to_string(descriptorPoolResult.result));
+		descriptorPool = descriptorPoolResult.value;
 	}
 }

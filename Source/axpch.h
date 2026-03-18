@@ -19,8 +19,10 @@
 
 #include <array>
 #include <fstream>
+#include <list>
 #include <map>
 #include <set>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>

@@ -1,5 +1,6 @@
 #pragma once
 #include "axpch.h"
+#include "Utils/BitMaskEnum.h"
 
 namespace Axiom {
 	enum class EventType {
@@ -10,7 +11,7 @@ namespace Axiom {
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled
 	};
 
-	enum EventCategory {
+	enum class EventCategory {
 		Empty = 0,
 		EventCategoryApplication = 1 << 0,
 		EventCategoryApplicationInput = 1 << 1,
@@ -19,23 +20,26 @@ namespace Axiom {
 		EventCategoryMouseButton = 1 << 4
 	};
 
+	template<>
+	struct EnableBitMaskOperators<EventCategory> : std::true_type {};
+
 #define EVENT_CLASS_TYPE(type) static EventType getStaticType() { return EventType::type; } \
 	virtual EventType getEventType() const override { return getStaticType(); } \
 	virtual const char* getName() const override { return #type; }
 
-#define EVENT_CLASS_CATEGORY(category) virtual int getCategoryFlags() const override { return category; }
+#define EVENT_CLASS_CATEGORY(category) virtual EventCategory getCategoryFlags() const override { return category; }
 
 	class Event {
 		friend class EventDispatcher;
 	public:
 		virtual EventType getEventType() const = 0;
 		virtual const char* getName() const = 0;
-		virtual int getCategoryFlags() const = 0;
+		virtual EventCategory getCategoryFlags() const = 0;
 		virtual std::string toString() const { return getName(); }
 
 		bool isHandled() const { return handled; }
 		bool isInCategory(EventCategory category) const {
-			return getCategoryFlags() & category;
+			return (getCategoryFlags() & category) != EventCategory::Empty;
 		}
 
 	protected:

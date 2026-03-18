@@ -17,7 +17,7 @@ namespace Axiom {
 		}
 
 		EVENT_CLASS_TYPE(WindowResize)
-		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+		EVENT_CLASS_CATEGORY(EventCategory::EventCategoryApplication)
 	private:
 		uint32_t width, height;
 	};
@@ -27,6 +27,6 @@ namespace Axiom {
 		WindowCloseEvent() = default;
 
 		EVENT_CLASS_TYPE(WindowClose)
-		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+		EVENT_CLASS_CATEGORY(EventCategory::EventCategoryApplication)
 	};
 }

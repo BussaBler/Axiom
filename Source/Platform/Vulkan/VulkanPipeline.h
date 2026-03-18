@@ -2,6 +2,7 @@
 #include "Renderer/Pipeline.h"
 #include "Core/Assert.h"
 #include "VulkanUtils.h"
+#include "VulkanResourceLayout.h"
 
 namespace Axiom {
 	class VulkanPipeline : public Pipeline {
@@ -10,11 +11,12 @@ namespace Axiom {
 		~VulkanPipeline() override;
 
 		inline Vk::Pipeline getHandle() const { return pipeline; }
+		inline Vk::PipelineLayout getPipelineLayout() const { return pipelineLayout; }
 
 	private:
 		Vk::ShaderModule createShaderModule(std::filesystem::path shaderPath);
-		Vk::PolygonMode AxPolygonToVkPolygon(PolygonMode mode);
-		Vk::CullModeFlags AxCullModeToVkCullMode(CullMode mode);
+		Vk::PolygonMode axPolygonToVkPolygon(PolygonMode mode);
+		Vk::CullModeFlags axCullModeToVkCullMode(CullMode mode);
 
 	private:
 		Vk::Device device = nullptr;

@@ -1,26 +1,27 @@
 #pragma once
 #include "axpch.h"
 #include "Event.h"
+#include "KeyCodes.h"
 
 namespace Axiom {
 	class KeyEvent : public Event {
 	public:
-		int getKeyCode() const { return keycode; }
-		EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryApplicationInput)
+		KeyCode getKeyCode() const { return keycode; }
+		EVENT_CLASS_CATEGORY(EventCategory::EventCategoryKeyboard | EventCategory::EventCategoryApplicationInput)
 	protected:
-		KeyEvent(int keycode) : keycode(keycode) {};
+		KeyEvent(KeyCode keycode) : keycode(keycode) {};
 	protected:
-		int keycode;
+		KeyCode keycode;
 	};
 
 	class KeyPressedEvent : public KeyEvent {
 	public:
-		KeyPressedEvent(int keycode, int repeatCount) : KeyEvent(keycode), repeatCount(repeatCount) {}
+		KeyPressedEvent(KeyCode keycode, int repeatCount) : KeyEvent(keycode), repeatCount(repeatCount) {}
 
 		int getRepeatCount() const { return repeatCount; }
 		std::string toString() const override {
 			std::stringstream ss;
-			ss << "KeyPressedEvent: " << keycode << " (" << repeatCount << " repeats)";
+			ss << "KeyPressedEvent: " << static_cast<uint32_t>(keycode) << " (" << repeatCount << " repeats)";
 			return ss.str();
 		}
 		EVENT_CLASS_TYPE(KeyPressed)
@@ -30,11 +31,11 @@ namespace Axiom {
 
 	class KeyReleassedEvent : public KeyEvent {
 	public:
-		KeyReleassedEvent(int keycode) : KeyEvent(keycode) {}
+		KeyReleassedEvent(KeyCode keycode) : KeyEvent(keycode) {}
 
 		std::string toString() const override {
 			std::stringstream ss;
-			ss << "KeyReleasedEvent: " << keycode;
+			ss << "KeyReleasedEvent: " << static_cast<uint32_t>(keycode);
 			return ss.str();
 		}
 		EVENT_CLASS_TYPE(KeyReleased)

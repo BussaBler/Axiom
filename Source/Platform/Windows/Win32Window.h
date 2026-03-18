@@ -3,6 +3,7 @@
 #include "Core/Log.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
+#include "Event/MouseEvent.h"
 #define UNICODE
 #define _UNICODE
 #define NOMINMAX
