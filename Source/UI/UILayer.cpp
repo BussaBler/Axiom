@@ -10,6 +10,10 @@ namespace Axiom {
 		UI::shutdown();
 	}
 
+	void UILayer::onUpdate() {
+		UI::beginFrame();
+	}
+
 	void UILayer::onEvent(Event& event) {
 		EventDispatcher dispatcher(event);
 
@@ -29,14 +33,7 @@ namespace Axiom {
 	}
 
 	void UILayer::onRender(CommandBuffer* commandBuffer) {
-		UI::render(commandBuffer);
-	}
-
-	void UILayer::begin() {
-		UI::beginFrame();
-	}
-
-	void UILayer::end() {
 		UI::endFrame();
+		UI::render(commandBuffer);
 	}
 }

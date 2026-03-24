@@ -28,6 +28,7 @@ def configurePlatform(env, platformName):
 
 coreSources = Glob('Source/*.cpp')
 coreSources += Glob('Source/*/*.cpp')
+coreSources += Glob('Source/UI/MSDFGen/core/*.cpp')
 # TODO: temp solution to add platform-specific code, should be changed to add more renderer backends
 vulkanSources = Glob('Source/Platform/Vulkan/*.cpp')
 
@@ -41,8 +42,8 @@ axiomLib = localEnv.StaticLibrary(f'#/Bin/{configName}/Axiom/Axiom', sources)
 
 axiomProject = None
 if vsproj:
-    axiomSources = Glob('Source/*.cpp') + Glob('Source/*/*.cpp') + Glob('Source/*/*/*.cpp')
-    axiomHeaders = Glob('Source/*.h') + Glob('Source/*/*.h') + Glob('Source/*/*/*.h')
+    axiomSources = Glob('Source/*.cpp') + Glob('Source/*/*.cpp') + Glob('Source/*/*/*.cpp') + Glob('Source/*/*/*/*.cpp') + Glob('Source/*/*/*/*/*.cpp')
+    axiomHeaders = Glob('Source/*.h') + Glob('Source/*/*.h') + Glob('Source/*/*/*.h') + Glob('Source/*/*/*/*.h') + Glob('Source/*/*/*/*/*.h')
     localEnv['CPPPATH'] = [Dir(path) for path in localEnv['CPPPATH']]
 
     axiomProject = localEnv.MSVSProject(

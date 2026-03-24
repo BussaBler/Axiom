@@ -46,6 +46,10 @@ namespace Math {
         return std::fmax(min, std::fmin(max, value));
     }
 
+    float linearInterpolation(float a, float b, float t) {
+        return a + t * (b - a);
+    }
+
     bool isPowerOfTwo(uint64_t value) {
         return (value != 0 && (value & (value - 1)) == 0);
     }

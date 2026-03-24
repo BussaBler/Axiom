@@ -2,7 +2,7 @@
 
 namespace Axiom {
 	VulkanMemoryPool::VulkanMemoryPool(Vk::Device logicalDevice, size_t size, uint32_t memoryTypeIndex) : device(logicalDevice), poolSize(size) {
-		AX_CORE_LOG_INFO("Creating Vulkan memory pool with size {} bytes and memory type index {}.", size, memoryTypeIndex);
+		AX_CORE_LOG_DEBUG("Creating Vulkan memory pool with size {} bytes and memory type index {}.", size, memoryTypeIndex);
 		Vk::MemoryAllocateInfo allocInfo(size, memoryTypeIndex);
 		Vk::ResultValue<Vk::DeviceMemory> allocResult = device.allocateMemory(allocInfo);
 

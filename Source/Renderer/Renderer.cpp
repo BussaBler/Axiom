@@ -1,8 +1,6 @@
 #include "Renderer.h"
 
 namespace Axiom {
-	Renderer* Renderer::instance = nullptr;
-
 	Renderer::Renderer(Window* windowPtr) : window(windowPtr) {
 		Device::CreateInfo deviceCreateInfo{};
 		deviceCreateInfo.api = GraphicsApi::Vulkan;
@@ -46,80 +44,69 @@ namespace Axiom {
 		device->waitIdle();
 	}
 
-	void Renderer::init(Window* windowPtr) {
-		if (!instance) {
-			instance = new Renderer(windowPtr);
-		}
-	}
-
-	void Renderer::shutdown() {
-		delete instance;
-		instance = nullptr;
-	}
-
 	void Renderer::waitIdle() {
-		instance->device->waitIdle();
+		device->waitIdle();
 	}
 
 	CommandBuffer* Renderer::beginFrame() {
-		instance->inFlightFences[instance->currentFrameIndex]->wait();
+		inFlightFences[currentFrameIndex]->wait();
 
-		instance->currentImageIndex = instance->swapChain->acquireNextImage(instance->imageAvailableSemaphores[instance->currentFrameIndex].get());
-		if (instance->currentImageIndex == std::numeric_limits<uint32_t>::max()) {
-			instance->recreateSwapChain();
+		currentImageIndex = swapChain->acquireNextImage(imageAvailableSemaphores[currentFrameIndex].get());
+		if (currentImageIndex == std::numeric_limits<uint32_t>::max()) {
+			recreateSwapChain();
 			return nullptr;
 		}
 
-		instance->inFlightFences[instance->currentFrameIndex]->reset();
-		CommandBuffer* commandBuffer = instance->commandBuffers[instance->currentFrameIndex].get();
+		inFlightFences[currentFrameIndex]->reset();
+		CommandBuffer* commandBuffer = commandBuffers[currentFrameIndex].get();
 		commandBuffer->begin();
-		instance->renderTargetBarrier.texture = instance->swapChain->getImageTexture(instance->currentImageIndex);
-		commandBuffer->pipelineBarrier({ instance->renderTargetBarrier });
+		renderTargetBarrier.texture = swapChain->getImageTexture(currentImageIndex);
+		commandBuffer->pipelineBarrier({ renderTargetBarrier });
 		return commandBuffer;
 	}
 
 	void Renderer::endFrame() {
-		CommandBuffer* commandBuffer = instance->commandBuffers[instance->currentFrameIndex].get();
-		instance->presentBarrier.texture = instance->renderTargetBarrier.texture;
-		commandBuffer->pipelineBarrier({ instance->presentBarrier });
+		CommandBuffer* commandBuffer = commandBuffers[currentFrameIndex].get();
+		presentBarrier.texture = renderTargetBarrier.texture;
+		commandBuffer->pipelineBarrier({ presentBarrier });
 		commandBuffer->end();
 
-		instance->device->submitCommandBuffers({ commandBuffer }, { instance->imageAvailableSemaphores[instance->currentFrameIndex].get() }, { instance->renderFinishedSemaphores[instance->currentImageIndex].get() }, instance->inFlightFences[instance->currentFrameIndex].get());
-		bool presentResult = instance->swapChain->present(instance->currentImageIndex, instance->renderFinishedSemaphores[instance->currentImageIndex].get());
+		device->submitCommandBuffers({ commandBuffer }, { imageAvailableSemaphores[currentFrameIndex].get() }, { renderFinishedSemaphores[currentImageIndex].get() }, inFlightFences[currentFrameIndex].get());
+		bool presentResult = swapChain->present(currentImageIndex, renderFinishedSemaphores[currentImageIndex].get());
 
 		if (!presentResult) {
-			instance->recreateSwapChain();
+			recreateSwapChain();
 		}
 
-		instance->currentFrameIndex = (instance->currentFrameIndex + 1) % instance->maxFramesInFlight;
+		currentFrameIndex = (currentFrameIndex + 1) % maxFramesInFlight;
 	}
 
 	std::unique_ptr<Pipeline> Renderer::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
-		return instance->device->createPipeline(pipelineCreateInfo);
+		return device->createPipeline(pipelineCreateInfo);
 	}
 
 	std::unique_ptr<Buffer> Renderer::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
-		return instance->device->createBuffer(bufferCreateInfo);
+		return device->createBuffer(bufferCreateInfo);
 	}
 
 	std::shared_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo& textureCreateInfo) {
-		return instance->device->createTexture(textureCreateInfo);
+		return device->createTexture(textureCreateInfo);
 	}
 
 	std::unique_ptr<ResourceLayout> Renderer::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
-		return instance->device->createResourceLayout(bindings);
+		return device->createResourceLayout(bindings);
 	}
 
 	std::unique_ptr<ResourceSet> Renderer::createResourceSet(ResourceLayout* resourceLayout) {
-		return instance->device->createResourceSet(resourceLayout);
+		return device->createResourceSet(resourceLayout);
 	}
 
 	std::unique_ptr<CommandBuffer> Renderer::beginSingleTimeCommands() {
-		return instance->device->beginSingleTimeCommands();
+		return device->beginSingleTimeCommands();
 	}
 
 	void Renderer::endSingleTimeCommands(CommandBuffer* commandBuffer) {
-		instance->device->endSingleTimeCommands(commandBuffer);
+		device->endSingleTimeCommands(commandBuffer);
 	}
 
 	void Renderer::recreateSwapChain() {

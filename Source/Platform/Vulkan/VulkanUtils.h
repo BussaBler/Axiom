@@ -26,8 +26,14 @@ namespace Axiom {
 		switch (format) {
 			case Format::Undefined: return Vk::Format::eUndefined;
 			case Format::B8G8R8A8Unorm: return Vk::Format::eB8G8R8A8Unorm;
+			case Format::R8Unorm: return Vk::Format::eR8Unorm;
+			case Format::R8G8Unorm: return Vk::Format::eR8G8Unorm;
+			case Format::R8G8B8Unorm: return Vk::Format::eR8G8B8Unorm;
 			case Format::R8G8B8A8Unorm: return Vk::Format::eR8G8B8A8Unorm;
 			case Format::B8G8R8A8Srgb: return Vk::Format::eB8G8R8A8Srgb;
+			case Format::R8Srgb: return Vk::Format::eR8Srgb;
+			case Format::R8G8Srgb: return Vk::Format::eR8G8Srgb;
+			case Format::R8G8B8Srgb: return Vk::Format::eR8G8B8Srgb;
 			case Format::R8G8B8A8Srgb: return Vk::Format::eR8G8B8A8Srgb;
 			case Format::D24UnormS8Uint: return Vk::Format::eD24UnormS8Uint;
 			case Format::D32sFloat: return Vk::Format::eD32Sfloat;

@@ -14,7 +14,7 @@ namespace Axiom {
 
     float WindowsInput::internalGetMouseX() {
         POINT pt;
-        HWND hwnd = reinterpret_cast<HWND>(Application::get().getWindow().getNativeWindow());
+        HWND hwnd = reinterpret_cast<HWND>(Application::getWindow()->getNativeWindow());
         if (!hwnd || !GetCursorPos(&pt))
             return 0.0f;
 
@@ -30,7 +30,7 @@ namespace Axiom {
 
 	float WindowsInput::internalgetMouseY() {
         POINT pt;
-        HWND hwnd = reinterpret_cast<HWND>(Application::get().getWindow().getNativeWindow());
+        HWND hwnd = reinterpret_cast<HWND>(Application::getWindow()->getNativeWindow());
         if (!hwnd || !GetCursorPos(&pt))
             return 0.0f;
 

@@ -7,30 +7,28 @@ namespace Axiom {
 		Renderer(Window* windowPtr);
 		~Renderer();
 
-		static void init(Window* windowPtr);
-		static void shutdown();
-		static void waitIdle();
+		void waitIdle();
 
-		static CommandBuffer* beginFrame();
-		static void endFrame();
+		CommandBuffer* beginFrame();
+		void endFrame();
 
-		static std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo);
-		static std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo);
-		static std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);
-		static std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings);
-		static std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout);
+		std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo);
+		std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo);
+		std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);
+		std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings);
+		std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout);
 
-		static std::unique_ptr<CommandBuffer> beginSingleTimeCommands();
-		static void endSingleTimeCommands(CommandBuffer* commandBuffer);
+		std::unique_ptr<CommandBuffer> beginSingleTimeCommands();
+		void endSingleTimeCommands(CommandBuffer* commandBuffer);
 
-		inline static Texture* getCurrentRenderTarget() {
-			return instance->swapChain->getImageTexture(instance->currentImageIndex);
+		inline Texture* getCurrentRenderTarget() {
+			return swapChain->getImageTexture(currentImageIndex);
 		}
-		inline static Math::uVec2 getCurrentRenderTargetSize() {
-			return { instance->swapChain->getWidth(), instance->swapChain->getHeight() };
+		inline Math::uVec2 getCurrentRenderTargetSize() {
+			return { swapChain->getWidth(), swapChain->getHeight() };
 		}
-		inline static Texture* getDefaultTexture() {
-			return instance->defaultTexture.get();
+		inline Texture* getDefaultTexture() {
+			return defaultTexture.get();
 		}
 
 	private:
@@ -38,7 +36,6 @@ namespace Axiom {
 		void createDefaultTexture();
 
 	private:
-		static Renderer* instance;
 		uint32_t currentFrameIndex = 0;
 		uint32_t maxFramesInFlight = 0;
 		uint32_t currentImageIndex = 0;

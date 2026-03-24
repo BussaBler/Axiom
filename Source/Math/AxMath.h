@@ -28,6 +28,7 @@ namespace Math {
     float abs(float value);
     float toRadians(float degrees);
     float clamp(float value, float min, float max);
+    float linearInterpolation(float a, float b, float t);
 
     bool isPowerOfTwo(uint64_t value);
     // Returns a random float in the range [0.0, 1.0)
@@ -46,7 +47,7 @@ namespace Math {
 #include "Vec.h"
 
 // ------- Axiom Math Type Formatters -------
-template <typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<T, N>, CharT> {
+template<typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<T, N>, CharT> {
     std::formatter<T, CharT> elem;
 
     constexpr auto parse(std::basic_format_parse_context<CharT>& ctx) {
@@ -57,7 +58,7 @@ template <typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<
         return elem.parse(ctx);
     }
 
-    template <typename FormatContext> auto format(const Math::Vec<T, N>& v, FormatContext& ctx) const {
+    template<typename FormatContext> auto format(const Math::Vec<T, N>& v, FormatContext& ctx) const {
         auto out = ctx.out();
         *out++ = CharT('V');
         *out++ = CharT('e');
@@ -80,7 +81,7 @@ template <typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<
     }
 };
 
-template <typename T, size_t N, typename CharT> struct std::formatter<Math::Mat<T, N>, CharT> {
+template<typename T, size_t N, typename CharT> struct std::formatter<Math::Mat<T, N>, CharT> {
     std::formatter<T, CharT> elem_;
 
     std::formatter<std::size_t, CharT> idx_;
@@ -93,7 +94,7 @@ template <typename T, size_t N, typename CharT> struct std::formatter<Math::Mat<
         return elem_.parse(ctx);
     }
 
-    template <typename FormatContext> auto format(const Math::Mat<T, N>& m, FormatContext& ctx) const {
+    template<typename FormatContext> auto format(const Math::Mat<T, N>& m, FormatContext& ctx) const {
         auto out = ctx.out();
 
         *out++ = CharT('M');

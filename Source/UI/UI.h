@@ -1,8 +1,9 @@
 #pragma once
 #include "axpch.h"
 #include "Event/KeyCodes.h"
+#include "Font.h"
 #include "Math/AxMath.h"
-#include "Renderer/Renderer.h"
+#include "Core/Application.h"
 #include "UIVertex.h"
 
 namespace Axiom {
@@ -10,6 +11,7 @@ namespace Axiom {
 		friend class UILayer;
 	public:
 		static bool button(const std::string& label, Math::Vec2 pos, Math::Vec2 size);
+		static void text(const std::string& text, Math::Vec2 pos, Math::Vec4 color = Math::Vec4(1.0f), uint16_t size = 11);
 
 	private:
 		UI();
@@ -26,15 +28,31 @@ namespace Axiom {
 
 		static bool shouldConsumeMouseEvents();
 
+		void addBaseQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec4& color);
+		void addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Math::Vec4& color);
+		void createBaseRenderObjects();
+		void createFontRenderObjects();
+
 	private:
 		static UI* instance;
-		static const uint32_t maxQuads = 500;
-		std::unique_ptr<Pipeline> pipeline = nullptr;
-		RenderPass renderPass;
-		std::unique_ptr<Buffer> vertexBuffer = nullptr;
-		std::unique_ptr<Buffer> indexBuffer = nullptr;
 
-		std::vector<UIVertex> vertices;
+		static const uint32_t maxButtonQuads = 500;
+		std::unique_ptr<Pipeline> basePipeline = nullptr;
+		RenderPass baseRenderPass;
+		std::unique_ptr<Buffer> baseVertexBuffer = nullptr;
+		std::unique_ptr<Buffer> baseIndexBuffer = nullptr;
+		std::vector<UIVertex> baseVertices;
+
+		static const uint32_t maxFontQuads = 1000;
+		Font jetBrainsMonoFont{ "Assets/Fonts/OpenSans-SemiBold.ttf" };
+		std::shared_ptr<Texture> fontAtlasTexture = nullptr;
+		std::unique_ptr<Pipeline> fontPipeline = nullptr;
+		RenderPass fontRenderPass;
+		std::unique_ptr<Buffer> fontVertexBuffer = nullptr;
+		std::unique_ptr<Buffer> fontIndexBuffer = nullptr;
+		std::unique_ptr<ResourceLayout> fontResourceLayout = nullptr;
+		std::unique_ptr<ResourceSet> fontResourceSet = nullptr;
+		std::vector<UIVertex> fontVertices;
 
 		Math::Vec2 mousePosition = Math::Vec2::zero();
 		bool isMouseButtonOneDown = false;

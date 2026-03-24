@@ -29,6 +29,7 @@ namespace Axiom {
 
 		virtual void* getNativeWindow() = 0;
 		virtual void* getNativeDisplay() const = 0;
+		virtual uint32_t getWindowDPI() const = 0;
 
 		static std::unique_ptr<Window> create(const WindowProps& props);
 	private:

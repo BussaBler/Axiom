@@ -25,7 +25,7 @@ namespace Axiom {
 		AX_CORE_ASSERT(result == Vk::Result::eSuccess, "Failed to bind image memory");
 
 		createImageView(imageCreateInfo.format, axToVkImageAspectFlags(createInfo.aspect));
-		createSampler(Vk::Filter::eNearest, Vk::SamplerAddressMode::eRepeat, createInfo.mipLevels);
+		createSampler(Vk::Filter::eLinear, Vk::SamplerAddressMode::eRepeat, createInfo.mipLevels);
 	}
 
 	VulkanTexture::VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage) : device(logicalDevice),

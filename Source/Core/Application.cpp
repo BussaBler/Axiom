@@ -1,5 +1,6 @@
 #include "axpch.h"
 #include "Application.h"
+#include "UI/UILayer.h"
 
 namespace Axiom {
 	Application* Application::instance = nullptr;
@@ -15,16 +16,13 @@ namespace Axiom {
 		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
-		Renderer::init(window.get());
+		renderer = std::make_unique<Renderer>(window.get());
 
-		uiLayer = new UILayer();
-		pushOverlay(uiLayer);
+		pushOverlay<UILayer>();
 	}
 
 	Application::~Application() {
-		popOverlay(uiLayer);
-		delete uiLayer;
-		Renderer::shutdown();
+
 	}
 
 	void Application::onEvent(Event& event) {
@@ -38,22 +36,6 @@ namespace Axiom {
 			}
 			(*it)->onEvent(event);
 		}
-	}
-
-	void Application::pushLayer(Layer* layer) {
-		layerStack.pushLayer(layer);
-	}
-
-	void Application::pushOverlay(Layer* overlay) {
-		layerStack.pushOverlay(overlay);
-	}
-
-	void Application::popLayer(Layer* layer) {
-		layerStack.popLayer(layer);
-	}
-
-	void Application::popOverlay(Layer* overlay) {
-		layerStack.popOverlay(overlay);
 	}
 
 	bool Application::onWindowClose(WindowCloseEvent& e) {
@@ -71,23 +53,21 @@ namespace Axiom {
 	void Application::run() {
 		while (running)
 		{
-			for (Layer* layer : layerStack) {
+			for (const auto& layer : layerStack) {
 				layer->onUpdate();
 			}
-			uiLayer->begin();
-			for (Layer* layer : layerStack) {
+			for (const auto& layer : layerStack) {
 				layer->onUIRender();
 			}
-			uiLayer->end();
 
-			CommandBuffer* commandBuffer = Renderer::beginFrame();
-			for (Layer* layer : layerStack) {
+			CommandBuffer* commandBuffer = renderer->beginFrame();
+			for (const auto& layer : layerStack) {
 				layer->onRender(commandBuffer);
 			}
-			Renderer::endFrame();
+			renderer->endFrame();
 
 			window->onUpdate();
 		}
-		Renderer::waitIdle();
+		renderer->waitIdle();
 	}
 }

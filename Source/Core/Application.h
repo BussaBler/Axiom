@@ -8,7 +8,6 @@
 #include "Renderer/Renderer.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
-#include "UI/UILayer.h"
 
 namespace Axiom {
 	struct ApplicationInfo {
@@ -25,13 +24,26 @@ namespace Axiom {
 
 		void onEvent(Event& event);
 
-		void pushLayer(Layer* layer);
-		void pushOverlay(Layer* overlay);
-		void popLayer(Layer* layer);
-		void popOverlay(Layer* overlay);
+		template<typename T> requires std::derived_from<T, Layer>
+		void pushLayer() {
+			layerStack.pushLayer<T>();
+		}
+		template<typename T> requires std::derived_from<T, Layer>
+		void pushOverlay() {
+			layerStack.pushOverlay<T>();
+		}
+		template<typename T> requires std::derived_from<T, Layer>
+		void popLayer(Layer* layer) {
+			layerStack.popLayer<T>();
+		}
+		template<typename T> requires std::derived_from<T, Layer>
+		void popOverlay() {
+			layerStack.popOverlay<T>();
+		}
 
-		static Application& get() { return *instance; }
-		Window& getWindow() const { return *window.get(); }
+		static Application* get() { return instance; }
+		static Renderer* getRenderer() { return instance->renderer.get(); }
+		static Window* getWindow() { return instance->window.get(); }
 
 	private:
 		bool onWindowClose(WindowCloseEvent& e);
@@ -39,9 +51,9 @@ namespace Axiom {
 
 	private:
 		std::unique_ptr<Window> window;
+		std::unique_ptr<Renderer> renderer;
 		bool running = true;
 		LayerStack layerStack;
-		UILayer* uiLayer = nullptr;
 
 	private:
 		static Application* instance;
