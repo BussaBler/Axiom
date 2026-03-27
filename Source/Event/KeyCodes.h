@@ -3,13 +3,14 @@
 namespace Axiom {
     // KeyCode enum class for representing keyboard keys based on Windows virtual key codes
     enum class KeyCode {
+		None = 0x00,
         LeftButton = 0x01,
         RightButton = 0x02,
         Cancel = 0x03,
         MiddleButton = 0x04,
         XButton1 = 0x05,
         XButton2 = 0x06,
-        Back = 0x08,
+        Backspace = 0x08,
         Tab = 0x09,
         Clear = 0x0C,
         Return = 0x0D,
@@ -140,6 +141,7 @@ namespace Axiom {
         Equals = 0xBB,
         Comma = 0xBC,
         Minus = 0xBD,
-        Period = 0xBE
+        Period = 0xBE,
+		Grave = 0xC0, // Grave accent
     };
 }

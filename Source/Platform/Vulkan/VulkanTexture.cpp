@@ -72,7 +72,7 @@ namespace Axiom {
 			{},
 			filter,
 			filter,
-			Vk::SamplerMipmapMode::eLinear,
+			Vk::SamplerMipmapMode::eNearest,
 			addressMode,
 			addressMode,
 			addressMode,

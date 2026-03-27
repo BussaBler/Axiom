@@ -36,6 +36,11 @@ namespace Axiom {
 			wData->eventCallback(e);
 			break;
 		}
+		case WM_CHAR: {
+			KeyTypedEvent e(static_cast<char>(wParam));
+			wData->eventCallback(e);
+			break;
+		}
 		case WM_LBUTTONDOWN: {
 			MouseButtonPressedEvent e(KeyCode::LeftButton);
 			wData->eventCallback(e);

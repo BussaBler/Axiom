@@ -42,4 +42,21 @@ namespace Axiom {
 	private:
 
 	};
+
+	class KeyTypedEvent : public KeyEvent {
+	public:
+		KeyTypedEvent(char keyChar) : KeyEvent(KeyCode::None), keyChar(keyChar) {}
+
+		std::string toString() const override {
+			std::stringstream ss;
+			ss << "KeyTypedEvent: " << keyChar;
+			return ss.str();
+		}
+		EVENT_CLASS_TYPE(KeyTyped)
+		
+		char getKeyChar() const { return keyChar; }
+
+	private:
+		char keyChar;
+	};
 }

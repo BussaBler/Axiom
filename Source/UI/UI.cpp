@@ -9,7 +9,7 @@ namespace Axiom {
         Texture::CreateInfo fontAtlasCreateInfo = {
             .width = asciiAtlas.width,
             .height = asciiAtlas.height,
-            .mipLevels = 3,
+            .mipLevels = 1,
             .arrayLayers = 1,
             .format = Format::R8G8B8A8Unorm,
             .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
@@ -289,13 +289,13 @@ namespace Axiom {
             }
         }
 
-        Math::Vec4 color = {1.0f, 1.0f, 1.0f, 1.0f}; // Default: Dark Gray
+        Math::Vec4 color = { 0.4f, 0.4f, 0.4f, 1.0f }; // Default: Dark Gray
 
         if (instance->hotItem == id) {
             if (instance->activeItem == id) {
-                color = {1.0f, 0.0f, 0.0f, 1.0f}; // Active: Darker Gray
+                color = { 0.2f, 0.2f, 0.2f, 1.0f }; // Active: Darker Gray
             } else {
-                color = {0.0f, 1.0f, 0.0f, 1.0f}; // Hover: Lighter Gray
+                color = { 0.6f, 0.6f, 0.6f, 1.0f }; // Hover: Lighter Gray
             }
         }
 

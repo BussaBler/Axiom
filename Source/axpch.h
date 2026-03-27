@@ -18,6 +18,7 @@
 #include <utility>
 
 #include <array>
+#include <deque>
 #include <fstream>
 #include <list>
 #include <map>

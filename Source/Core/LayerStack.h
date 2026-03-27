@@ -40,6 +40,15 @@ namespace Axiom {
 			layers.erase(it);
 		}
 
+		void insertLayer(std::vector<std::unique_ptr<Layer>>::iterator it, std::unique_ptr<Layer> layer) {
+			layers.insert(it, std::move(layer));
+			layerInsertIndex++;
+		}
+		void eraseLayer(std::vector<std::unique_ptr<Layer>>::iterator it) {
+			layers.erase(it);
+			layerInsertIndex--;
+		}
+
 		std::vector<std::unique_ptr<Layer>>::iterator begin() { return layers.begin(); }
 		std::vector<std::unique_ptr<Layer>>::iterator end() { return layers.end(); }
 		std::vector<std::unique_ptr<Layer>>::reverse_iterator rbegin() { return layers.rbegin(); }

@@ -21,7 +21,6 @@ namespace Axiom {
 		virtual ~Application();
 
 		void run();
-
 		void onEvent(Event& event);
 
 		template<typename T> requires std::derived_from<T, Layer>
@@ -33,13 +32,15 @@ namespace Axiom {
 			layerStack.pushOverlay<T>();
 		}
 		template<typename T> requires std::derived_from<T, Layer>
-		void popLayer(Layer* layer) {
+		void popLayer() {
 			layerStack.popLayer<T>();
 		}
 		template<typename T> requires std::derived_from<T, Layer>
 		void popOverlay() {
 			layerStack.popOverlay<T>();
 		}
+
+		void queueLayerAction(Layer* requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action);
 
 		static Application* get() { return instance; }
 		static Renderer* getRenderer() { return instance->renderer.get(); }
@@ -49,11 +50,21 @@ namespace Axiom {
 		bool onWindowClose(WindowCloseEvent& e);
 		bool onWindowResize(WindowResizeEvent& e);
 
+		void processLayerActions();
+
+	private:
+		struct LayerAction {
+			Layer* requester;
+			std::unique_ptr<Layer> newLayer;
+			Layer::ActionType action;
+		};
+
 	private:
 		std::unique_ptr<Window> window;
 		std::unique_ptr<Renderer> renderer;
 		bool running = true;
 		LayerStack layerStack;
+		std::vector<LayerAction> layerActionQueue;
 
 	private:
 		static Application* instance;

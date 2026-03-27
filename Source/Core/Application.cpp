@@ -38,6 +38,10 @@ namespace Axiom {
 		}
 	}
 
+	void Application::queueLayerAction(Layer* requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action) {
+		layerActionQueue.emplace_back(LayerAction{ requester, std::move(newLayer), action });
+	}
+
 	bool Application::onWindowClose(WindowCloseEvent& e) {
 		running = false;
 		return true;
@@ -48,6 +52,52 @@ namespace Axiom {
 			return false;
 		}
 		return true;
+	}
+
+	void Application::processLayerActions() {
+		for (auto& layerAction : layerActionQueue) {
+
+			auto it = std::find_if(layerStack.begin(), layerStack.end(),
+				[&layerAction](const std::unique_ptr<Layer>& layerPtr) {
+					return layerPtr.get() == layerAction.requester;
+				}
+			);
+
+			if (it == layerStack.end()) {
+				AX_CORE_LOG_ERROR("Layer action requester not found in layer stack!");
+				continue;
+			}
+
+			switch (layerAction.action) {
+			case Layer::ActionType::Transition:
+				(*it)->onDetach();
+				layerAction.newLayer->onAttach();
+
+				*it = std::move(layerAction.newLayer);
+				break;
+
+			case Layer::ActionType::Suspend:
+				(*it)->onSuspend();
+				(*it)->isSuspended = true;
+				layerAction.newLayer->onAttach();
+
+				layerStack.insertLayer(it + 1, std::move(layerAction.newLayer));
+				break;
+
+			case Layer::ActionType::Pop:
+				(*it)->onDetach();
+
+				if (it != layerStack.begin()) {
+					auto prevIt = std::prev(it);
+					(*prevIt)->isSuspended = false;
+					(*prevIt)->onResume();
+				}
+				layerStack.eraseLayer(it);
+				break;
+			}
+		}
+
+		layerActionQueue.clear();
 	}
 
 	void Application::run() {
@@ -67,6 +117,7 @@ namespace Axiom {
 			renderer->endFrame();
 
 			window->onUpdate();
+			processLayerActions();
 		}
 		renderer->waitIdle();
 	}
