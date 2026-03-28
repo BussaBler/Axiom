@@ -1,6 +1,5 @@
 Import('baseEnv', 'debugEnv', 'releaseEnv', 'buildInfo')
 
-import os
 from SCons.Script import Dir, Return
 
 platform = buildInfo['platform']
@@ -36,6 +35,7 @@ sources = coreSources + vulkanSources + configurePlatform(localEnv, platform)
 
 localEnv.Append(CPPPATH=[
     Dir('#/Axiom/Source'),
+    Dir('#/Vendor/AxImageLoader/Include'),
 ])
 
 axiomLib = localEnv.StaticLibrary(f'#/Bin/{configName}/Axiom/Axiom', sources)

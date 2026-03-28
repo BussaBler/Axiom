@@ -242,15 +242,27 @@ namespace Axiom {
             {.location = 2, .binding = 0, .format = Format::R32G32B32A32Sfloat, .offset = offsetof(UIVertex, color)},
         };
 
-        std::vector<ResourceLayout::BindingCreateInfo> resourceLayoutBindings(1);
+        std::vector<ResourceLayout::BindingCreateInfo> resourceLayoutBindings(2);
 		resourceLayoutBindings[0].binding = 0;
-		resourceLayoutBindings[0].type = ResourceType::TextureSampler;
+		resourceLayoutBindings[0].type = ResourceType::Texture;
 		resourceLayoutBindings[0].stages = ShaderStage::Fragment;
 		resourceLayoutBindings[0].count = 1;
+		resourceLayoutBindings[1].binding = 1;
+		resourceLayoutBindings[1].type = ResourceType::Sampler;
+		resourceLayoutBindings[1].stages = ShaderStage::Fragment;
+		resourceLayoutBindings[1].count = 1;
+
+        std::vector<ResourceSet::Binding> resourceSetBindings(2);
+		resourceSetBindings[0].binding = 0;
+		resourceSetBindings[0].type = ResourceType::Texture;
+		resourceSetBindings[0].texture = fontAtlasTexture.get();
+        resourceSetBindings[1].binding = 1;
+		resourceSetBindings[1].type = ResourceType::Sampler;
+		resourceSetBindings[1].sampler = Application::getRenderer()->getNearestSampler();
 
 		fontResourceLayout = Application::getRenderer()->createResourceLayout(resourceLayoutBindings);
 		fontResourceSet = Application::getRenderer()->createResourceSet(fontResourceLayout.get());
-		fontResourceSet->update({ {.binding = 0, .type = ResourceType::TextureSampler, .texture = fontAtlasTexture.get()} });
+		fontResourceSet->update(resourceSetBindings);
 
         Pipeline::CreateInfo pipelineCreateInfo = {
             .vertexShaderPath = "Assets/Shaders/BuiltIn.UI.Font.vert",

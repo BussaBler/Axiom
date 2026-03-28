@@ -2,6 +2,7 @@
 #include "ResourceLayout.h"
 #include "Buffer.h"
 #include "Texture.h"
+#include "Sampler.h"
 
 namespace Axiom {
 	class ResourceSet {
@@ -11,6 +12,7 @@ namespace Axiom {
 			ResourceType type = ResourceType::UniformBuffer;
 			Buffer* buffer = nullptr;
 			Texture* texture = nullptr;
+			Sampler* sampler = nullptr;
 		};
 
 	public:

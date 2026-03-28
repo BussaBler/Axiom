@@ -7,6 +7,7 @@ namespace Axiom {
 		static bool isKeyPressed(KeyCode keyCode) { return instance->internalIsKeyPressed(keyCode); }
 		static float getMouseX() { return instance->internalGetMouseX(); }
 		static float getMouseY() { return instance->internalgetMouseY(); }
+		// TODO: change this to a more platform-agnostic key code system
 		static int keyCodeToWindowsKey(KeyCode keyCode) { return static_cast<int>(keyCode); }
 
 	protected:

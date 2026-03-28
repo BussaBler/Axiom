@@ -2,8 +2,8 @@
 #include "Log.h"
 
 namespace Axiom {
-	std::shared_ptr<Logger> Log::coreLogger = std::make_shared<Logger>();
-	std::shared_ptr<Logger> Log::clientLogger = std::make_shared<Logger>();
+	std::shared_ptr<Logger> Log::coreLogger = nullptr;
+	std::shared_ptr<Logger> Log::clientLogger = nullptr;
 
     void Log::init() {
         coreLogger = std::make_shared<Logger>();

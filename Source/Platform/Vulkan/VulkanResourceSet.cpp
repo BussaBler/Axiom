@@ -14,6 +14,9 @@ namespace Axiom {
 		std::vector<Vk::WriteDescriptorSet> descriptorWrites;
 		std::vector<Vk::DescriptorBufferInfo> bufferInfos;
 		std::vector<Vk::DescriptorImageInfo> imageInfos;
+		descriptorWrites.reserve(bindings.size());
+		bufferInfos.reserve(bindings.size());
+		imageInfos.reserve(bindings.size());
 
 		for (const auto& binding : bindings) {
 			Vk::WriteDescriptorSet write{};
@@ -37,10 +40,25 @@ namespace Axiom {
 					write.setPBufferInfo(&bufferInfos.back());
 					break;
 				}
-				case ResourceType::TextureSampler: {
+				case ResourceType::Texture: {
+					write.setDescriptorType(Vk::DescriptorType::eSampledImage);
+					VulkanTexture* vkTexture = static_cast<VulkanTexture*>(binding.texture);
+					imageInfos.push_back({ nullptr, vkTexture->getImageView(), Vk::ImageLayout::eShaderReadOnlyOptimal });
+					write.setPImageInfo(&imageInfos.back());
+					break;
+				}
+				case ResourceType::Sampler: {
+					write.setDescriptorType(Vk::DescriptorType::eSampler);
+					VulkanSampler* vkSampler = static_cast<VulkanSampler*>(binding.sampler);
+					imageInfos.push_back({ vkSampler->getSampler(), nullptr, Vk::ImageLayout::eUndefined });
+					write.setPImageInfo(&imageInfos.back());
+					break;
+				}
+				case ResourceType::CombinedTextureSampler: {
 					write.setDescriptorType(Vk::DescriptorType::eCombinedImageSampler);
 					VulkanTexture* vkTexture = static_cast<VulkanTexture*>(binding.texture);
-					imageInfos.push_back({ vkTexture->getSampler(), vkTexture->getImageView(), Vk::ImageLayout::eShaderReadOnlyOptimal });
+					VulkanSampler* vkSampler = static_cast<VulkanSampler*>(binding.sampler);
+					imageInfos.push_back({ vkSampler->getSampler(), vkTexture->getImageView(), Vk::ImageLayout::eShaderReadOnlyOptimal});
 					write.setPImageInfo(&imageInfos.back());
 					break;
 				}

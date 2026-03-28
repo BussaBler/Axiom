@@ -6,7 +6,9 @@ namespace Axiom {
 	enum class ResourceType {
 		UniformBuffer,
 		StorageBuffer,
-		TextureSampler,
+		Texture,
+		Sampler,
+		CombinedTextureSampler,
 	};
 
 	enum class ShaderStage {

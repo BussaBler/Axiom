@@ -14,18 +14,15 @@ namespace Axiom {
 		Format getFormat() const override;
 
 		void createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags);
-		void createSampler(Vk::Filter filter, Vk::SamplerAddressMode addressMode, uint32_t mipLevels);
 
 		inline Vk::Image getImage() const { return image; }
 		inline Vk::ImageView getImageView() const { return imageView; }
-		inline Vk::Sampler getSampler() const { return sampler; }
 
 	private:
 		Vk::Device device = nullptr;
 		Vk::Image image = nullptr;
 		Vk::ImageView imageView = nullptr;
 		Vk::Format imageFormat = Vk::Format::eUndefined;
-		Vk::Sampler sampler = nullptr;
 		bool ownsImage = false;
 		Allocation imageAllocation;
 	};

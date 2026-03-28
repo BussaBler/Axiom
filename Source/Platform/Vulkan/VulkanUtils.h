@@ -4,6 +4,7 @@
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/ResourceLayout.h"
+#include "Renderer/Sampler.h"
 #include "Renderer/Texture.h"
 #include "VulkanInclude.h"
 
@@ -98,7 +99,9 @@ namespace Axiom {
 		switch (type) {
 			case ResourceType::UniformBuffer: return Vk::DescriptorType::eUniformBuffer;
 			case ResourceType::StorageBuffer: return Vk::DescriptorType::eStorageBuffer;
-			case ResourceType::TextureSampler: return Vk::DescriptorType::eCombinedImageSampler;
+			case ResourceType::Texture: return Vk::DescriptorType::eSampledImage;
+			case ResourceType::Sampler: return Vk::DescriptorType::eSampler;
+			case ResourceType::CombinedTextureSampler: return Vk::DescriptorType::eCombinedImageSampler;
 			default: return Vk::DescriptorType::eUniformBuffer;
 		}
 	}
@@ -141,5 +144,31 @@ namespace Axiom {
 		if ((aspect & TextureAspect::Depth) != TextureAspect::None) flags |= Vk::ImageAspectFlagBits::eDepth;
 		if ((aspect & TextureAspect::Stencil) != TextureAspect::None) flags |= Vk::ImageAspectFlagBits::eStencil;
 		return flags;
+	}
+
+	inline Vk::SamplerAddressMode axToVkAddressMode(SamplerAddressMode mode) {
+		switch (mode) {
+			case SamplerAddressMode::Repeat: return Vk::SamplerAddressMode::eRepeat;
+			case SamplerAddressMode::MirroredRepeat: return Vk::SamplerAddressMode::eMirroredRepeat;
+			case SamplerAddressMode::ClampToEdge: return Vk::SamplerAddressMode::eClampToEdge;
+			case SamplerAddressMode::ClampToBorder: return Vk::SamplerAddressMode::eClampToBorder;
+			default: return Vk::SamplerAddressMode::eRepeat;
+		}
+	}
+
+	inline Vk::Filter axToVkFilterMode(SamplerFilterMode mode) {
+		switch (mode) {
+			case SamplerFilterMode::Linear: return Vk::Filter::eLinear;
+			case SamplerFilterMode::Nearest: return Vk::Filter::eNearest;
+			default: return Vk::Filter::eLinear;
+		}
+	}
+
+	inline Vk::SamplerMipmapMode axToVkMipmapMode(SamplerFilterMode mode) {
+		switch (mode) {
+			case SamplerFilterMode::Linear: return Vk::SamplerMipmapMode::eLinear;
+			case SamplerFilterMode::Nearest: return Vk::SamplerMipmapMode::eNearest;
+			default: return Vk::SamplerMipmapMode::eLinear;
+		}
 	}
 }

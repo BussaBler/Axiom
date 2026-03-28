@@ -6,12 +6,15 @@ namespace Axiom {
 	Application* Application::instance = nullptr;
 
 	Application::Application(const ApplicationInfo& appInfo) {
-		AX_CORE_ASSERT(!instance, "Application already exists!");
-		instance = this;
-		
+		Log::init();
 		FileSystem::setWorkingDirectory(appInfo.workingDirectory);
+		AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
+		
 		AX_CORE_LOG_INFO("Application started: {0}", appInfo.name);
 		AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
+		
+		AX_CORE_ASSERT(!instance, "Application already exists!");
+		instance = this;
 
 		window = Window::create(WindowProps());
 		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));

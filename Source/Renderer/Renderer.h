@@ -15,6 +15,7 @@ namespace Axiom {
 		std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo);
 		std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo);
 		std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);
+		std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo);
 		std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings);
 		std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout);
 
@@ -30,10 +31,17 @@ namespace Axiom {
 		inline Texture* getDefaultTexture() {
 			return defaultTexture.get();
 		}
+		inline Sampler* getLinearSampler() {
+			return linearSampler.get();
+		}
+		inline Sampler* getNearestSampler() {
+			return nearestSampler.get();
+		}
 
 	private:
 		void recreateSwapChain();
 		void createDefaultTexture();
+		void createDefaultSamplers();
 
 	private:
 		uint32_t currentFrameIndex = 0;
@@ -49,6 +57,8 @@ namespace Axiom {
 		Texture::Barrier renderTargetBarrier;
 		Texture::Barrier presentBarrier;
 		std::shared_ptr<Texture> defaultTexture = nullptr;
+		std::unique_ptr<Sampler> linearSampler = nullptr;
+		std::unique_ptr<Sampler> nearestSampler = nullptr;
 	};
 }
 

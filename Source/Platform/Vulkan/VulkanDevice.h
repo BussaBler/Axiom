@@ -8,11 +8,12 @@
 #include "VulkanFence.h"
 #include "VulkanInclude.h"
 #include "VulkanPipeline.h"
+#include "VulkanResourceLayout.h"
+#include "VulkanResourceSet.h"
+#include "VulkanSampler.h"
 #include "VulkanSwapChain.h"
 #include "VulkanTexture.h"
 #include "VulkanUtils.h"
-#include "VulkanResourceLayout.h"
-#include "VulkanResourceSet.h"
 
 #if defined(AX_PLATFORM_WINDOWS)
 	#include "Platform/Windows/Win32Window.h"
@@ -33,6 +34,7 @@ namespace Axiom {
 		std::unique_ptr<Fence> createFence(bool isSignaled) override;
 		std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) override;
 		std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) override;
+		std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo) override;
 		std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) override;
 		std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) override;
 		std::unique_ptr<CommandBuffer> beginSingleTimeCommands() override;
@@ -60,7 +62,7 @@ namespace Axiom {
 		Vk::DebugUtilsMessengerEXT debugMessenger = nullptr;
 		Vk::SurfaceKHR surface = nullptr;
 		Vk::PhysicalDevice physicalDevice = nullptr;
-		Vk::Device logicDevice = nullptr;
+		Vk::Device logicalDevice = nullptr;
 		Vk::Queue graphicsQueue = nullptr;
 		Vk::Queue presentQueue = nullptr;
 		Vk::CommandPool commandPool = nullptr;

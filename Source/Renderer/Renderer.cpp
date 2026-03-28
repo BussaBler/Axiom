@@ -38,6 +38,7 @@ namespace Axiom {
 		};
 
 		createDefaultTexture();
+		createDefaultSamplers();
 	}
 
 	Renderer::~Renderer() {
@@ -91,6 +92,10 @@ namespace Axiom {
 
 	std::shared_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo& textureCreateInfo) {
 		return device->createTexture(textureCreateInfo);
+	}
+
+	std::unique_ptr<Sampler> Renderer::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {
+		return device->createSampler(samplerCreateInfo);
 	}
 
 	std::unique_ptr<ResourceLayout> Renderer::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
@@ -175,5 +180,21 @@ namespace Axiom {
 		stagingBuffer->setData<uint32_t>(defaultTextureData);
 		commandBuffer->copyBufferToTexture(stagingBuffer.get(), defaultTexture.get(), defaultTextureSize, defaultTextureSize);
 		device->endSingleTimeCommands(commandBuffer.get());
+	}
+
+	void Renderer::createDefaultSamplers() {
+		Sampler::CreateInfo linearSamplerCreateInfo = {
+			.adressMode = SamplerAddressMode::Repeat,
+			.filterMode = SamplerFilterMode::Linear,
+			.mipmapFilterMode = SamplerFilterMode::Linear
+		};
+		linearSampler = device->createSampler(linearSamplerCreateInfo);
+
+		Sampler::CreateInfo nearestSamplerCreateInfo = {
+			.adressMode = SamplerAddressMode::Repeat,
+			.filterMode = SamplerFilterMode::Nearest,
+			.mipmapFilterMode = SamplerFilterMode::Nearest
+		};
+		nearestSampler = device->createSampler(nearestSamplerCreateInfo);
 	}
 }

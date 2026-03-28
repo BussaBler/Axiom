@@ -4,8 +4,7 @@
 extern Axiom::Application* Axiom::createApplication(const Axiom::ApplicationInfo& appInfo);
 
 int main(int argc, char** argv) {
-    Axiom::Log::init();
-    auto app = Axiom::createApplication({"Axiom Application", ".."});
+    auto app = Axiom::createApplication({"Axiom Application", "../../.."});
     app->run();
     delete app;
 #ifdef AX_DEBUG

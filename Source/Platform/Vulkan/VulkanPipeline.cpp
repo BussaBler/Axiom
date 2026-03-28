@@ -106,6 +106,7 @@ namespace Axiom {
 
 		shaderc::Compiler compiler = {};
 		shaderc::CompileOptions options = {};
+		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 		shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv(
 			reinterpret_cast<const char*>(shaderSource.data()), shaderSource.size(),
 			shaderc_shader_kind::shaderc_glsl_infer_from_source, shaderPath.string().c_str(), "main", options
@@ -118,7 +119,6 @@ namespace Axiom {
 
 		Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, codeSize, shaderCode);
 		Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = device.createShaderModule(shaderModuleCreateInfo);
-
 		AX_CORE_ASSERT(shaderModuleResult.result == Vk::Result::eSuccess, "Failed to create shader module!");
 		return shaderModuleResult.value;
 	}

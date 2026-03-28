@@ -5,10 +5,11 @@
 #include "Core/Window.h"
 #include "Fence.h"
 #include "Pipeline.h"
+#include "ResourceSet.h"
+#include "Sampler.h"
 #include "Semaphore.h"
 #include "SwapChain.h"
 #include "Texture.h"
-#include "ResourceSet.h"
 
 namespace Axiom {
 	enum class GraphicsApi {
@@ -47,6 +48,7 @@ namespace Axiom {
 		virtual std::unique_ptr<Fence> createFence(bool isSignaled) = 0;
 		virtual std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) = 0;
 		virtual std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) = 0;
+		virtual std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo) = 0;
 		virtual std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) = 0;
 		virtual std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) = 0;
 		virtual std::unique_ptr<CommandBuffer> beginSingleTimeCommands() = 0;

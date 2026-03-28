@@ -3,6 +3,7 @@
 #include "VulkanUtils.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
+#include "VulkanSampler.h"
 
 namespace Axiom {
 	class VulkanResourceSet : public ResourceSet {

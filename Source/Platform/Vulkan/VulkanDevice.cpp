@@ -52,23 +52,23 @@ namespace Axiom {
 		createSurface(createInfo.windowObjPtr);
 		pickPhysicalDevice();
 		createLogicalDevice();
-		VULKAN_HPP_DEFAULT_DISPATCHER.init(logicDevice);
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(logicalDevice);
 		createCommandPool();
 		createDescriptorPool();
-		VulkanAllocator::init(logicDevice, physicalDevice);
+		VulkanAllocator::init(logicalDevice, physicalDevice);
 	}
 
 	VulkanDevice::~VulkanDevice() {
 		waitIdle();
 		VulkanAllocator::shutdown();
 		if (descriptorPool) {
-			logicDevice.destroyDescriptorPool(descriptorPool);
+			logicalDevice.destroyDescriptorPool(descriptorPool);
 		}
 		if (commandPool) {
-			logicDevice.destroyCommandPool(commandPool);
+			logicalDevice.destroyCommandPool(commandPool);
 		}
-		if (logicDevice) {
-			logicDevice.destroy();
+		if (logicalDevice) {
+			logicalDevice.destroy();
 		}
 		if (surface) {
 			instance.destroySurfaceKHR(surface);
@@ -84,44 +84,48 @@ namespace Axiom {
 	std::unique_ptr<SwapChain> VulkanDevice::createSwapchain(uint32_t width, uint32_t height) {
 		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-		VulkanSwapChain::CreateInfo createInfo{ logicDevice, surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height) };
+		VulkanSwapChain::CreateInfo createInfo{ logicalDevice, surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height) };
 		return std::make_unique<VulkanSwapChain>(createInfo);
 	}
 
 	std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
-		return std::make_unique<VulkanPipeline>(pipelineCreateInfo, logicDevice);
+		return std::make_unique<VulkanPipeline>(pipelineCreateInfo, logicalDevice);
 	}
 
 	std::unique_ptr<CommandBuffer> VulkanDevice::createCommandBuffer() {
-		return std::make_unique<VulkanCommandBuffer>(logicDevice, commandPool);
+		return std::make_unique<VulkanCommandBuffer>(logicalDevice, commandPool);
 	}
 
 	std::unique_ptr<Semaphore> VulkanDevice::createSemaphore() {
-		return std::make_unique<VulkanSemaphore>(logicDevice);
+		return std::make_unique<VulkanSemaphore>(logicalDevice);
 	}
 
 	std::unique_ptr<Fence> VulkanDevice::createFence(bool isSignaled) {
-		return std::make_unique<VulkanFence>(logicDevice, isSignaled);
+		return std::make_unique<VulkanFence>(logicalDevice, isSignaled);
 	}
 
 	std::unique_ptr<Buffer> VulkanDevice::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
-		return std::make_unique<VulkanBuffer>(logicDevice, bufferCreateInfo);
+		return std::make_unique<VulkanBuffer>(logicalDevice, bufferCreateInfo);
 	}
 
 	std::shared_ptr<Texture> VulkanDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
-		return std::make_shared<VulkanTexture>(logicDevice, textureCreateInfo);
+		return std::make_shared<VulkanTexture>(logicalDevice, textureCreateInfo);
+	}
+
+	std::unique_ptr<Sampler> VulkanDevice::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {
+		return std::make_unique<VulkanSampler>(logicalDevice, samplerCreateInfo);
 	}
 
 	std::unique_ptr<ResourceLayout> VulkanDevice::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
-		return std::make_unique<VulkanResourceLayout>(logicDevice, bindings);
+		return std::make_unique<VulkanResourceLayout>(logicalDevice, bindings);
 	}
 
 	std::unique_ptr<ResourceSet> VulkanDevice::createResourceSet(ResourceLayout* resourceLayout) {
-		return std::make_unique<VulkanResourceSet>(logicDevice, descriptorPool, static_cast<VulkanResourceLayout*>(resourceLayout)->getHandle());
+		return std::make_unique<VulkanResourceSet>(logicalDevice, descriptorPool, static_cast<VulkanResourceLayout*>(resourceLayout)->getHandle());
 	}
 
 	std::unique_ptr<CommandBuffer> VulkanDevice::beginSingleTimeCommands() {
-		VulkanCommandBuffer* commandBuffer = new VulkanCommandBuffer(logicDevice, commandPool);
+		VulkanCommandBuffer* commandBuffer = new VulkanCommandBuffer(logicalDevice, commandPool);
 		commandBuffer->begin();
 
 		return std::make_unique<VulkanCommandBuffer>(*commandBuffer);
@@ -163,7 +167,7 @@ namespace Axiom {
 	}
 
 	void VulkanDevice::waitIdle() {
-		AX_CORE_ASSERT(logicDevice.waitIdle() == Vk::Result::eSuccess, "Failed to wait for Vulkan device idle: {}", Vk::to_string(logicDevice.waitIdle()));
+		AX_CORE_ASSERT(logicalDevice.waitIdle() == Vk::Result::eSuccess, "Failed to wait for Vulkan device idle: {}", Vk::to_string(logicalDevice.waitIdle()));
 	}
 
 	bool VulkanDevice::linkVulkanLib() {
@@ -386,30 +390,32 @@ namespace Axiom {
 		Vk::ResultValue<Vk::Device> logicalDeviceResult = physicalDevice.createDevice(deviceCreateInfo);
 
 		AX_CORE_ASSERT(logicalDeviceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan logical device: {}", Vk::to_string(logicalDeviceResult.result));
-		logicDevice = logicalDeviceResult.value;
+		logicalDevice = logicalDeviceResult.value;
 
-		graphicsQueue = logicDevice.getQueue(indices.graphicsFamily.value(), 0);
-		presentQueue = logicDevice.getQueue(indices.presentFamily.value(), 0);
+		graphicsQueue = logicalDevice.getQueue(indices.graphicsFamily.value(), 0);
+		presentQueue = logicalDevice.getQueue(indices.presentFamily.value(), 0);
 	}
 
 	void VulkanDevice::createCommandPool() {
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 		Vk::CommandPoolCreateInfo poolCreateInfo(Vk::CommandPoolCreateFlagBits::eResetCommandBuffer, indices.graphicsFamily.value());
-		Vk::ResultValue<Vk::CommandPool> commandPoolResult = logicDevice.createCommandPool(poolCreateInfo);
+		Vk::ResultValue<Vk::CommandPool> commandPoolResult = logicalDevice.createCommandPool(poolCreateInfo);
 		
 		AX_CORE_ASSERT(commandPoolResult.result == Vk::Result::eSuccess, "Failed to create Vulkan command pool: {}", Vk::to_string(commandPoolResult.result));
 		commandPool = commandPoolResult.value;
 	}
 
 	void VulkanDevice::createDescriptorPool() {
-		std::array<Vk::DescriptorPoolSize, 3> poolSizes = {
+		std::array<Vk::DescriptorPoolSize, 5> poolSizes = {
 			Vk::DescriptorPoolSize(Vk::DescriptorType::eUniformBuffer, 100),
-			Vk::DescriptorPoolSize(Vk::DescriptorType::eCombinedImageSampler, 100),
-			Vk::DescriptorPoolSize(Vk::DescriptorType::eStorageBuffer, 100)
+			Vk::DescriptorPoolSize(Vk::DescriptorType::eStorageBuffer, 100),
+			Vk::DescriptorPoolSize(Vk::DescriptorType::eSampledImage, 100),
+			Vk::DescriptorPoolSize(Vk::DescriptorType::eSampler, 100),
+			Vk::DescriptorPoolSize(Vk::DescriptorType::eCombinedImageSampler, 50),
 		};
 
-		Vk::DescriptorPoolCreateInfo poolCreateInfo(Vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 400, poolSizes);
-		Vk::ResultValue<Vk::DescriptorPool> descriptorPoolResult = logicDevice.createDescriptorPool(poolCreateInfo);
+		Vk::DescriptorPoolCreateInfo poolCreateInfo(Vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 500, poolSizes);
+		Vk::ResultValue<Vk::DescriptorPool> descriptorPoolResult = logicalDevice.createDescriptorPool(poolCreateInfo);
 
 		AX_CORE_ASSERT(descriptorPoolResult.result == Vk::Result::eSuccess, "Failed to create Vulkan descriptor pool: {}", Vk::to_string(descriptorPoolResult.result));
 		descriptorPool = descriptorPoolResult.value;

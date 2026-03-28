@@ -25,7 +25,6 @@ namespace Axiom {
 		AX_CORE_ASSERT(result == Vk::Result::eSuccess, "Failed to bind image memory");
 
 		createImageView(imageCreateInfo.format, axToVkImageAspectFlags(createInfo.aspect));
-		createSampler(Vk::Filter::eLinear, Vk::SamplerAddressMode::eRepeat, createInfo.mipLevels);
 	}
 
 	VulkanTexture::VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage) : device(logicalDevice),
@@ -41,9 +40,6 @@ namespace Axiom {
 		}
 		if (imageView) {
 			device.destroyImageView(imageView);
-		}
-		if (sampler) {
-			device.destroySampler(sampler);
 		}
 	}
 
@@ -65,27 +61,5 @@ namespace Axiom {
 
 		AX_CORE_ASSERT(imageViewResult.result == Vk::Result::eSuccess, "Failed to create image view for texture!");
 		imageView = imageViewResult.value;
-	}
-
-	void VulkanTexture::createSampler(Vk::Filter filter, Vk::SamplerAddressMode addressMode, uint32_t mipLevels) {
-		Vk::SamplerCreateInfo createInfo(
-			{},
-			filter,
-			filter,
-			Vk::SamplerMipmapMode::eNearest,
-			addressMode,
-			addressMode,
-			addressMode,
-			0.0f,
-			false,
-			1.0f,
-			false,
-			Vk::CompareOp::eAlways,
-			0.0f,
-			static_cast<float>(mipLevels)
-		);
-		Vk::ResultValue<Vk::Sampler> samplerResult = device.createSampler(createInfo);
-		AX_CORE_ASSERT(samplerResult.result == Vk::Result::eSuccess, "Failed to create sampler for texture!");
-		sampler = samplerResult.value;
 	}
 }
