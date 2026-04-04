@@ -1,5 +1,6 @@
 #pragma once
 #include "axpch.h"
+#include <filesystem>
 
 namespace Axiom {
 	class Logger {
@@ -50,12 +51,21 @@ namespace Axiom {
 				return;
 			}
 
+			std::string timestamp;
+#if defined(AX_PLATFORM_MACOS)
+			auto now = std::chrono::system_clock::now();
+			std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+			std::tm local_tm;
+			localtime_r(&now_c, &local_tm);
+			char buffer[100];
+			std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &local_tm);
+			timestamp = buffer;
+#else
 			auto currentTime = std::chrono::system_clock::now();
-			auto zonedTime = std::chrono::zoned_time(std::chrono::current_zone(), currentTime);
-			std::string timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", zonedTime);
-
-			auto fmt_args = std::make_format_args<std::format_context>(static_cast<const Args&>(args)...);
-			std::string formatted = std::vformat(fmtString, fmt_args);
+			auto zonedTime = std::chrono::zoned_time{std::chrono::current_zone(), currentTime};
+			timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", zonedTime);
+#endif
+			std::string formatted = std::vformat(fmtString, std::make_format_args(args...));
 
 			std::scoped_lock lock(mLogLock);
 			auto color = mColorCodes[static_cast<size_t>(priority)];

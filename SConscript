@@ -13,16 +13,21 @@ localEnv = (debugEnv if config.lower() == 'debug' else releaseEnv).Clone()
 
 def configurePlatform(env, platformName):
     platformMap = {
-        'windows': {'define': 'AX_PLATFORM_WINDOWS', 'path': 'Source/Platform/Windows/*.cpp'},
-        'linux': {'define': 'AX_PLATFORM_LINUX', 'path': 'Source/Platform/Linux/*.cpp'},
-        'darwin': {'define': 'AX_PLATFORM_MACOS', 'path': 'Source/Platform/MacOS/*.cpp'}
+        'windows': {'define': 'AX_PLATFORM_WINDOWS', 'path': ['Source/Platform/Windows/*.cpp']},
+        'linux': {'define': 'AX_PLATFORM_LINUX', 'path': ['Source/Platform/Linux/*.cpp']},
+        'macos': {'define': 'AX_PLATFORM_MACOS', 'path': ['Source/Platform/MacOS/*.cpp', 'Source/Platform/MacOS/*.mm']},
     }
 
     key = next((k for k in platformMap if platformName.startswith(k)), None)
     
     if key:
         env.Append(CPPDEFINES=[platformMap[key]['define']])
-        return Glob(platformMap[key]['path'])
+
+        pathGlobs = []
+        for path in platformMap[key]['path']:
+            pathGlobs.extend(Glob(path))
+
+        return pathGlobs
     return []
 
 coreSources = Glob('Source/*.cpp')
@@ -31,7 +36,12 @@ coreSources += Glob('Source/UI/MSDFGen/core/*.cpp')
 # TODO: temp solution to add platform-specific code, should be changed to add more renderer backends
 vulkanSources = Glob('Source/Platform/Vulkan/*.cpp')
 
-sources = coreSources + vulkanSources + configurePlatform(localEnv, platform)
+sources = coreSources + vulkanSources
+platformSpecificSources = configurePlatform(localEnv, platform)
+
+for source in platformSpecificSources:
+    if source not in sources:
+        sources.append(source)
 
 localEnv.Append(CPPPATH=[
     Dir('#/Axiom/Source'),

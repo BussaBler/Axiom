@@ -24,6 +24,7 @@ namespace Axiom {
 		virtual uint32_t getHeight() const = 0;
 
 		virtual void setEventCallback(const EventCallback& callback) = 0;
+		// TODO: probably remove the v sync functions and just have it as a setting in the renderer or something, not sure yet
 		virtual void setVSync(bool enabled) = 0;
 		virtual bool isVSync() const = 0;
 
