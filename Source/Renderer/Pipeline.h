@@ -67,12 +67,12 @@ namespace Axiom {
             std::vector<Format> colorAttachmentFormats;
             Format depthAttachmentFormat = Format::Undefined;
 
-            std::vector<ResourceLayout *> resourceLayouts;
+            std::vector<ResourceLayout*> resourceLayouts;
         };
 
         Pipeline() = default;
         virtual ~Pipeline() = default;
 
-        virtual std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout *resourceLayout) = 0;
+        virtual std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) = 0;
     };
 } // namespace Axiom

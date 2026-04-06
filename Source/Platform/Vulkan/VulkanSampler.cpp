@@ -1,7 +1,7 @@
 #include "VulkanSampler.h"
 
 namespace Axiom {
-    VulkanSampler::VulkanSampler(Vk::Device logicalDevice, const CreateInfo &createInfo) : device(logicalDevice) {
+    VulkanSampler::VulkanSampler(Vk::Device logicalDevice, const CreateInfo& createInfo) : device(logicalDevice) {
         Vk::SamplerCreateInfo samplerCreateInfo({}, axToVkFilterMode(createInfo.filterMode), axToVkFilterMode(createInfo.filterMode),
                                                 axToVkMipmapMode(createInfo.mipmapFilterMode), axToVkAddressMode(createInfo.adressMode),
                                                 axToVkAddressMode(createInfo.adressMode), axToVkAddressMode(createInfo.adressMode));

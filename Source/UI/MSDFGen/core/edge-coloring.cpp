@@ -20,11 +20,11 @@ namespace msdfgen {
         return int(3 + 2.875 * position / (n - 1) - 1.4375 + .5) - 3;
     }
 
-    static bool isCorner(const Vector2 &aDir, const Vector2 &bDir, double crossThreshold) {
+    static bool isCorner(const Vector2& aDir, const Vector2& bDir, double crossThreshold) {
         return dotProduct(aDir, bDir) <= 0 || fabs(crossProduct(aDir, bDir)) > crossThreshold;
     }
 
-    static double estimateEdgeLength(const EdgeSegment *edge) {
+    static double estimateEdgeLength(const EdgeSegment* edge) {
         double len = 0;
         Point2 prev = edge->point(0);
         for (int i = 1; i <= MSDFGEN_EDGE_LENGTH_PRECISION; ++i) {
@@ -35,29 +35,29 @@ namespace msdfgen {
         return len;
     }
 
-    static int seedExtract2(unsigned long long &seed) {
+    static int seedExtract2(unsigned long long& seed) {
         int v = int(seed) & 1;
         seed >>= 1;
         return v;
     }
 
-    static int seedExtract3(unsigned long long &seed) {
+    static int seedExtract3(unsigned long long& seed) {
         int v = int(seed % 3);
         seed /= 3;
         return v;
     }
 
-    static EdgeColor initColor(unsigned long long &seed) {
+    static EdgeColor initColor(unsigned long long& seed) {
         static const EdgeColor colors[3] = {CYAN, MAGENTA, YELLOW};
         return colors[seedExtract3(seed)];
     }
 
-    static void switchColor(EdgeColor &color, unsigned long long &seed) {
+    static void switchColor(EdgeColor& color, unsigned long long& seed) {
         int shifted = color << (1 + seedExtract2(seed));
         color = EdgeColor((shifted | shifted >> 3) & WHITE);
     }
 
-    static void switchColor(EdgeColor &color, unsigned long long &seed, EdgeColor banned) {
+    static void switchColor(EdgeColor& color, unsigned long long& seed, EdgeColor banned) {
         EdgeColor combined = EdgeColor(color & banned);
         if (combined == RED || combined == GREEN || combined == BLUE)
             color = EdgeColor(combined ^ WHITE);
@@ -65,7 +65,7 @@ namespace msdfgen {
             switchColor(color, seed);
     }
 
-    void edgeColoringSimple(Shape &shape, double angleThreshold, unsigned long long seed) {
+    void edgeColoringSimple(Shape& shape, double angleThreshold, unsigned long long seed) {
         double crossThreshold = sin(angleThreshold);
         EdgeColor color = initColor(seed);
         std::vector<int> corners;
@@ -104,7 +104,7 @@ namespace msdfgen {
                         contour->edges[(corner + i) % m]->color = colors[1 + symmetricalTrichotomy(i, m)];
                 } else if (contour->edges.size() >= 1) {
                     // Less than three edge segments for three colors => edges must be split
-                    EdgeSegment *parts[7] = {};
+                    EdgeSegment* parts[7] = {};
                     contour->edges[0]->splitInThirds(parts[0 + 3 * corner], parts[1 + 3 * corner], parts[2 + 3 * corner]);
                     if (contour->edges.size() >= 2) {
                         contour->edges[1]->splitInThirds(parts[3 - 3 * corner], parts[4 - 3 * corner], parts[5 - 3 * corner]);
@@ -148,7 +148,7 @@ namespace msdfgen {
         EdgeColor color;
     };
 
-    void edgeColoringInkTrap(Shape &shape, double angleThreshold, unsigned long long seed) {
+    void edgeColoringInkTrap(Shape& shape, double angleThreshold, unsigned long long seed) {
         typedef EdgeColoringInkTrapCorner Corner;
         double crossThreshold = sin(angleThreshold);
         EdgeColor color = initColor(seed);
@@ -193,7 +193,7 @@ namespace msdfgen {
                         contour->edges[(corner + i) % m]->color = colors[1 + symmetricalTrichotomy(i, m)];
                 } else if (contour->edges.size() >= 1) {
                     // Less than three edge segments for three colors => edges must be split
-                    EdgeSegment *parts[7] = {};
+                    EdgeSegment* parts[7] = {};
                     contour->edges[0]->splitInThirds(parts[0 + 3 * corner], parts[1 + 3 * corner], parts[2 + 3 * corner]);
                     if (contour->edges.size() >= 2) {
                         contour->edges[1]->splitInThirds(parts[3 - 3 * corner], parts[4 - 3 * corner], parts[5 - 3 * corner]);
@@ -259,7 +259,7 @@ namespace msdfgen {
 #define MAX_RECOLOR_STEPS 16
 #define EDGE_DISTANCE_PRECISION 16
 
-    static double edgeToEdgeDistance(const EdgeSegment &a, const EdgeSegment &b, int precision) {
+    static double edgeToEdgeDistance(const EdgeSegment& a, const EdgeSegment& b, int precision) {
         if (a.point(0) == b.point(0) || a.point(0) == b.point(1) || a.point(1) == b.point(0) || a.point(1) == b.point(1))
             return 0;
         double iFac = 1. / precision;
@@ -277,7 +277,7 @@ namespace msdfgen {
         return minDistance;
     }
 
-    static double splineToSplineDistance(EdgeSegment *const *edgeSegments, int aStart, int aEnd, int bStart, int bEnd, int precision) {
+    static double splineToSplineDistance(EdgeSegment* const* edgeSegments, int aStart, int aEnd, int bStart, int bEnd, int precision) {
         double minDistance = DBL_MAX;
         for (int ai = aStart; ai < aEnd; ++ai)
             for (int bi = bStart; bi < bEnd && minDistance; ++bi) {
@@ -287,7 +287,7 @@ namespace msdfgen {
         return minDistance;
     }
 
-    static void colorSecondDegreeGraph(int *coloring, const int *const *edgeMatrix, int vertexCount, unsigned long long seed) {
+    static void colorSecondDegreeGraph(int* coloring, const int* const* edgeMatrix, int vertexCount, unsigned long long seed) {
         for (int i = 0; i < vertexCount; ++i) {
             int possibleColors = 7;
             for (int j = 0; j < i; ++j) {
@@ -322,7 +322,7 @@ namespace msdfgen {
         }
     }
 
-    static int vertexPossibleColors(const int *coloring, const int *edgeVector, int vertexCount) {
+    static int vertexPossibleColors(const int* coloring, const int* edgeVector, int vertexCount) {
         int usedColors = 0;
         for (int i = 0; i < vertexCount; ++i)
             if (edgeVector[i])
@@ -330,7 +330,7 @@ namespace msdfgen {
         return 7 & ~usedColors;
     }
 
-    static void uncolorSameNeighbors(std::queue<int> &uncolored, int *coloring, const int *const *edgeMatrix, int vertex, int vertexCount) {
+    static void uncolorSameNeighbors(std::queue<int>& uncolored, int* coloring, const int* const* edgeMatrix, int vertex, int vertexCount) {
         for (int i = vertex + 1; i < vertexCount; ++i) {
             if (edgeMatrix[vertex][i] && coloring[i] == coloring[vertex]) {
                 coloring[i] = -1;
@@ -345,7 +345,7 @@ namespace msdfgen {
         }
     }
 
-    static bool tryAddEdge(int *coloring, int *const *edgeMatrix, int vertexCount, int vertexA, int vertexB, int *coloringBuffer) {
+    static bool tryAddEdge(int* coloring, int* const* edgeMatrix, int vertexCount, int vertexA, int vertexB, int* coloringBuffer) {
         static const int FIRST_POSSIBLE_COLOR[8] = {-1, 0, 1, 0, 2, 2, 1, 0};
         edgeMatrix[vertexA][vertexB] = 1;
         edgeMatrix[vertexB][vertexA] = 1;
@@ -359,7 +359,7 @@ namespace msdfgen {
         memcpy(coloringBuffer, coloring, sizeof(int) * vertexCount);
         std::queue<int> uncolored;
         {
-            int *coloring = coloringBuffer;
+            int* coloring = coloringBuffer;
             coloring[vertexB] = FIRST_POSSIBLE_COLOR[7 & ~(1 << coloring[vertexA])];
             uncolorSameNeighbors(uncolored, coloring, edgeMatrix, vertexB, vertexCount);
             int step = 0;
@@ -386,13 +386,13 @@ namespace msdfgen {
         return true;
     }
 
-    static int cmpDoublePtr(const void *a, const void *b) {
-        return sign(**reinterpret_cast<const double *const *>(a) - **reinterpret_cast<const double *const *>(b));
+    static int cmpDoublePtr(const void* a, const void* b) {
+        return sign(**reinterpret_cast<const double* const*>(a) - **reinterpret_cast<const double* const*>(b));
     }
 
-    void edgeColoringByDistance(Shape &shape, double angleThreshold, unsigned long long seed) {
+    void edgeColoringByDistance(Shape& shape, double angleThreshold, unsigned long long seed) {
 
-        std::vector<EdgeSegment *> edgeSegments;
+        std::vector<EdgeSegment*> edgeSegments;
         std::vector<int> splineStarts;
 
         double crossThreshold = sin(angleThreshold);
@@ -429,7 +429,7 @@ namespace msdfgen {
                         }
                     } else if (contour->edges.size() >= 1) {
                         // Less than three edge segments for three colors => edges must be split
-                        EdgeSegment *parts[7] = {};
+                        EdgeSegment* parts[7] = {};
                         contour->edges[0]->splitInThirds(parts[0 + 3 * corner], parts[1 + 3 * corner], parts[2 + 3 * corner]);
                         if (contour->edges.size() >= 2) {
                             contour->edges[1]->splitInThirds(parts[3 - 3 * corner], parts[4 - 3 * corner], parts[5 - 3 * corner]);
@@ -474,10 +474,10 @@ namespace msdfgen {
             return;
 
         std::vector<double> distanceMatrixStorage(splineCount * splineCount);
-        std::vector<double *> distanceMatrix(splineCount);
+        std::vector<double*> distanceMatrix(splineCount);
         for (int i = 0; i < splineCount; ++i)
             distanceMatrix[i] = &distanceMatrixStorage[i * splineCount];
-        const double *distanceMatrixBase = &distanceMatrixStorage[0];
+        const double* distanceMatrixBase = &distanceMatrixStorage[0];
 
         for (int i = 0; i < splineCount; ++i) {
             distanceMatrix[i][i] = -1;
@@ -489,17 +489,17 @@ namespace msdfgen {
             }
         }
 
-        std::vector<const double *> graphEdgeDistances;
+        std::vector<const double*> graphEdgeDistances;
         graphEdgeDistances.reserve(splineCount * (splineCount - 1) / 2);
         for (int i = 0; i < splineCount; ++i)
             for (int j = i + 1; j < splineCount; ++j)
                 graphEdgeDistances.push_back(&distanceMatrix[i][j]);
         int graphEdgeCount = (int)graphEdgeDistances.size();
         if (!graphEdgeDistances.empty())
-            qsort(&graphEdgeDistances[0], graphEdgeDistances.size(), sizeof(const double *), &cmpDoublePtr);
+            qsort(&graphEdgeDistances[0], graphEdgeDistances.size(), sizeof(const double*), &cmpDoublePtr);
 
         std::vector<int> edgeMatrixStorage(splineCount * splineCount);
-        std::vector<int *> edgeMatrix(splineCount);
+        std::vector<int*> edgeMatrix(splineCount);
         for (int i = 0; i < splineCount; ++i)
             edgeMatrix[i] = &edgeMatrixStorage[i * splineCount];
         int nextEdge = 0;

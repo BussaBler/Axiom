@@ -1,7 +1,7 @@
 #include "BinaryReader.h"
 
 namespace Axiom {
-    BinaryReader::BinaryReader(const std::filesystem::path &filePath, bool bigEndian) : isBigEndian(bigEndian) {
+    BinaryReader::BinaryReader(const std::filesystem::path& filePath, bool bigEndian) : isBigEndian(bigEndian) {
         fileStream.open(filePath, std::ios::binary | std::ios::in);
         AX_CORE_ASSERT(fileStream.is_open(), "Failed to open file: {0}", filePath.string());
     }
@@ -20,25 +20,25 @@ namespace Axiom {
 
     uint8_t BinaryReader::readUInt8() {
         uint8_t value;
-        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
         return value;
     }
 
     uint16_t BinaryReader::readUInt16() {
         uint16_t value;
-        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
         return isBigEndian ? swap16(value) : value;
     }
 
     uint32_t BinaryReader::readUInt32() {
         uint32_t value;
-        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
         return isBigEndian ? swap32(value) : value;
     }
 
     uint64_t BinaryReader::readUInt64() {
         uint64_t value;
-        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
         return isBigEndian ? swap64(value) : value;
     }
 

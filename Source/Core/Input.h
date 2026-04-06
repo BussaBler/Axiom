@@ -24,6 +24,6 @@ namespace Axiom {
         virtual float internalgetMouseY() = 0;
 
       private:
-        static Input *instance;
+        static Input* instance;
     };
 } // namespace Axiom

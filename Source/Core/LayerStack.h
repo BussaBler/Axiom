@@ -6,7 +6,7 @@ namespace Axiom {
       public:
         LayerStack() = default;
         ~LayerStack() {
-            for (auto &layer : layers) {
+            for (auto& layer : layers) {
                 layer->onDetach();
             }
         }
@@ -27,7 +27,7 @@ namespace Axiom {
         template <typename T>
             requires std::derived_from<T, Layer>
         void popLayer() {
-            auto it = std::find_if(layers.begin(), layers.end(), [](const std::unique_ptr<Layer> &layer) { return isLayerOfType<T>(layer.get()); });
+            auto it = std::find_if(layers.begin(), layers.end(), [](const std::unique_ptr<Layer>& layer) { return isLayerOfType<T>(layer.get()); });
             it->onDetach();
             layers.erase(it);
             layerInsertIndex--;
@@ -35,7 +35,7 @@ namespace Axiom {
         template <typename T>
             requires std::derived_from<T, Layer>
         void popOverlay() {
-            auto it = std::find_if(layers.begin(), layers.end(), [](const std::unique_ptr<Layer> &layer) { return isLayerOfType<T>(layer.get()); });
+            auto it = std::find_if(layers.begin(), layers.end(), [](const std::unique_ptr<Layer>& layer) { return isLayerOfType<T>(layer.get()); });
             it->onDetach();
             layers.erase(it);
         }
@@ -76,8 +76,8 @@ namespace Axiom {
         }
 
       private:
-        template <typename T> static bool isLayerOfType(Layer *layer) {
-            if (auto type = dynamic_cast<T *>(layer)) {
+        template <typename T> static bool isLayerOfType(Layer* layer) {
+            if (auto type = dynamic_cast<T*>(layer)) {
                 return true;
             }
             return false;

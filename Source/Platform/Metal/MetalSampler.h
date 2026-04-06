@@ -5,14 +5,14 @@
 namespace Axiom {
     class MetalSampler : public Sampler {
       public:
-        MetalSampler(const CreateInfo &createInfo, MTL::Device *device);
+        MetalSampler(const CreateInfo& createInfo, MTL::Device* device);
         ~MetalSampler() override;
 
-        MTL::SamplerState *getHandle() const {
+        MTL::SamplerState* getHandle() const {
             return samplerState;
         }
 
       private:
-        MTL::SamplerState *samplerState = nullptr;
+        MTL::SamplerState* samplerState = nullptr;
     };
 } // namespace Axiom

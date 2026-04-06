@@ -26,54 +26,54 @@ namespace Math {
         }
 
         // Returns a the i-th column vector
-        constexpr Vec<T, N> &operator[](size_t i) {
+        constexpr Vec<T, N>& operator[](size_t i) {
             return data[i];
         }
         // Returns a the i-th column vector
-        constexpr const Vec<T, N> &operator[](size_t i) const {
+        constexpr const Vec<T, N>& operator[](size_t i) const {
             return data[i];
         }
 
-        constexpr Mat<T, N> operator+(const Mat<T, N> &other) const {
+        constexpr Mat<T, N> operator+(const Mat<T, N>& other) const {
             Mat<T, N> result;
             for (size_t i = 0; i < N; ++i)
                 for (size_t j = 0; j < N; ++j)
                     result.data[i][j] = data[i][j] + other.data[i][j];
             return result;
         }
-        constexpr Mat<T, N> operator-(const Mat<T, N> &other) const {
+        constexpr Mat<T, N> operator-(const Mat<T, N>& other) const {
             Mat<T, N> result;
             for (size_t i = 0; i < N; ++i)
                 for (size_t j = 0; j < N; ++j)
                     result.data[i][j] = data[i][j] - other.data[i][j];
             return result;
         }
-        constexpr Mat<T, N> &operator+=(const Mat<T, N> &other) {
+        constexpr Mat<T, N>& operator+=(const Mat<T, N>& other) {
             for (size_t i = 0; i < N; ++i)
                 for (size_t j = 0; j < N; ++j)
                     data[i][j] += other.data[i][j];
             return *this;
         }
-        constexpr Mat<T, N> &operator-=(const Mat<T, N> &other) {
+        constexpr Mat<T, N>& operator-=(const Mat<T, N>& other) {
             for (size_t i = 0; i < N; ++i)
                 for (size_t j = 0; j < N; ++j)
                     data[i][j] -= other.data[i][j];
             return *this;
         }
-        constexpr Mat<T, N> operator*(const T &scalar) const {
+        constexpr Mat<T, N> operator*(const T& scalar) const {
             Mat<T, N> result;
             for (size_t i = 0; i < N; ++i)
                 for (size_t j = 0; j < N; ++j)
                     result.data[i][j] = data[i][j] * scalar;
             return result;
         }
-        constexpr Mat<T, N> &operator*=(const T &scalar) {
+        constexpr Mat<T, N>& operator*=(const T& scalar) {
             for (size_t i = 0; i < N; ++i)
                 for (size_t j = 0; j < N; ++j)
                     data[i][j] *= scalar;
             return *this;
         }
-        constexpr Mat<T, N> operator/(const T &scalar) const {
+        constexpr Mat<T, N> operator/(const T& scalar) const {
             AX_CORE_ASSERT(scalar != static_cast<T>(0), "Division by zero in Mat::operator/.");
             Mat<T, N> result;
             for (size_t i = 0; i < N; ++i)
@@ -81,17 +81,17 @@ namespace Math {
                     result.data[i][j] = data[i][j] / scalar;
             return result;
         }
-        constexpr Mat<T, N> &operator/=(const T &scalar) {
+        constexpr Mat<T, N>& operator/=(const T& scalar) {
             AX_CORE_ASSERT(scalar != static_cast<T>(0), "Division by zero in Mat::operator/=.");
             for (size_t i = 0; i < N; ++i)
                 for (size_t j = 0; j < N; ++j)
                     data[i][j] /= scalar;
             return *this;
         }
-        friend constexpr Mat<T, N> operator*(const T &scalar, const Mat<T, N> &m) {
+        friend constexpr Mat<T, N> operator*(const T& scalar, const Mat<T, N>& m) {
             return m * scalar;
         }
-        friend constexpr Vec<T, N> operator*(const Mat<T, N> &m, const Vec<T, N> &v) {
+        friend constexpr Vec<T, N> operator*(const Mat<T, N>& m, const Vec<T, N>& v) {
             Vec<T, N> result;
             for (size_t i = 0; i < N; ++i) {
                 result[i] = static_cast<T>(0);
@@ -101,7 +101,7 @@ namespace Math {
             }
             return result;
         }
-        friend constexpr Mat<T, N> operator*(const Mat<T, N> &a, const Mat<T, N> &b) {
+        friend constexpr Mat<T, N> operator*(const Mat<T, N>& a, const Mat<T, N>& b) {
             Mat<T, N> result;
             for (size_t i = 0; i < N; ++i) {
                 result[i] = a * b[i];
@@ -127,7 +127,7 @@ namespace Math {
             result[3] = Vec4(0.0f, 0.0f, (zFar * zNear) / (zNear - zFar), 0.0f);
             return result;
         }
-        static Mat<float, 4> lookAt(const Vec3 &position, const Vec3 &target, const Vec3 &up) {
+        static Mat<float, 4> lookAt(const Vec3& position, const Vec3& target, const Vec3& up) {
             Vec3 zAxis = normalize(position - target); // Forward
             Vec3 xAxis = normalize(cross(up, zAxis));  // Right
             Vec3 yAxis = cross(zAxis, xAxis);          // Up
@@ -206,21 +206,21 @@ namespace Math {
             }
             return result;
         }
-        static Mat<float, 4> translate(const Vec3 &translation) {
+        static Mat<float, 4> translate(const Vec3& translation) {
             Mat<float, 4> result = Mat<float, 4>::identity();
             result[3][0] = translation.x();
             result[3][1] = translation.y();
             result[3][2] = translation.z();
             return result;
         }
-        static Mat<float, 4> scale(const Vec3 &scale) {
+        static Mat<float, 4> scale(const Vec3& scale) {
             Mat<float, 4> result = Mat<float, 4>::identity();
             result[0][0] = scale.x();
             result[1][1] = scale.y();
             result[2][2] = scale.z();
             return result;
         }
-        static Mat<float, 4> rotate(const Vec3 &axis, float radians) {
+        static Mat<float, 4> rotate(const Vec3& axis, float radians) {
             if (dot(axis, axis) < std::numeric_limits<float>::epsilon()) {
                 return Mat<float, 4>::identity();
             }

@@ -5,7 +5,7 @@
 namespace Axiom {
     class VulkanResourceLayout : public ResourceLayout {
       public:
-        VulkanResourceLayout(Vk::Device logicalDevice, const std::vector<BindingCreateInfo> &bindings);
+        VulkanResourceLayout(Vk::Device logicalDevice, const std::vector<BindingCreateInfo>& bindings);
         ~VulkanResourceLayout() override;
 
         inline Vk::DescriptorSetLayout getHandle() const {

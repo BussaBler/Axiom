@@ -42,11 +42,11 @@ namespace msdfgen {
         /// The minimum ratio between the pre-correction distance error and the post-correction distance error. Has no effect for DO_NOT_CHECK_DISTANCE.
         double minImproveRatio;
         /// An optional buffer to avoid dynamic allocation. Must have at least as many bytes as the MSDF has pixels.
-        byte *buffer;
+        byte* buffer;
 
         inline explicit ErrorCorrectionConfig(Mode mode = EDGE_PRIORITY, DistanceCheckMode distanceCheckMode = CHECK_DISTANCE_AT_EDGE,
                                               double minDeviationRatio = defaultMinDeviationRatio, double minImproveRatio = defaultMinImproveRatio,
-                                              byte *buffer = NULL)
+                                              byte* buffer = NULL)
             : mode(mode), distanceCheckMode(distanceCheckMode), minDeviationRatio(minDeviationRatio), minImproveRatio(minImproveRatio), buffer(buffer) {
         }
     };
@@ -68,7 +68,7 @@ namespace msdfgen {
 
         inline MSDFGeneratorConfig() {
         }
-        inline explicit MSDFGeneratorConfig(bool overlapSupport, const ErrorCorrectionConfig &errorCorrection = ErrorCorrectionConfig())
+        inline explicit MSDFGeneratorConfig(bool overlapSupport, const ErrorCorrectionConfig& errorCorrection = ErrorCorrectionConfig())
             : GeneratorConfig(overlapSupport), errorCorrection(errorCorrection) {
         }
     };

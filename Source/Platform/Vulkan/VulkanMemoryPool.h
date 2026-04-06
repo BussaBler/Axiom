@@ -22,7 +22,7 @@ namespace Axiom {
         ~VulkanMemoryPool();
 
         Allocation allocate(size_t size, size_t alignment);
-        void free(const Allocation &allocation);
+        void free(const Allocation& allocation);
 
       private:
         Vk::Device device = nullptr;

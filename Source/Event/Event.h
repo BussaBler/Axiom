@@ -40,7 +40,7 @@ namespace Axiom {
     virtual EventType getEventType() const override {                                                                                                          \
         return getStaticType();                                                                                                                                \
     }                                                                                                                                                          \
-    virtual const char *getName() const override {                                                                                                             \
+    virtual const char* getName() const override {                                                                                                             \
         return #type;                                                                                                                                          \
     }
 
@@ -54,7 +54,7 @@ namespace Axiom {
 
       public:
         virtual EventType getEventType() const = 0;
-        virtual const char *getName() const = 0;
+        virtual const char* getName() const = 0;
         virtual EventCategory getCategoryFlags() const = 0;
         virtual std::string toString() const {
             return getName();
@@ -72,20 +72,20 @@ namespace Axiom {
     };
 
     class EventDispatcher {
-        template <typename T> using EventFunction = std::function<bool(T &)>;
+        template <typename T> using EventFunction = std::function<bool(T&)>;
 
       public:
-        EventDispatcher(Event &event) : event(event) {
+        EventDispatcher(Event& event) : event(event) {
         }
         template <typename T> bool dispatch(EventFunction<T> func) {
             if (event.getEventType() == T::getStaticType()) {
-                event.handled = func(*(T *)&event);
+                event.handled = func(*(T*)&event);
                 return true;
             }
             return false;
         }
 
       private:
-        Event &event;
+        Event& event;
     };
 } // namespace Axiom

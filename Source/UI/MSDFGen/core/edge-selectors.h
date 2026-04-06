@@ -27,9 +27,9 @@ namespace msdfgen {
             EdgeCache();
         };
 
-        void reset(const Point2 &p);
-        void addEdge(EdgeCache &cache, const EdgeSegment *prevEdge, const EdgeSegment *edge, const EdgeSegment *nextEdge);
-        void merge(const TrueDistanceSelector &other);
+        void reset(const Point2& p);
+        void addEdge(EdgeCache& cache, const EdgeSegment* prevEdge, const EdgeSegment* edge, const EdgeSegment* nextEdge);
+        void merge(const TrueDistanceSelector& other);
         DistanceType distance() const;
 
       private:
@@ -49,22 +49,22 @@ namespace msdfgen {
             EdgeCache();
         };
 
-        static bool getPerpendicularDistance(double &distance, const Vector2 &ep, const Vector2 &edgeDir);
+        static bool getPerpendicularDistance(double& distance, const Vector2& ep, const Vector2& edgeDir);
 
         PerpendicularDistanceSelectorBase();
         void reset(double delta);
-        bool isEdgeRelevant(const EdgeCache &cache, const EdgeSegment *edge, const Point2 &p) const;
-        void addEdgeTrueDistance(const EdgeSegment *edge, const SignedDistance &distance, double param);
+        bool isEdgeRelevant(const EdgeCache& cache, const EdgeSegment* edge, const Point2& p) const;
+        void addEdgeTrueDistance(const EdgeSegment* edge, const SignedDistance& distance, double param);
         void addEdgePerpendicularDistance(double distance);
-        void merge(const PerpendicularDistanceSelectorBase &other);
-        double computeDistance(const Point2 &p) const;
+        void merge(const PerpendicularDistanceSelectorBase& other);
+        double computeDistance(const Point2& p) const;
         SignedDistance trueDistance() const;
 
       private:
         SignedDistance minTrueDistance;
         double minNegativePerpendicularDistance;
         double minPositivePerpendicularDistance;
-        const EdgeSegment *nearEdge;
+        const EdgeSegment* nearEdge;
         double nearEdgeParam;
     };
 
@@ -74,8 +74,8 @@ namespace msdfgen {
       public:
         typedef double DistanceType;
 
-        void reset(const Point2 &p);
-        void addEdge(EdgeCache &cache, const EdgeSegment *prevEdge, const EdgeSegment *edge, const EdgeSegment *nextEdge);
+        void reset(const Point2& p);
+        void addEdge(EdgeCache& cache, const EdgeSegment* prevEdge, const EdgeSegment* edge, const EdgeSegment* nextEdge);
         DistanceType distance() const;
 
       private:
@@ -89,9 +89,9 @@ namespace msdfgen {
         typedef MultiDistance DistanceType;
         typedef PerpendicularDistanceSelectorBase::EdgeCache EdgeCache;
 
-        void reset(const Point2 &p);
-        void addEdge(EdgeCache &cache, const EdgeSegment *prevEdge, const EdgeSegment *edge, const EdgeSegment *nextEdge);
-        void merge(const MultiDistanceSelector &other);
+        void reset(const Point2& p);
+        void addEdge(EdgeCache& cache, const EdgeSegment* prevEdge, const EdgeSegment* edge, const EdgeSegment* nextEdge);
+        void merge(const MultiDistanceSelector& other);
         DistanceType distance() const;
         SignedDistance trueDistance() const;
 

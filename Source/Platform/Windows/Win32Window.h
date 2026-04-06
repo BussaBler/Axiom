@@ -13,7 +13,7 @@
 namespace Axiom {
     class Win32Window : public Window {
       public:
-        Win32Window(const WindowProps &props);
+        Win32Window(const WindowProps& props);
         ~Win32Window();
 
         void onUpdate() override;
@@ -24,7 +24,7 @@ namespace Axiom {
             return data.height;
         }
 
-        void setEventCallback(const EventCallback &callback) override {
+        void setEventCallback(const EventCallback& callback) override {
             data.eventCallback = callback;
         }
         void setVSync(bool enabled) override;
@@ -32,10 +32,10 @@ namespace Axiom {
             return data.vSync;
         }
 
-        void *getNativeWindow() override {
+        void* getNativeWindow() override {
             return window;
         }
-        void *getNativeDisplay() const override {
+        void* getNativeDisplay() const override {
             return hInstance;
         }
         uint32_t getWindowDPI() const override {
@@ -43,7 +43,7 @@ namespace Axiom {
         }
 
       private:
-        void init(const WindowProps &props);
+        void init(const WindowProps& props);
         void shutdown();
         void processMessages();
 

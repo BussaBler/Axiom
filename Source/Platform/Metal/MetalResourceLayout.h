@@ -4,10 +4,10 @@
 namespace Axiom {
     class MetalResourceLayout : public ResourceLayout {
       public:
-        MetalResourceLayout(const std::vector<BindingCreateInfo> &bindingsCreateInfo);
+        MetalResourceLayout(const std::vector<BindingCreateInfo>& bindingsCreateInfo);
         ~MetalResourceLayout() override = default;
 
-        std::vector<BindingCreateInfo> &getBindingsCreateInfo() {
+        std::vector<BindingCreateInfo>& getBindingsCreateInfo() {
             return bindingsCreateInfo;
         }
 

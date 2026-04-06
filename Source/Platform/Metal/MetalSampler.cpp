@@ -1,8 +1,8 @@
 #include "MetalSampler.h"
 
 namespace Axiom {
-    MetalSampler::MetalSampler(const CreateInfo &createInfo, MTL::Device *device) {
-        MTL::SamplerDescriptor *samplerDescriptor = MTL::SamplerDescriptor::alloc()->init();
+    MetalSampler::MetalSampler(const CreateInfo& createInfo, MTL::Device* device) {
+        MTL::SamplerDescriptor* samplerDescriptor = MTL::SamplerDescriptor::alloc()->init();
         samplerDescriptor->setSAddressMode(axToMetalAdressMode(createInfo.adressMode));
         samplerDescriptor->setTAddressMode(axToMetalAdressMode(createInfo.adressMode));
         samplerDescriptor->setRAddressMode(axToMetalAdressMode(createInfo.adressMode));

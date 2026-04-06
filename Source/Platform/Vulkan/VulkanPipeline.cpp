@@ -4,7 +4,7 @@
 #include <shaderc/shaderc.hpp>
 
 namespace Axiom {
-    VulkanPipeline::VulkanPipeline(const CreateInfo &createInfo, Vk::Device logicDevice, Vk::DescriptorPool descriptorPool)
+    VulkanPipeline::VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice, Vk::DescriptorPool descriptorPool)
         : device(logicDevice), descriptorPool(descriptorPool) {
         Vk::ShaderModule vertShaderModule = createShaderModule(createInfo.vertexShaderPath);
         Vk::ShaderModule fragShaderModule = createShaderModule(createInfo.fragmentShaderPath);
@@ -15,14 +15,14 @@ namespace Axiom {
 
         std::vector<Vk::VertexInputBindingDescription> bindingDescriptions(createInfo.vertexBindings.size());
         for (size_t i = 0; i < createInfo.vertexBindings.size(); i++) {
-            const auto &binding = createInfo.vertexBindings[i];
+            const auto& binding = createInfo.vertexBindings[i];
             bindingDescriptions[i] = Vk::VertexInputBindingDescription(binding.binding, binding.stride,
                                                                        (binding.inputRate == VertexInputRate::Vertex) ? Vk::VertexInputRate::eVertex
                                                                                                                       : Vk::VertexInputRate::eInstance);
         }
         std::vector<Vk::VertexInputAttributeDescription> attributeDescriptions(createInfo.vertexAttributes.size());
         for (size_t i = 0; i < createInfo.vertexAttributes.size(); i++) {
-            const auto &attribute = createInfo.vertexAttributes[i];
+            const auto& attribute = createInfo.vertexAttributes[i];
             attributeDescriptions[i] =
                 Vk::VertexInputAttributeDescription(attribute.location, attribute.binding, axToVkFormat(attribute.format), attribute.offset);
         }
@@ -63,7 +63,7 @@ namespace Axiom {
 
         std::vector<Vk::DescriptorSetLayout> vkDescriptorSetLayouts;
         for (auto layout : createInfo.resourceLayouts) {
-            auto vulkanLayout = static_cast<VulkanResourceLayout *>(layout);
+            auto vulkanLayout = static_cast<VulkanResourceLayout*>(layout);
             vkDescriptorSetLayouts.push_back(vulkanLayout->getHandle());
         }
         std::array<Vk::PushConstantRange, 1> pushConstantRanges = {
@@ -104,8 +104,8 @@ namespace Axiom {
         }
     }
 
-    std::unique_ptr<ResourceSet> VulkanPipeline::createResourceSet(ResourceLayout *resourceLayout) {
-        return std::make_unique<VulkanResourceSet>(device, descriptorPool, static_cast<VulkanResourceLayout *>(resourceLayout)->getHandle());
+    std::unique_ptr<ResourceSet> VulkanPipeline::createResourceSet(ResourceLayout* resourceLayout) {
+        return std::make_unique<VulkanResourceSet>(device, descriptorPool, static_cast<VulkanResourceLayout*>(resourceLayout)->getHandle());
     }
 
     Vk::ShaderModule VulkanPipeline::createShaderModule(std::filesystem::path shaderPath) {
@@ -115,14 +115,14 @@ namespace Axiom {
         shaderc::CompileOptions options = {};
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
         shaderc::SpvCompilationResult compilationResult =
-            compiler.CompileGlslToSpv(reinterpret_cast<const char *>(shaderSource.data()), shaderSource.size(),
+            compiler.CompileGlslToSpv(reinterpret_cast<const char*>(shaderSource.data()), shaderSource.size(),
                                       shaderc_shader_kind::shaderc_glsl_infer_from_source, shaderPath.string().c_str(), "main", options);
 
         AX_CORE_ASSERT(compilationResult.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader: {0}",
                        compilationResult.GetErrorMessage());
 
         size_t codeSize = std::distance(compilationResult.cbegin(), compilationResult.cend()) * sizeof(uint32_t);
-        const uint32_t *shaderCode = compilationResult.cbegin();
+        const uint32_t* shaderCode = compilationResult.cbegin();
 
         Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, codeSize, shaderCode);
         Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = device.createShaderModule(shaderModuleCreateInfo);

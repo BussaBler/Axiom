@@ -10,7 +10,7 @@ namespace Axiom {
       public:
         VulkanResourceSet(Vk::Device logicalDevice, Vk::DescriptorPool descriptorPool, Vk::DescriptorSetLayout descriptorSetLayout);
         ~VulkanResourceSet() = default;
-        void update(const std::vector<Binding> &bindings) override;
+        void update(const std::vector<Binding>& bindings) override;
 
         inline Vk::DescriptorSet getHandle() const {
             return descriptorSet;

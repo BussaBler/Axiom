@@ -12,11 +12,11 @@
 namespace Axiom {
     class XLibWindow : public Window {
       public:
-        XLibWindow(const WindowProps &props);
+        XLibWindow(const WindowProps& props);
         ~XLibWindow();
         void onUpdate() override;
 
-        void setEventCallback(const EventCallback &callback) override {
+        void setEventCallback(const EventCallback& callback) override {
             data.eventCallback = callback;
         }
         void setVSync(bool enabled) override {
@@ -25,10 +25,10 @@ namespace Axiom {
             return false;
         }
 
-        void *getNativeWindow() override {
+        void* getNativeWindow() override {
             return &window;
         }
-        void *getNativeDisplay() const override {
+        void* getNativeDisplay() const override {
             return display;
         }
         uint32_t getWidth() const override {
@@ -39,10 +39,10 @@ namespace Axiom {
         }
 
       private:
-        void init(const WindowProps &props);
+        void init(const WindowProps& props);
 
       private:
-        Display *display;
+        Display* display;
         int screen;
         ::Window rootWindow, window;
         XEvent xEvent;

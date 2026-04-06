@@ -29,7 +29,7 @@
 
 namespace msdfgen {
 
-    static void simplifyDegenerateCurve(Point2 *controlPoints, int &order) {
+    static void simplifyDegenerateCurve(Point2* controlPoints, int& order) {
         if (order == 3 && (controlPoints[1] == controlPoints[0] || controlPoints[1] == controlPoints[3]) &&
             (controlPoints[2] == controlPoints[0] || controlPoints[2] == controlPoints[3])) {
             controlPoints[1] = controlPoints[3];
@@ -43,7 +43,7 @@ namespace msdfgen {
             order = 0;
     }
 
-    int convergentCurveOrdering(const Point2 *corner, int controlPointsBefore, int controlPointsAfter) {
+    int convergentCurveOrdering(const Point2* corner, int controlPointsBefore, int controlPointsAfter) {
         if (!(controlPointsBefore > 0 && controlPointsAfter > 0))
             return 0;
         Vector2 a1, a2, a3, b1, b2, b3;
@@ -115,10 +115,10 @@ namespace msdfgen {
         }
     }
 
-    int convergentCurveOrdering(const EdgeSegment *a, const EdgeSegment *b) {
+    int convergentCurveOrdering(const EdgeSegment* a, const EdgeSegment* b) {
         Point2 controlPoints[12];
-        Point2 *corner = controlPoints + 4;
-        Point2 *aCpTmp = controlPoints + 8;
+        Point2* corner = controlPoints + 4;
+        Point2* aCpTmp = controlPoints + 8;
         int aOrder = int(a->type());
         int bOrder = int(b->type());
         if (!(aOrder >= 1 && aOrder <= 3 && bOrder >= 1 && bOrder <= 3)) {

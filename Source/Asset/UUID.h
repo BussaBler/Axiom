@@ -25,7 +25,7 @@ namespace Axiom {
 
 namespace std {
     template <> struct hash<Axiom::UUID> {
-        size_t operator()(const Axiom::UUID &uuid) const {
+        size_t operator()(const Axiom::UUID& uuid) const {
             return hash<uint64_t>()(static_cast<uint64_t>(uuid));
         }
     };

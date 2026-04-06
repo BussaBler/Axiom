@@ -12,17 +12,17 @@ namespace msdfgen {
     Shape::Shape() : inverseYAxis(false) {
     }
 
-    void Shape::addContour(const Contour &contour) {
+    void Shape::addContour(const Contour& contour) {
         contours.push_back(contour);
     }
 
 #ifdef MSDFGEN_USE_CPP11
-    void Shape::addContour(Contour &&contour) {
-        contours.push_back((Contour &&)contour);
+    void Shape::addContour(Contour&& contour) {
+        contours.push_back((Contour&&)contour);
     }
 #endif
 
-    Contour &Shape::addContour() {
+    Contour& Shape::addContour() {
         contours.resize(contours.size() + 1);
         return contours.back();
     }
@@ -43,13 +43,13 @@ namespace msdfgen {
         return true;
     }
 
-    static void deconvergeEdge(EdgeHolder &edgeHolder, int param, Vector2 vector) {
+    static void deconvergeEdge(EdgeHolder& edgeHolder, int param, Vector2 vector) {
         switch (edgeHolder->type()) {
         case (int)QuadraticSegment::EDGE_TYPE:
-            edgeHolder = static_cast<const QuadraticSegment *>(&*edgeHolder)->convertToCubic();
+            edgeHolder = static_cast<const QuadraticSegment*>(&*edgeHolder)->convertToCubic();
             // fallthrough
         case (int)CubicSegment::EDGE_TYPE: {
-            Point2 *p = static_cast<CubicSegment *>(&*edgeHolder)->p;
+            Point2* p = static_cast<CubicSegment*>(&*edgeHolder)->p;
             switch (param) {
             case 0:
                 p[1] += (p[1] - p[0]).length() * vector;
@@ -65,7 +65,7 @@ namespace msdfgen {
     void Shape::normalize() {
         for (std::vector<Contour>::iterator contour = contours.begin(); contour != contours.end(); ++contour) {
             if (contour->edges.size() == 1) {
-                EdgeSegment *parts[3] = {};
+                EdgeSegment* parts[3] = {};
                 contour->edges[0]->splitInThirds(parts[0], parts[1], parts[2]);
                 contour->edges.clear();
                 contour->edges.push_back(EdgeHolder(parts[0]));
@@ -73,7 +73,7 @@ namespace msdfgen {
                 contour->edges.push_back(EdgeHolder(parts[2]));
             } else if (!contour->edges.empty()) {
                 // Push apart convergent edge segments
-                EdgeHolder *prevEdge = &contour->edges.back();
+                EdgeHolder* prevEdge = &contour->edges.back();
                 for (std::vector<EdgeHolder>::iterator edge = contour->edges.begin(); edge != contour->edges.end(); ++edge) {
                     Vector2 prevDir = (*prevEdge)->direction(1).normalize();
                     Vector2 curDir = (*edge)->direction(0).normalize();
@@ -92,12 +92,12 @@ namespace msdfgen {
         }
     }
 
-    void Shape::bound(double &xMin, double &yMin, double &xMax, double &yMax) const {
+    void Shape::bound(double& xMin, double& yMin, double& xMax, double& yMax) const {
         for (std::vector<Contour>::const_iterator contour = contours.begin(); contour != contours.end(); ++contour)
             contour->bound(xMin, yMin, xMax, yMax);
     }
 
-    void Shape::boundMiters(double &xMin, double &yMin, double &xMax, double &yMax, double border, double miterLimit, int polarity) const {
+    void Shape::boundMiters(double& xMin, double& yMin, double& xMax, double& yMax, double border, double miterLimit, int polarity) const {
         for (std::vector<Contour>::const_iterator contour = contours.begin(); contour != contours.end(); ++contour)
             contour->boundMiters(xMin, yMin, xMax, yMax, border, miterLimit, polarity);
     }
@@ -115,7 +115,7 @@ namespace msdfgen {
         return bounds;
     }
 
-    void Shape::scanline(Scanline &line, double y) const {
+    void Shape::scanline(Scanline& line, double y) const {
         std::vector<Scanline::Intersection> intersections;
         double x[3];
         int dy[3];
@@ -129,7 +129,7 @@ namespace msdfgen {
             }
         }
 #ifdef MSDFGEN_USE_CPP11
-        line.setIntersections((std::vector<Scanline::Intersection> &&)intersections);
+        line.setIntersections((std::vector<Scanline::Intersection>&&)intersections);
 #else
         line.setIntersections(intersections);
 #endif
@@ -148,8 +148,8 @@ namespace msdfgen {
             int direction;
             int contourIndex;
 
-            static int compare(const void *a, const void *b) {
-                return sign(reinterpret_cast<const Intersection *>(a)->x - reinterpret_cast<const Intersection *>(b)->x);
+            static int compare(const void* a, const void* b) {
+                return sign(reinterpret_cast<const Intersection*>(a)->x - reinterpret_cast<const Intersection*>(b)->x);
             }
         };
 

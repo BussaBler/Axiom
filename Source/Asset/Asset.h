@@ -7,7 +7,7 @@ namespace Axiom {
 
     class Asset {
       public:
-        Asset(UUID handle, AssetType type, const std::string &name) : handle(handle), type(type), name(name) {
+        Asset(UUID handle, AssetType type, const std::string& name) : handle(handle), type(type), name(name) {
         }
         ~Asset() = default;
 

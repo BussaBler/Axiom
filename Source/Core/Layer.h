@@ -5,7 +5,7 @@
 namespace Axiom {
     class Layer {
       public:
-        Layer(const char *name = "Layer") : debugName(name) {
+        Layer(const char* name = "Layer") : debugName(name) {
         }
         virtual ~Layer() = default;
         virtual void onAttach() {
@@ -14,26 +14,26 @@ namespace Axiom {
         }
         virtual void onUpdate() {
         }
-        virtual void onEvent(Event &event) {
+        virtual void onEvent(Event& event) {
         }
         virtual void onUIRender() {
         }
-        virtual void onRender(CommandBuffer *commandBuffer) {
+        virtual void onRender(CommandBuffer* commandBuffer) {
         }
         virtual void onSuspend() {
         }
         virtual void onResume() {
         }
 
-        const std::string &getName() const {
+        const std::string& getName() const {
             return debugName;
         }
 
       protected:
-        template <typename T, typename... Args> void transitionTo(Args &&...args) {
+        template <typename T, typename... Args> void transitionTo(Args&&... args) {
             requestLayerAction(std::make_unique<T>(std::forward<Args>(args)...), ActionType::Transition);
         }
-        template <typename T, typename... Args> void suspendTo(Args &&...args) {
+        template <typename T, typename... Args> void suspendTo(Args&&... args) {
             requestLayerAction(std::make_unique<T>(std::forward<Args>(args)...), ActionType::Suspend);
         }
         void pop() {

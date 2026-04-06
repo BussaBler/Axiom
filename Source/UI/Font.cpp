@@ -2,15 +2,15 @@
 #include "MSDFGen/msdfgen.h"
 
 namespace Axiom {
-    static msdfgen::Shape createMSDFGenShape(const std::vector<Font::Contour> &contours) {
+    static msdfgen::Shape createMSDFGenShape(const std::vector<Font::Contour>& contours) {
         msdfgen::Shape shape;
 
-        for (const auto &contour : contours) {
-            const auto &pts = contour.points;
+        for (const auto& contour : contours) {
+            const auto& pts = contour.points;
             if (pts.size() < 3)
                 continue;
 
-            msdfgen::Contour &msdfContour = shape.addContour();
+            msdfgen::Contour& msdfContour = shape.addContour();
 
             auto it = pts.begin();
             while (it != pts.end()) {
@@ -49,7 +49,7 @@ namespace Axiom {
         return shape;
     }
 
-    Font::Font(const std::filesystem::path &filePath) {
+    Font::Font(const std::filesystem::path& filePath) {
         BinaryReader reader(filePath, true);
 
         reader.skip(4);
@@ -198,7 +198,7 @@ namespace Axiom {
         }
     }
 
-    Font::Glyph Font::readSimpleGlyph(BinaryReader &reader) const {
+    Font::Glyph Font::readSimpleGlyph(BinaryReader& reader) const {
         int16_t numberOfContours = reader.readInt16();
         if (numberOfContours <= 0) {
             AX_CORE_LOG_WARN("Glyph with {} contours is not supported", numberOfContours);
@@ -237,7 +237,7 @@ namespace Axiom {
         return Glyph{boundsMax, boundsMin, std::move(points), std::move(contourEndPoints), hasOverlaps};
     }
 
-    std::vector<Font::Point> Font::readPoints(BinaryReader &reader, const std::vector<uint8_t> &pointsFlags) const {
+    std::vector<Font::Point> Font::readPoints(BinaryReader& reader, const std::vector<uint8_t>& pointsFlags) const {
         std::vector<Point> points(pointsFlags.size());
 
         // 1. Read all X coordinates using a running sum
@@ -272,7 +272,7 @@ namespace Axiom {
         return points;
     }
 
-    std::unordered_map<uint32_t, uint32_t> Font::createUnicodeToGlyphIndexMap(BinaryReader &reader) const {
+    std::unordered_map<uint32_t, uint32_t> Font::createUnicodeToGlyphIndexMap(BinaryReader& reader) const {
         size_t cmapPos = reader.tell();
         std::unordered_map<uint32_t, uint32_t> charCodeToGlyphIndex;
         uint16_t cmapVersion = reader.readUInt16();
@@ -385,7 +385,7 @@ namespace Axiom {
         return Math::linearInterpolation(interA, interB, t);
     }
 
-    std::vector<Font::Contour> Font::createRawGlyphContours(const Glyph &glyph, float scale) const {
+    std::vector<Font::Contour> Font::createRawGlyphContours(const Glyph& glyph, float scale) const {
         std::vector<Contour> contours;
         uint32_t contourStart = 0;
 
@@ -400,8 +400,8 @@ namespace Axiom {
 
             Contour newContour;
             for (size_t i = 0; i < originalContour.size(); i++) {
-                const Point &currPoint = originalContour[(pointOffset + i + 0) % originalContour.size()];
-                const Point &nextPoint = originalContour[(pointOffset + i + 1) % originalContour.size()];
+                const Point& currPoint = originalContour[(pointOffset + i + 0) % originalContour.size()];
+                const Point& nextPoint = originalContour[(pointOffset + i + 1) % originalContour.size()];
                 newContour.points.push_back(Math::Vec2(currPoint.position) * scale);
 
                 if (currPoint.onCurve == nextPoint.onCurve) {

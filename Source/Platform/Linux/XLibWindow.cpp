@@ -1,7 +1,7 @@
 #include "XLibWindow.h"
 
 namespace Axiom {
-    XLibWindow::XLibWindow(const WindowProps &props) {
+    XLibWindow::XLibWindow(const WindowProps& props) {
         init(props);
     }
 
@@ -36,7 +36,7 @@ namespace Axiom {
         }
     }
 
-    void XLibWindow::init(const WindowProps &props) {
+    void XLibWindow::init(const WindowProps& props) {
         AX_CORE_LOG_INFO("Initializing X11 window {0} ({1}, {2})", props.title, props.width, props.height);
         data.title = props.title;
         data.width = props.width;
@@ -59,7 +59,7 @@ namespace Axiom {
         XMapWindow(display, window);
     }
 
-    std::unique_ptr<Window> Window::create(const WindowProps &props) {
+    std::unique_ptr<Window> Window::create(const WindowProps& props) {
         return std::make_unique<XLibWindow>(props);
     }
 } // namespace Axiom

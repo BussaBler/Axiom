@@ -5,10 +5,10 @@
 namespace Axiom {
     class MetalSemaphore : public Semaphore {
       public:
-        MetalSemaphore(MTL::Device *device);
+        MetalSemaphore(MTL::Device* device);
         ~MetalSemaphore() override;
 
-        MTL::Event *getHandle() const {
+        MTL::Event* getHandle() const {
             return event;
         }
 
@@ -20,7 +20,7 @@ namespace Axiom {
         }
 
       private:
-        MTL::Event *event = nullptr;
+        MTL::Event* event = nullptr;
         uint64_t value = 0;
     };
 } // namespace Axiom

@@ -5,7 +5,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 namespace Axiom {
     static VKAPI_ATTR Vk::Bool32 VKAPI_CALL debugCallback(Vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                           Vk::DebugUtilsMessageTypeFlagsEXT messageType,
-                                                          const Vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
+                                                          const Vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
         switch (messageSeverity) {
         case Vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
             AX_CORE_LOG_TRACE("Vulkan validation layer: {0}", pCallbackData->pMessage);
@@ -25,7 +25,7 @@ namespace Axiom {
         return Vk::False;
     }
 
-    VulkanDevice::VulkanDevice(const Device::CreateInfo &createInfo) {
+    VulkanDevice::VulkanDevice(const Device::CreateInfo& createInfo) {
         AX_CORE_LOG_INFO("Initializing Vulkan Device...");
         AX_CORE_ASSERT(linkVulkanLib(), "Failed to link Vulkan library!");
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkInstanceProcAddr);
@@ -35,8 +35,8 @@ namespace Axiom {
             createInfo.engineName.c_str(), Vk::makeVersion(createInfo.engineVersionMajor, createInfo.engineVersionMinor, createInfo.engineVersionPatch),
             Vk::ApiVersion14);
 
-        std::vector<const char *> extensions = getRequiredExtensions();
-        std::vector<const char *> layers = getValidationLayers();
+        std::vector<const char*> extensions = getRequiredExtensions();
+        std::vector<const char*> layers = getValidationLayers();
 
         Vk::InstanceCreateInfo instanceCreateInfo({}, &appInfo, layers, extensions);
         Vk::ResultValue<Vk::Instance> instanceResult = Vk::createInstance(instanceCreateInfo, nullptr, VULKAN_HPP_DEFAULT_DISPATCHER);
@@ -87,7 +87,7 @@ namespace Axiom {
         return std::make_unique<VulkanSwapChain>(createInfo);
     }
 
-    std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo &pipelineCreateInfo) {
+    std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         return std::make_unique<VulkanPipeline>(pipelineCreateInfo, logicalDevice, descriptorPool);
     }
 
@@ -103,33 +103,33 @@ namespace Axiom {
         return std::make_unique<VulkanFence>(logicalDevice, isSignaled);
     }
 
-    std::unique_ptr<Buffer> VulkanDevice::createBuffer(const Buffer::CreateInfo &bufferCreateInfo) {
+    std::unique_ptr<Buffer> VulkanDevice::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
         return std::make_unique<VulkanBuffer>(logicalDevice, bufferCreateInfo);
     }
 
-    std::shared_ptr<Texture> VulkanDevice::createTexture(const Texture::CreateInfo &textureCreateInfo) {
+    std::shared_ptr<Texture> VulkanDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
         return std::make_shared<VulkanTexture>(logicalDevice, textureCreateInfo);
     }
 
-    std::unique_ptr<Sampler> VulkanDevice::createSampler(const Sampler::CreateInfo &samplerCreateInfo) {
+    std::unique_ptr<Sampler> VulkanDevice::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {
         return std::make_unique<VulkanSampler>(logicalDevice, samplerCreateInfo);
     }
 
-    std::unique_ptr<ResourceLayout> VulkanDevice::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo> &bindings) {
+    std::unique_ptr<ResourceLayout> VulkanDevice::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
         return std::make_unique<VulkanResourceLayout>(logicalDevice, bindings);
     }
 
     std::unique_ptr<CommandBuffer> VulkanDevice::beginSingleTimeCommands() {
-        VulkanCommandBuffer *commandBuffer = new VulkanCommandBuffer(logicalDevice, commandPool);
+        VulkanCommandBuffer* commandBuffer = new VulkanCommandBuffer(logicalDevice, commandPool);
         commandBuffer->begin();
 
         return std::make_unique<VulkanCommandBuffer>(*commandBuffer);
     }
 
-    void VulkanDevice::endSingleTimeCommands(CommandBuffer *commandBuffer) {
+    void VulkanDevice::endSingleTimeCommands(CommandBuffer* commandBuffer) {
         commandBuffer->end();
-        std::vector<CommandBuffer *> commandBuffers = {commandBuffer};
-        std::array<Vk::CommandBuffer, 1> vkCommandBuffers = {static_cast<VulkanCommandBuffer *>(commandBuffer)->getHandle()};
+        std::vector<CommandBuffer*> commandBuffers = {commandBuffer};
+        std::array<Vk::CommandBuffer, 1> vkCommandBuffers = {static_cast<VulkanCommandBuffer*>(commandBuffer)->getHandle()};
 
         Vk::SubmitInfo submitInfo({}, {}, vkCommandBuffers, {});
         AX_CORE_ASSERT(graphicsQueue.submit(submitInfo, nullptr) == Vk::Result::eSuccess,
@@ -139,24 +139,24 @@ namespace Axiom {
                        Vk::to_string(graphicsQueue.waitIdle()));
     }
 
-    void VulkanDevice::submitCommandBuffers(const std::vector<CommandBuffer *> commandBuffers, const std::vector<Semaphore *> waitSemaphores,
-                                            const std::vector<Semaphore *> signalSemaphores, Fence *signalFence) {
+    void VulkanDevice::submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores,
+                                            const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) {
         std::vector<Vk::CommandBuffer> vkCommandBuffers(commandBuffers.size());
         for (size_t i = 0; i < commandBuffers.size(); i++) {
-            vkCommandBuffers[i] = static_cast<VulkanCommandBuffer *>(commandBuffers[i])->getHandle();
+            vkCommandBuffers[i] = static_cast<VulkanCommandBuffer*>(commandBuffers[i])->getHandle();
         }
 
         std::vector<Vk::Semaphore> vkWaitSemaphores(waitSemaphores.size());
         for (size_t i = 0; i < waitSemaphores.size(); i++) {
-            vkWaitSemaphores[i] = static_cast<VulkanSemaphore *>(waitSemaphores[i])->getHandle();
+            vkWaitSemaphores[i] = static_cast<VulkanSemaphore*>(waitSemaphores[i])->getHandle();
         }
 
         std::vector<Vk::Semaphore> vkSignalSemaphores(signalSemaphores.size());
         for (size_t i = 0; i < signalSemaphores.size(); i++) {
-            vkSignalSemaphores[i] = static_cast<VulkanSemaphore *>(signalSemaphores[i])->getHandle();
+            vkSignalSemaphores[i] = static_cast<VulkanSemaphore*>(signalSemaphores[i])->getHandle();
         }
 
-        Vk::Fence vkSignalFence = signalFence ? static_cast<VulkanFence *>(signalFence)->getHandle() : Vk::Fence();
+        Vk::Fence vkSignalFence = signalFence ? static_cast<VulkanFence*>(signalFence)->getHandle() : Vk::Fence();
 
         std::array<Vk::PipelineStageFlags, 1> waitStages = {Vk::PipelineStageFlagBits::eColorAttachmentOutput};
 
@@ -179,7 +179,7 @@ namespace Axiom {
         }
         vkInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(GetProcAddress(vulkanLib, "vkGetInstanceProcAddr"));
 #elif defined(AX_PLATFORM_LINUX)
-        void *vulkanLib = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
+        void* vulkanLib = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
         if (vulkanLib == nullptr) {
             AX_CORE_LOG_ERROR("Failed to load Vulkan library: {}", dlerror());
             return false;
@@ -189,8 +189,8 @@ namespace Axiom {
         return vkInstanceProcAddr != nullptr;
     }
 
-    std::vector<const char *> VulkanDevice::getRequiredExtensions() {
-        std::vector<const char *> extensions{};
+    std::vector<const char*> VulkanDevice::getRequiredExtensions() {
+        std::vector<const char*> extensions{};
         extensions.push_back(Vk::KHRSurfaceExtensionName);
 #if defined(AX_DEBUG)
         extensions.push_back(Vk::EXTDebugUtilsExtensionName);
@@ -200,14 +200,14 @@ namespace Axiom {
 #elif defined(AX_PLATFORM_LINUX)
         extensions.push_back(Vk::KHRXlibSurfaceExtensionName);
 #endif
-        for (const char *ext : extensions) {
+        for (const char* ext : extensions) {
             AX_CORE_LOG_DEBUG("Required Vulkan Device Extension: {}", ext);
         }
         return extensions;
     }
 
-    std::vector<const char *> VulkanDevice::getValidationLayers() {
-        std::vector<const char *> layers{};
+    std::vector<const char*> VulkanDevice::getValidationLayers() {
+        std::vector<const char*> layers{};
 #if defined(AX_DEBUG)
         layers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
@@ -219,7 +219,7 @@ namespace Axiom {
 
         for (size_t i = 0; i < layers.size(); i++) {
             bool layerFound = false;
-            for (const auto &layer : availableLayers) {
+            for (const auto& layer : availableLayers) {
                 if (layers[i] == std::string_view(layer.layerName.data())) {
                     layerFound = true;
                     break;
@@ -246,9 +246,9 @@ namespace Axiom {
         debugMessenger = debugMessengerResult.value;
     }
 
-    void VulkanDevice::createSurface(Window *windowObjPtr) {
+    void VulkanDevice::createSurface(Window* windowObjPtr) {
 #if defined(AX_PLATFORM_WINDOWS)
-        Win32Window *win32Window = reinterpret_cast<Win32Window *>(windowObjPtr);
+        Win32Window* win32Window = reinterpret_cast<Win32Window*>(windowObjPtr);
 
         Vk::Win32SurfaceCreateInfoKHR surfaceCreateInfo({}, reinterpret_cast<HINSTANCE>(win32Window->getNativeDisplay()),
                                                         reinterpret_cast<HWND>(win32Window->getNativeWindow()));
@@ -257,10 +257,10 @@ namespace Axiom {
         AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan Win32 surface: {}", Vk::to_string(surfaceResult.result));
         surface = surfaceResult.value;
 #elif defined(AX_PLATFORM_LINUX)
-        XLibWindow *xLibWindow = reinterpret_cast<XLibWindow *>(windowObjPtr);
+        XLibWindow* xLibWindow = reinterpret_cast<XLibWindow*>(windowObjPtr);
 
-        Vk::XlibSurfaceCreateInfoKHR createInfo({}, static_cast<Display *>(xLibWindow->getNativeDisplay()),
-                                                *static_cast<::Window *>(xLibWindow->getNativeWindow()));
+        Vk::XlibSurfaceCreateInfoKHR createInfo({}, static_cast<Display*>(xLibWindow->getNativeDisplay()),
+                                                *static_cast<::Window*>(xLibWindow->getNativeWindow()));
         Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createXlibSurfaceKHR(createInfo);
 
         AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Failed to create window surface!");
@@ -275,7 +275,7 @@ namespace Axiom {
                        Vk::to_string(physicalDevicesResult.result));
         std::vector<Vk::PhysicalDevice> physicalDevices = physicalDevicesResult.value;
 
-        for (const auto &device : physicalDevices) {
+        for (const auto& device : physicalDevices) {
             Vk::PhysicalDeviceProperties deviceProperties = device.getProperties();
             AX_CORE_LOG_DEBUG("Found Vulkan Adapter: {} (API Version: {}.{}.{} | Driver Version: {} | Vendor ID: {} | Device ID: {})",
                               std::string_view(deviceProperties.deviceName.data()), Vk::versionMajor(deviceProperties.apiVersion),
@@ -298,18 +298,18 @@ namespace Axiom {
         }
     }
 
-    bool VulkanDevice::checkPhysicalDeviceExtensions(const Vk::PhysicalDevice &device) {
+    bool VulkanDevice::checkPhysicalDeviceExtensions(const Vk::PhysicalDevice& device) {
         Vk::ResultValue<std::vector<Vk::ExtensionProperties>> availableExtensionsResult = device.enumerateDeviceExtensionProperties();
 
         AX_CORE_ASSERT(availableExtensionsResult.result == Vk::Result::eSuccess, "Failed to enumerate device extensions for device: {}",
                        std::string_view(device.getProperties().deviceName));
         std::vector<Vk::ExtensionProperties> availableExtensions = availableExtensionsResult.value;
-        std::vector<const char *> requiredExtensions = {Vk::KHRSwapchainExtensionName, Vk::KHRDynamicRenderingExtensionName,
-                                                        Vk::KHRSynchronization2ExtensionName};
+        std::vector<const char*> requiredExtensions = {Vk::KHRSwapchainExtensionName, Vk::KHRDynamicRenderingExtensionName,
+                                                       Vk::KHRSynchronization2ExtensionName};
 
-        for (const char *requiredExt : requiredExtensions) {
+        for (const char* requiredExt : requiredExtensions) {
             bool extensionFound = false;
-            for (const auto &ext : availableExtensions) {
+            for (const auto& ext : availableExtensions) {
                 if (requiredExt == std::string_view(ext.extensionName.data())) {
                     extensionFound = true;
                     break;
@@ -324,7 +324,7 @@ namespace Axiom {
         return true;
     }
 
-    QueueFamilyIndices VulkanDevice::findQueueFamilies(const Vk::PhysicalDevice &device) const {
+    QueueFamilyIndices VulkanDevice::findQueueFamilies(const Vk::PhysicalDevice& device) const {
         QueueFamilyIndices indices{};
 
         std::vector<Vk::QueueFamilyProperties> queueFamilies = device.getQueueFamilyProperties();
@@ -349,7 +349,7 @@ namespace Axiom {
         return indices;
     }
 
-    SwapChainSupportDetails VulkanDevice::querySwapChainSupport(const Vk::PhysicalDevice &device) const {
+    SwapChainSupportDetails VulkanDevice::querySwapChainSupport(const Vk::PhysicalDevice& device) const {
         SwapChainSupportDetails details{};
 
         Vk::ResultValue<Vk::SurfaceCapabilitiesKHR> capabilitiesResult = device.getSurfaceCapabilitiesKHR(surface);

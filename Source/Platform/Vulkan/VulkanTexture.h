@@ -7,7 +7,7 @@
 namespace Axiom {
     class VulkanTexture : public Texture {
       public:
-        VulkanTexture(Vk::Device logicalDevice, const CreateInfo &createInfo);
+        VulkanTexture(Vk::Device logicalDevice, const CreateInfo& createInfo);
         VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage);
         ~VulkanTexture() override;
 

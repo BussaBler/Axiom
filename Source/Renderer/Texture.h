@@ -43,7 +43,7 @@ namespace Axiom {
         };
 
         struct Barrier {
-            Texture *texture;
+            Texture* texture;
             TextureState oldState = TextureState::Undefined;
             TextureState newState = TextureState::Undefined;
             TextureAspect aspect = TextureAspect::None;

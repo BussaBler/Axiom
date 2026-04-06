@@ -6,17 +6,17 @@
 
 namespace msdfgen {
 
-    EdgeSegment *EdgeSegment::create(Point2 p0, Point2 p1, EdgeColor edgeColor) {
+    EdgeSegment* EdgeSegment::create(Point2 p0, Point2 p1, EdgeColor edgeColor) {
         return new LinearSegment(p0, p1, edgeColor);
     }
 
-    EdgeSegment *EdgeSegment::create(Point2 p0, Point2 p1, Point2 p2, EdgeColor edgeColor) {
+    EdgeSegment* EdgeSegment::create(Point2 p0, Point2 p1, Point2 p2, EdgeColor edgeColor) {
         if (!crossProduct(p1 - p0, p2 - p1))
             return new LinearSegment(p0, p2, edgeColor);
         return new QuadraticSegment(p0, p1, p2, edgeColor);
     }
 
-    EdgeSegment *EdgeSegment::create(Point2 p0, Point2 p1, Point2 p2, Point2 p3, EdgeColor edgeColor) {
+    EdgeSegment* EdgeSegment::create(Point2 p0, Point2 p1, Point2 p2, Point2 p3, EdgeColor edgeColor) {
         Vector2 p12 = p2 - p1;
         if (!crossProduct(p1 - p0, p12) && !crossProduct(p12, p3 - p2))
             return new LinearSegment(p0, p3, edgeColor);
@@ -25,7 +25,7 @@ namespace msdfgen {
         return new CubicSegment(p0, p1, p2, p3, edgeColor);
     }
 
-    void EdgeSegment::distanceToPerpendicularDistance(SignedDistance &distance, Point2 origin, double param) const {
+    void EdgeSegment::distanceToPerpendicularDistance(SignedDistance& distance, Point2 origin, double param) const {
         if (param < 0) {
             Vector2 dir = direction(0).normalize();
             Vector2 aq = origin - point(0);
@@ -69,15 +69,15 @@ namespace msdfgen {
         p[3] = p3;
     }
 
-    LinearSegment *LinearSegment::clone() const {
+    LinearSegment* LinearSegment::clone() const {
         return new LinearSegment(p[0], p[1], color);
     }
 
-    QuadraticSegment *QuadraticSegment::clone() const {
+    QuadraticSegment* QuadraticSegment::clone() const {
         return new QuadraticSegment(p[0], p[1], p[2], color);
     }
 
-    CubicSegment *CubicSegment::clone() const {
+    CubicSegment* CubicSegment::clone() const {
         return new CubicSegment(p[0], p[1], p[2], p[3], color);
     }
 
@@ -93,15 +93,15 @@ namespace msdfgen {
         return (int)EDGE_TYPE;
     }
 
-    const Point2 *LinearSegment::controlPoints() const {
+    const Point2* LinearSegment::controlPoints() const {
         return p;
     }
 
-    const Point2 *QuadraticSegment::controlPoints() const {
+    const Point2* QuadraticSegment::controlPoints() const {
         return p;
     }
 
-    const Point2 *CubicSegment::controlPoints() const {
+    const Point2* CubicSegment::controlPoints() const {
         return p;
     }
 
@@ -169,7 +169,7 @@ namespace msdfgen {
         return (brLen * ((abbr + brbr) * h - abbr * abLen) + crs * crs * log((brLen * h + abbr + brbr) / (brLen * abLen + abbr))) / (brbr * brLen);
     }
 
-    SignedDistance LinearSegment::signedDistance(Point2 origin, double &param) const {
+    SignedDistance LinearSegment::signedDistance(Point2 origin, double& param) const {
         Vector2 aq = origin - p[0];
         Vector2 ab = p[1] - p[0];
         param = dotProduct(aq, ab) / dotProduct(ab, ab);
@@ -183,7 +183,7 @@ namespace msdfgen {
         return SignedDistance(nonZeroSign(crossProduct(aq, ab)) * endpointDistance, fabs(dotProduct(ab.normalize(), eq.normalize())));
     }
 
-    SignedDistance QuadraticSegment::signedDistance(Point2 origin, double &param) const {
+    SignedDistance QuadraticSegment::signedDistance(Point2 origin, double& param) const {
         Vector2 qa = p[0] - origin;
         Vector2 ab = p[1] - p[0];
         Vector2 br = p[2] - p[1] - ab;
@@ -224,7 +224,7 @@ namespace msdfgen {
             return SignedDistance(minDistance, fabs(dotProduct(direction(1).normalize(), (p[2] - origin).normalize())));
     }
 
-    SignedDistance CubicSegment::signedDistance(Point2 origin, double &param) const {
+    SignedDistance CubicSegment::signedDistance(Point2 origin, double& param) const {
         Vector2 qa = p[0] - origin;
         Vector2 ab = p[1] - p[0];
         Vector2 br = p[2] - p[1] - ab;
@@ -401,7 +401,7 @@ namespace msdfgen {
         return total;
     }
 
-    static void pointBounds(Point2 p, double &xMin, double &yMin, double &xMax, double &yMax) {
+    static void pointBounds(Point2 p, double& xMin, double& yMin, double& xMax, double& yMax) {
         if (p.x < xMin)
             xMin = p.x;
         if (p.y < yMin)
@@ -412,12 +412,12 @@ namespace msdfgen {
             yMax = p.y;
     }
 
-    void LinearSegment::bound(double &xMin, double &yMin, double &xMax, double &yMax) const {
+    void LinearSegment::bound(double& xMin, double& yMin, double& xMax, double& yMax) const {
         pointBounds(p[0], xMin, yMin, xMax, yMax);
         pointBounds(p[1], xMin, yMin, xMax, yMax);
     }
 
-    void QuadraticSegment::bound(double &xMin, double &yMin, double &xMax, double &yMax) const {
+    void QuadraticSegment::bound(double& xMin, double& yMin, double& xMax, double& yMax) const {
         pointBounds(p[0], xMin, yMin, xMax, yMax);
         pointBounds(p[2], xMin, yMin, xMax, yMax);
         Vector2 bot = (p[1] - p[0]) - (p[2] - p[1]);
@@ -433,7 +433,7 @@ namespace msdfgen {
         }
     }
 
-    void CubicSegment::bound(double &xMin, double &yMin, double &xMax, double &yMax) const {
+    void CubicSegment::bound(double& xMin, double& yMin, double& xMax, double& yMax) const {
         pointBounds(p[0], xMin, yMin, xMax, yMax);
         pointBounds(p[3], xMin, yMin, xMax, yMax);
         Vector2 a0 = p[1] - p[0];
@@ -508,19 +508,19 @@ namespace msdfgen {
         p[3] = to;
     }
 
-    void LinearSegment::splitInThirds(EdgeSegment *&part0, EdgeSegment *&part1, EdgeSegment *&part2) const {
+    void LinearSegment::splitInThirds(EdgeSegment*& part0, EdgeSegment*& part1, EdgeSegment*& part2) const {
         part0 = new LinearSegment(p[0], point(1 / 3.), color);
         part1 = new LinearSegment(point(1 / 3.), point(2 / 3.), color);
         part2 = new LinearSegment(point(2 / 3.), p[1], color);
     }
 
-    void QuadraticSegment::splitInThirds(EdgeSegment *&part0, EdgeSegment *&part1, EdgeSegment *&part2) const {
+    void QuadraticSegment::splitInThirds(EdgeSegment*& part0, EdgeSegment*& part1, EdgeSegment*& part2) const {
         part0 = new QuadraticSegment(p[0], mix(p[0], p[1], 1 / 3.), point(1 / 3.), color);
         part1 = new QuadraticSegment(point(1 / 3.), mix(mix(p[0], p[1], 5 / 9.), mix(p[1], p[2], 4 / 9.), .5), point(2 / 3.), color);
         part2 = new QuadraticSegment(point(2 / 3.), mix(p[1], p[2], 2 / 3.), p[2], color);
     }
 
-    void CubicSegment::splitInThirds(EdgeSegment *&part0, EdgeSegment *&part1, EdgeSegment *&part2) const {
+    void CubicSegment::splitInThirds(EdgeSegment*& part0, EdgeSegment*& part1, EdgeSegment*& part2) const {
         part0 = new CubicSegment(p[0], p[0] == p[1] ? p[0] : mix(p[0], p[1], 1 / 3.), mix(mix(p[0], p[1], 1 / 3.), mix(p[1], p[2], 1 / 3.), 1 / 3.),
                                  point(1 / 3.), color);
         part1 = new CubicSegment(
@@ -532,7 +532,7 @@ namespace msdfgen {
                                  p[3], color);
     }
 
-    EdgeSegment *QuadraticSegment::convertToCubic() const {
+    EdgeSegment* QuadraticSegment::convertToCubic() const {
         return new CubicSegment(p[0], mix(p[0], p[1], 2 / 3.), mix(p[1], p[2], 1 / 3.), p[2], color);
     }
 

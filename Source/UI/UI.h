@@ -11,8 +11,8 @@ namespace Axiom {
         friend class UILayer;
 
       public:
-        static bool button(const std::string &label, Math::Vec2 pos, Math::Vec2 size);
-        static void text(const std::string &text, Math::Vec2 pos, Math::Vec4 color = Math::Vec4(1.0f), uint16_t size = 11);
+        static bool button(const std::string& label, Math::Vec2 pos, Math::Vec2 size);
+        static void text(const std::string& text, Math::Vec2 pos, Math::Vec4 color = Math::Vec4(1.0f), uint16_t size = 11);
 
       private:
         UI();
@@ -23,19 +23,19 @@ namespace Axiom {
 
         static void beginFrame();
         static void endFrame();
-        static void render(CommandBuffer *commandBuffer);
+        static void render(CommandBuffer* commandBuffer);
         static void setMousePosition(Math::Vec2 pos);
         static void setMouseButtonState(KeyCode button, bool pressed);
 
         static bool shouldConsumeMouseEvents();
 
-        void addBaseQuad(const Math::Vec2 &pos, const Math::Vec2 &size, const Math::Vec4 &color);
-        void addFontQuad(const Math::Vec2 &pos, const Math::Vec2 &size, const Math::Vec2 &uv0, const Math::Vec2 &uv1, const Math::Vec4 &color);
+        void addBaseQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec4& color);
+        void addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Math::Vec4& color);
         void createBaseRenderObjects();
         void createFontRenderObjects();
 
       private:
-        static UI *instance;
+        static UI* instance;
 
         static const uint32_t maxButtonQuads = 500;
         std::unique_ptr<Pipeline> basePipeline = nullptr;

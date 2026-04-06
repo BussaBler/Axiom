@@ -5,7 +5,7 @@
 namespace Axiom {
     class VulkanSampler : public Sampler {
       public:
-        VulkanSampler(Vk::Device logicalDevice, const CreateInfo &createInfo);
+        VulkanSampler(Vk::Device logicalDevice, const CreateInfo& createInfo);
         ~VulkanSampler() override;
 
         inline Vk::Sampler getSampler() const {

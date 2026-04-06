@@ -8,8 +8,8 @@ namespace msdfgen {
 // Requires byte reversal for floats on big-endian platform
 #ifndef __BIG_ENDIAN__
 
-    template <int N> bool saveFl32(BitmapConstSection<float, N> bitmap, const char *filename) {
-        if (FILE *f = fopen(filename, "wb")) {
+    template <int N> bool saveFl32(BitmapConstSection<float, N> bitmap, const char* filename) {
+        if (FILE* f = fopen(filename, "wb")) {
             bitmap.reorient(Y_UPWARD);
             byte header[16] = {byte('F'), byte('L'), byte('3'), byte('2')};
             header[4] = byte(bitmap.height);
@@ -30,10 +30,10 @@ namespace msdfgen {
         return false;
     }
 
-    template bool saveFl32(BitmapConstSection<float, 1> bitmap, const char *filename);
-    template bool saveFl32(BitmapConstSection<float, 2> bitmap, const char *filename);
-    template bool saveFl32(BitmapConstSection<float, 3> bitmap, const char *filename);
-    template bool saveFl32(BitmapConstSection<float, 4> bitmap, const char *filename);
+    template bool saveFl32(BitmapConstSection<float, 1> bitmap, const char* filename);
+    template bool saveFl32(BitmapConstSection<float, 2> bitmap, const char* filename);
+    template bool saveFl32(BitmapConstSection<float, 3> bitmap, const char* filename);
+    template bool saveFl32(BitmapConstSection<float, 4> bitmap, const char* filename);
 
 #endif
 

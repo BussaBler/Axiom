@@ -6,7 +6,7 @@
 
 namespace msdfgen {
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 1> &sdf, const Projection &projection, double y, YAxisOrientation yAxisOrientation) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 1>& sdf, const Projection& projection, double y, YAxisOrientation yAxisOrientation) {
         if (!(sdf.width > 0 && sdf.height > 0))
             return line.setIntersections(std::vector<Scanline::Intersection>());
         double pixelY = clamp(projection.projectY(y) - .5, double(sdf.height - 1));
@@ -39,14 +39,14 @@ namespace msdfgen {
             }
         }
 #ifdef MSDFGEN_USE_CPP11
-        line.setIntersections((std::vector<Scanline::Intersection> &&)intersections);
+        line.setIntersections((std::vector<Scanline::Intersection>&&)intersections);
 #else
         line.setIntersections(intersections);
 #endif
     }
 
     template <int N>
-    void scanlineMSDF(Scanline &line, const BitmapConstSection<float, N> &sdf, const Projection &projection, double y, YAxisOrientation yAxisOrientation) {
+    void scanlineMSDF(Scanline& line, const BitmapConstSection<float, N>& sdf, const Projection& projection, double y, YAxisOrientation yAxisOrientation) {
         if (!(sdf.width > 0 && sdf.height > 0))
             return line.setIntersections(std::vector<Scanline::Intersection>());
         double pixelY = clamp(projection.projectY(y) - .5, double(sdf.height - 1));
@@ -114,21 +114,21 @@ namespace msdfgen {
             }
         }
 #ifdef MSDFGEN_USE_CPP11
-        line.setIntersections((std::vector<Scanline::Intersection> &&)intersections);
+        line.setIntersections((std::vector<Scanline::Intersection>&&)intersections);
 #else
         line.setIntersections(intersections);
 #endif
     }
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 3> &sdf, const Projection &projection, double y, YAxisOrientation yAxisOrientation) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 3>& sdf, const Projection& projection, double y, YAxisOrientation yAxisOrientation) {
         scanlineMSDF(line, sdf, projection, y, yAxisOrientation);
     }
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 4> &sdf, const Projection &projection, double y, YAxisOrientation yAxisOrientation) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 4>& sdf, const Projection& projection, double y, YAxisOrientation yAxisOrientation) {
         scanlineMSDF(line, sdf, projection, y, yAxisOrientation);
     }
 
     template <int N>
-    double estimateSDFErrorInner(const BitmapConstSection<float, N> &sdf, const Shape &shape, const Projection &projection, int scanlinesPerRow,
+    double estimateSDFErrorInner(const BitmapConstSection<float, N>& sdf, const Shape& shape, const Projection& projection, int scanlinesPerRow,
                                  FillRule fillRule) {
         if (sdf.width <= 1 || sdf.height <= 1 || scanlinesPerRow < 1)
             return 0;
@@ -150,53 +150,53 @@ namespace msdfgen {
         return error / ((sdf.height - 1) * scanlinesPerRow);
     }
 
-    double estimateSDFError(const BitmapConstSection<float, 1> &sdf, const Shape &shape, const Projection &projection, int scanlinesPerRow, FillRule fillRule) {
+    double estimateSDFError(const BitmapConstSection<float, 1>& sdf, const Shape& shape, const Projection& projection, int scanlinesPerRow, FillRule fillRule) {
         return estimateSDFErrorInner(sdf, shape, projection, scanlinesPerRow, fillRule);
     }
-    double estimateSDFError(const BitmapConstSection<float, 3> &sdf, const Shape &shape, const Projection &projection, int scanlinesPerRow, FillRule fillRule) {
+    double estimateSDFError(const BitmapConstSection<float, 3>& sdf, const Shape& shape, const Projection& projection, int scanlinesPerRow, FillRule fillRule) {
         return estimateSDFErrorInner(sdf, shape, projection, scanlinesPerRow, fillRule);
     }
-    double estimateSDFError(const BitmapConstSection<float, 4> &sdf, const Shape &shape, const Projection &projection, int scanlinesPerRow, FillRule fillRule) {
+    double estimateSDFError(const BitmapConstSection<float, 4>& sdf, const Shape& shape, const Projection& projection, int scanlinesPerRow, FillRule fillRule) {
         return estimateSDFErrorInner(sdf, shape, projection, scanlinesPerRow, fillRule);
     }
 
     // Legacy API
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 1> &sdf, const Projection &projection, double y, bool inverseYAxis) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 1>& sdf, const Projection& projection, double y, bool inverseYAxis) {
         scanlineSDF(line, sdf, projection, y, inverseYAxis ? MSDFGEN_Y_AXIS_NONDEFAULT_ORIENTATION : MSDFGEN_Y_AXIS_DEFAULT_ORIENTATION);
     }
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 3> &sdf, const Projection &projection, double y, bool inverseYAxis) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 3>& sdf, const Projection& projection, double y, bool inverseYAxis) {
         scanlineSDF(line, sdf, projection, y, inverseYAxis ? MSDFGEN_Y_AXIS_NONDEFAULT_ORIENTATION : MSDFGEN_Y_AXIS_DEFAULT_ORIENTATION);
     }
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 4> &sdf, const Projection &projection, double y, bool inverseYAxis) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 4>& sdf, const Projection& projection, double y, bool inverseYAxis) {
         scanlineSDF(line, sdf, projection, y, inverseYAxis ? MSDFGEN_Y_AXIS_NONDEFAULT_ORIENTATION : MSDFGEN_Y_AXIS_DEFAULT_ORIENTATION);
     }
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 1> &sdf, const Vector2 &scale, const Vector2 &translate, bool inverseYAxis, double y) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 1>& sdf, const Vector2& scale, const Vector2& translate, bool inverseYAxis, double y) {
         scanlineSDF(line, sdf, Projection(scale, translate), y, inverseYAxis);
     }
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 3> &sdf, const Vector2 &scale, const Vector2 &translate, bool inverseYAxis, double y) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 3>& sdf, const Vector2& scale, const Vector2& translate, bool inverseYAxis, double y) {
         scanlineSDF(line, sdf, Projection(scale, translate), y, inverseYAxis);
     }
 
-    void scanlineSDF(Scanline &line, const BitmapConstSection<float, 4> &sdf, const Vector2 &scale, const Vector2 &translate, bool inverseYAxis, double y) {
+    void scanlineSDF(Scanline& line, const BitmapConstSection<float, 4>& sdf, const Vector2& scale, const Vector2& translate, bool inverseYAxis, double y) {
         scanlineSDF(line, sdf, Projection(scale, translate), y, inverseYAxis);
     }
 
-    double estimateSDFError(const BitmapConstSection<float, 1> &sdf, const Shape &shape, const Vector2 &scale, const Vector2 &translate, int scanlinesPerRow,
+    double estimateSDFError(const BitmapConstSection<float, 1>& sdf, const Shape& shape, const Vector2& scale, const Vector2& translate, int scanlinesPerRow,
                             FillRule fillRule) {
         return estimateSDFError(sdf, shape, Projection(scale, translate), scanlinesPerRow, fillRule);
     }
 
-    double estimateSDFError(const BitmapConstSection<float, 3> &sdf, const Shape &shape, const Vector2 &scale, const Vector2 &translate, int scanlinesPerRow,
+    double estimateSDFError(const BitmapConstSection<float, 3>& sdf, const Shape& shape, const Vector2& scale, const Vector2& translate, int scanlinesPerRow,
                             FillRule fillRule) {
         return estimateSDFError(sdf, shape, Projection(scale, translate), scanlinesPerRow, fillRule);
     }
 
-    double estimateSDFError(const BitmapConstSection<float, 4> &sdf, const Shape &shape, const Vector2 &scale, const Vector2 &translate, int scanlinesPerRow,
+    double estimateSDFError(const BitmapConstSection<float, 4>& sdf, const Shape& shape, const Vector2& scale, const Vector2& translate, int scanlinesPerRow,
                             FillRule fillRule) {
         return estimateSDFError(sdf, shape, Projection(scale, translate), scanlinesPerRow, fillRule);
     }

@@ -9,8 +9,8 @@ namespace Axiom {
 
         Logger();
         ~Logger();
-        Logger(const Logger &) = delete;
-        Logger &operator=(const Logger &) = delete;
+        Logger(const Logger&) = delete;
+        Logger& operator=(const Logger&) = delete;
 
         void setPriority(Priority priority) {
             mPriority = priority;
@@ -19,42 +19,42 @@ namespace Axiom {
             return mPriority;
         }
 
-        void setInitialString(const std::string &initial) {
+        void setInitialString(const std::string& initial) {
             mInitialString = initial;
         }
-        const std::string &getInitialString() const {
+        const std::string& getInitialString() const {
             return mInitialString;
         }
 
-        bool outputToFile(const std::filesystem::path &path = "Logs/log.txt") {
+        bool outputToFile(const std::filesystem::path& path = "Logs/log.txt") {
             std::scoped_lock lock(mLogLock);
             mFilePath = path;
             return enableFileOutput();
         }
-        const std::filesystem::path &getFilePath() const {
+        const std::filesystem::path& getFilePath() const {
             return mFilePath;
         }
 
-        void setTimestampFormat(const std::string &format) {
+        void setTimestampFormat(const std::string& format) {
             mTimestampFormat = format;
         }
-        const std::string &getTimestampFormat() const {
+        const std::string& getTimestampFormat() const {
             return mTimestampFormat;
         }
 
-        template <typename... Args> void trace(std::string_view fmt, Args &&...args) {
+        template <typename... Args> void trace(std::string_view fmt, Args&&... args) {
             log(Priority::Trace, fmt, std::forward<Args>(args)...);
         }
-        template <typename... Args> void debug(std::string_view fmt, Args &&...args) {
+        template <typename... Args> void debug(std::string_view fmt, Args&&... args) {
             log(Priority::Debug, fmt, std::forward<Args>(args)...);
         }
-        template <typename... Args> void info(std::string_view fmt, Args &&...args) {
+        template <typename... Args> void info(std::string_view fmt, Args&&... args) {
             log(Priority::Info, fmt, std::forward<Args>(args)...);
         }
-        template <typename... Args> void warn(std::string_view fmt, Args &&...args) {
+        template <typename... Args> void warn(std::string_view fmt, Args&&... args) {
             log(Priority::Warn, fmt, std::forward<Args>(args)...);
         }
-        template <typename... Args> void error(std::string_view fmt, Args &&...args) {
+        template <typename... Args> void error(std::string_view fmt, Args&&... args) {
             log(Priority::Error, fmt, std::forward<Args>(args)...);
         }
 
@@ -62,7 +62,7 @@ namespace Axiom {
         bool enableFileOutput();
         const std::string messagePriorityToString(Priority p);
 
-        template <typename... Args> void log(Priority priority, std::string_view fmtString, Args &&...args) {
+        template <typename... Args> void log(Priority priority, std::string_view fmtString, Args&&... args) {
             if (priority < mPriority) {
                 return;
             }

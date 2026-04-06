@@ -10,15 +10,15 @@ namespace msdfgen {
 
       public:
         Projection();
-        Projection(const Vector2 &scale, const Vector2 &translate);
+        Projection(const Vector2& scale, const Vector2& translate);
         /// Converts the shape coordinate to pixel coordinate.
-        Point2 project(const Point2 &coord) const;
+        Point2 project(const Point2& coord) const;
         /// Converts the pixel coordinate to shape coordinate.
-        Point2 unproject(const Point2 &coord) const;
+        Point2 unproject(const Point2& coord) const;
         /// Converts the vector to pixel coordinate space.
-        Vector2 projectVector(const Vector2 &vector) const;
+        Vector2 projectVector(const Vector2& vector) const;
         /// Converts the vector from pixel coordinate space.
-        Vector2 unprojectVector(const Vector2 &vector) const;
+        Vector2 unprojectVector(const Vector2& vector) const;
         /// Converts the X-coordinate from shape to pixel coordinate space.
         double projectX(double x) const;
         /// Converts the Y-coordinate from shape to pixel coordinate space.

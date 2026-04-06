@@ -26,22 +26,22 @@ namespace msdfgen {
         0xdf, 0x4f, 0x8d, 0x0b, 0xc0, 0xec, 0x9e, 0x04, 0xf4, 0xfd, 0xd4, 0x3c, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00,
     };
 
-    template <typename T> bool writeLE(FILE *file, T value);
+    template <typename T> bool writeLE(FILE* file, T value);
 
-    template <> bool writeLE(FILE *f, uint16_t value) {
+    template <> bool writeLE(FILE* f, uint16_t value) {
         byte bytes[2] = {byte(value), byte(value >> 8)};
         return fwrite(bytes, 1, 2, f) == 2;
     }
-    template <> bool writeLE(FILE *f, uint32_t value) {
+    template <> bool writeLE(FILE* f, uint32_t value) {
         byte bytes[4] = {byte(value), byte(value >> 8), byte(value >> 16), byte(value >> 24)};
         return fwrite(bytes, 1, 4, f) == 4;
     }
-    template <> bool writeLE(FILE *f, int32_t value) {
+    template <> bool writeLE(FILE* f, int32_t value) {
         byte bytes[4] = {byte(value), byte(value >> 8), byte(value >> 16), byte(value >> 24)};
         return fwrite(bytes, 1, 4, f) == 4;
     }
 
-    static bool writeBmpHeader(FILE *file, int bytesPerPixel, int width, int height, int &paddedWidth) {
+    static bool writeBmpHeader(FILE* file, int bytesPerPixel, int width, int height, int& paddedWidth) {
         paddedWidth = (bytesPerPixel * width + 3) & ~3; // Ceil to multiple of 4 bytes
         uint32_t colorTableEntries = bytesPerPixel == 1 ? 256 : 0;
         uint32_t bitmapStart = 14 + 108 + 4 * colorTableEntries;
@@ -83,8 +83,8 @@ namespace msdfgen {
         return true;
     }
 
-    bool saveBmp(BitmapConstSection<byte, 1> bitmap, const char *filename) {
-        FILE *file = fopen(filename, "wb");
+    bool saveBmp(BitmapConstSection<byte, 1> bitmap, const char* filename) {
+        FILE* file = fopen(filename, "wb");
         if (!file)
             return false;
 
@@ -102,8 +102,8 @@ namespace msdfgen {
         return !fclose(file);
     }
 
-    bool saveBmp(BitmapConstSection<byte, 3> bitmap, const char *filename) {
-        FILE *file = fopen(filename, "wb");
+    bool saveBmp(BitmapConstSection<byte, 3> bitmap, const char* filename) {
+        FILE* file = fopen(filename, "wb");
         if (!file)
             return false;
 
@@ -124,8 +124,8 @@ namespace msdfgen {
         return !fclose(file);
     }
 
-    bool saveBmp(BitmapConstSection<byte, 4> bitmap, const char *filename) {
-        FILE *file = fopen(filename, "wb");
+    bool saveBmp(BitmapConstSection<byte, 4> bitmap, const char* filename) {
+        FILE* file = fopen(filename, "wb");
         if (!file)
             return false;
 
@@ -143,8 +143,8 @@ namespace msdfgen {
         return !fclose(file);
     }
 
-    bool saveBmp(BitmapConstSection<float, 1> bitmap, const char *filename) {
-        FILE *file = fopen(filename, "wb");
+    bool saveBmp(BitmapConstSection<float, 1> bitmap, const char* filename) {
+        FILE* file = fopen(filename, "wb");
         if (!file)
             return false;
 
@@ -165,8 +165,8 @@ namespace msdfgen {
         return !fclose(file);
     }
 
-    bool saveBmp(BitmapConstSection<float, 3> bitmap, const char *filename) {
-        FILE *file = fopen(filename, "wb");
+    bool saveBmp(BitmapConstSection<float, 3> bitmap, const char* filename) {
+        FILE* file = fopen(filename, "wb");
         if (!file)
             return false;
 
@@ -187,8 +187,8 @@ namespace msdfgen {
         return !fclose(file);
     }
 
-    bool saveBmp(BitmapConstSection<float, 4> bitmap, const char *filename) {
-        FILE *file = fopen(filename, "wb");
+    bool saveBmp(BitmapConstSection<float, 4> bitmap, const char* filename) {
+        FILE* file = fopen(filename, "wb");
         if (!file)
             return false;
 

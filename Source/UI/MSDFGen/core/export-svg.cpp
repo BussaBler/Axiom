@@ -6,13 +6,13 @@
 
 namespace msdfgen {
 
-    static void writeSvgCoord(FILE *f, Point2 coord) {
+    static void writeSvgCoord(FILE* f, Point2 coord) {
         fprintf(f, "%.17g %.17g", coord.x, coord.y);
     }
 
-    static void writeSvgPathDef(FILE *f, const Shape &shape) {
+    static void writeSvgPathDef(FILE* f, const Shape& shape) {
         bool beginning = true;
-        for (const Contour &c : shape.contours) {
+        for (const Contour& c : shape.contours) {
             if (c.edges.empty())
                 continue;
             if (beginning)
@@ -21,8 +21,8 @@ namespace msdfgen {
                 fputc(' ', f);
             fputs("M ", f);
             writeSvgCoord(f, c.edges[0]->controlPoints()[0]);
-            for (const EdgeHolder &e : c.edges) {
-                const Point2 *cp = e->controlPoints();
+            for (const EdgeHolder& e : c.edges) {
+                const Point2* cp = e->controlPoints();
                 switch (e->type()) {
                 case (int)LinearSegment::EDGE_TYPE:
                     fputs(" L ", f);
@@ -48,8 +48,8 @@ namespace msdfgen {
         }
     }
 
-    bool saveSvgShape(const Shape &shape, const char *filename) {
-        if (FILE *f = fopen(filename, "w")) {
+    bool saveSvgShape(const Shape& shape, const char* filename) {
+        if (FILE* f = fopen(filename, "w")) {
             fputs("<svg xmlns=\"http://www.w3.org/2000/svg\"><path", f);
             if (shape.getYAxisOrientation() == Y_UPWARD)
                 fputs(" transform=\"scale(1 -1)\"", f);
@@ -62,8 +62,8 @@ namespace msdfgen {
         return false;
     }
 
-    bool saveSvgShape(const Shape &shape, const Shape::Bounds &bounds, const char *filename) {
-        if (FILE *f = fopen(filename, "w")) {
+    bool saveSvgShape(const Shape& shape, const Shape::Bounds& bounds, const char* filename) {
+        if (FILE* f = fopen(filename, "w")) {
             fprintf(f, "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%.17g %.17g %.17g %.17g\"><path", bounds.l, bounds.b, bounds.r - bounds.l,
                     bounds.t - bounds.b);
             if (shape.getYAxisOrientation() == Y_UPWARD)

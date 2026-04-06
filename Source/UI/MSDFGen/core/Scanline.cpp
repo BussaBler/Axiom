@@ -6,8 +6,8 @@
 
 namespace msdfgen {
 
-    static int compareIntersections(const void *a, const void *b) {
-        return sign(reinterpret_cast<const Scanline::Intersection *>(a)->x - reinterpret_cast<const Scanline::Intersection *>(b)->x);
+    static int compareIntersections(const void* a, const void* b) {
+        return sign(reinterpret_cast<const Scanline::Intersection*>(a)->x - reinterpret_cast<const Scanline::Intersection*>(b)->x);
     }
 
     bool interpretFillRule(int intersections, FillRule fillRule) {
@@ -24,7 +24,7 @@ namespace msdfgen {
         return false;
     }
 
-    double Scanline::overlap(const Scanline &a, const Scanline &b, double xFrom, double xTo, FillRule fillRule) {
+    double Scanline::overlap(const Scanline& a, const Scanline& b, double xFrom, double xTo, FillRule fillRule) {
         double total = 0;
         bool aInside = false, bInside = false;
         int ai = 0, bi = 0;
@@ -76,14 +76,14 @@ namespace msdfgen {
         }
     }
 
-    void Scanline::setIntersections(const std::vector<Intersection> &intersections) {
+    void Scanline::setIntersections(const std::vector<Intersection>& intersections) {
         this->intersections = intersections;
         preprocess();
     }
 
 #ifdef MSDFGEN_USE_CPP11
-    void Scanline::setIntersections(std::vector<Intersection> &&intersections) {
-        this->intersections = (std::vector<Intersection> &&)intersections;
+    void Scanline::setIntersections(std::vector<Intersection>&& intersections) {
+        this->intersections = (std::vector<Intersection>&&)intersections;
         preprocess();
     }
 #endif

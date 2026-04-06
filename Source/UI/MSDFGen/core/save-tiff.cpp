@@ -20,15 +20,15 @@ namespace msdfgen {
 
 namespace msdfgen {
 
-    template <typename T> static bool writeValue(FILE *file, T value) {
+    template <typename T> static bool writeValue(FILE* file, T value) {
         return fwrite(&value, sizeof(T), 1, file) == 1;
     }
-    template <typename T> static void writeValueRepeated(FILE *file, T value, int times) {
+    template <typename T> static void writeValueRepeated(FILE* file, T value, int times) {
         for (int i = 0; i < times; ++i)
             writeValue(file, value);
     }
 
-    static bool writeTiffHeader(FILE *file, int width, int height, int channels) {
+    static bool writeTiffHeader(FILE* file, int width, int height, int channels) {
 #ifdef __BIG_ENDIAN__
         writeValue<uint16_t>(file, 0x4d4du);
 #else
@@ -168,8 +168,8 @@ namespace msdfgen {
         return true;
     }
 
-    template <int N> bool saveTiffFloat(BitmapConstSection<float, N> bitmap, const char *filename) {
-        FILE *file = fopen(filename, "wb");
+    template <int N> bool saveTiffFloat(BitmapConstSection<float, N> bitmap, const char* filename) {
+        FILE* file = fopen(filename, "wb");
         if (!file)
             return false;
         bitmap.reorient(Y_DOWNWARD);
@@ -179,13 +179,13 @@ namespace msdfgen {
         return !fclose(file);
     }
 
-    bool saveTiff(const BitmapConstSection<float, 1> &bitmap, const char *filename) {
+    bool saveTiff(const BitmapConstSection<float, 1>& bitmap, const char* filename) {
         return saveTiffFloat(bitmap, filename);
     }
-    bool saveTiff(const BitmapConstSection<float, 3> &bitmap, const char *filename) {
+    bool saveTiff(const BitmapConstSection<float, 3>& bitmap, const char* filename) {
         return saveTiffFloat(bitmap, filename);
     }
-    bool saveTiff(const BitmapConstSection<float, 4> &bitmap, const char *filename) {
+    bool saveTiff(const BitmapConstSection<float, 4>& bitmap, const char* filename) {
         return saveTiffFloat(bitmap, filename);
     }
 

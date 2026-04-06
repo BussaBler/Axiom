@@ -10,15 +10,15 @@
 namespace msdfgen {
 
     template <int N>
-    static void msdfErrorCorrectionInner(const BitmapSection<float, N> &sdf, const Shape &shape, const SDFTransformation &transformation,
-                                         const MSDFGeneratorConfig &config) {
+    static void msdfErrorCorrectionInner(const BitmapSection<float, N>& sdf, const Shape& shape, const SDFTransformation& transformation,
+                                         const MSDFGeneratorConfig& config) {
         if (config.errorCorrection.mode == ErrorCorrectionConfig::DISABLED)
             return;
         Bitmap<byte, 1> stencilBuffer;
         if (!config.errorCorrection.buffer)
             stencilBuffer = Bitmap<byte, 1>(sdf.width, sdf.height);
         BitmapSection<byte, 1> stencil(NULL, sdf.width, sdf.height);
-        stencil.pixels = config.errorCorrection.buffer ? config.errorCorrection.buffer : (byte *)stencilBuffer;
+        stencil.pixels = config.errorCorrection.buffer ? config.errorCorrection.buffer : (byte*)stencilBuffer;
         MSDFErrorCorrection ec(stencil, transformation);
         ec.setMinDeviationRatio(config.errorCorrection.minDeviationRatio);
         ec.setMinImproveRatio(config.errorCorrection.minImproveRatio);
@@ -52,7 +52,7 @@ namespace msdfgen {
     }
 
     template <int N>
-    static void msdfErrorCorrectionShapeless(const BitmapSection<float, N> &sdf, const SDFTransformation &transformation, double minDeviationRatio,
+    static void msdfErrorCorrectionShapeless(const BitmapSection<float, N>& sdf, const SDFTransformation& transformation, double minDeviationRatio,
                                              bool protectAll) {
         Bitmap<byte, 1> stencilBuffer(sdf.width, sdf.height);
         MSDFErrorCorrection ec(stencilBuffer, transformation);
@@ -63,64 +63,64 @@ namespace msdfgen {
         ec.apply(sdf);
     }
 
-    void msdfErrorCorrection(const BitmapSection<float, 3> &sdf, const Shape &shape, const SDFTransformation &transformation,
-                             const MSDFGeneratorConfig &config) {
+    void msdfErrorCorrection(const BitmapSection<float, 3>& sdf, const Shape& shape, const SDFTransformation& transformation,
+                             const MSDFGeneratorConfig& config) {
         msdfErrorCorrectionInner(sdf, shape, transformation, config);
     }
-    void msdfErrorCorrection(const BitmapSection<float, 4> &sdf, const Shape &shape, const SDFTransformation &transformation,
-                             const MSDFGeneratorConfig &config) {
+    void msdfErrorCorrection(const BitmapSection<float, 4>& sdf, const Shape& shape, const SDFTransformation& transformation,
+                             const MSDFGeneratorConfig& config) {
         msdfErrorCorrectionInner(sdf, shape, transformation, config);
     }
-    void msdfErrorCorrection(const BitmapSection<float, 3> &sdf, const Shape &shape, const Projection &projection, Range range,
-                             const MSDFGeneratorConfig &config) {
+    void msdfErrorCorrection(const BitmapSection<float, 3>& sdf, const Shape& shape, const Projection& projection, Range range,
+                             const MSDFGeneratorConfig& config) {
         msdfErrorCorrectionInner(sdf, shape, SDFTransformation(projection, range), config);
     }
-    void msdfErrorCorrection(const BitmapSection<float, 4> &sdf, const Shape &shape, const Projection &projection, Range range,
-                             const MSDFGeneratorConfig &config) {
+    void msdfErrorCorrection(const BitmapSection<float, 4>& sdf, const Shape& shape, const Projection& projection, Range range,
+                             const MSDFGeneratorConfig& config) {
         msdfErrorCorrectionInner(sdf, shape, SDFTransformation(projection, range), config);
     }
 
-    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 3> &sdf, const SDFTransformation &transformation, double minDeviationRatio) {
+    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 3>& sdf, const SDFTransformation& transformation, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, transformation, minDeviationRatio, false);
     }
-    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 4> &sdf, const SDFTransformation &transformation, double minDeviationRatio) {
+    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 4>& sdf, const SDFTransformation& transformation, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, transformation, minDeviationRatio, false);
     }
-    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 3> &sdf, const Projection &projection, Range range, double minDeviationRatio) {
+    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 3>& sdf, const Projection& projection, Range range, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(projection, range), minDeviationRatio, false);
     }
-    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 4> &sdf, const Projection &projection, Range range, double minDeviationRatio) {
+    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 4>& sdf, const Projection& projection, Range range, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(projection, range), minDeviationRatio, false);
     }
-    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 3> &sdf, Range pxRange, double minDeviationRatio) {
+    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 3>& sdf, Range pxRange, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(Projection(), pxRange), minDeviationRatio, false);
     }
-    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 4> &sdf, Range pxRange, double minDeviationRatio) {
+    void msdfFastDistanceErrorCorrection(const BitmapSection<float, 4>& sdf, Range pxRange, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(Projection(), pxRange), minDeviationRatio, false);
     }
 
-    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 3> &sdf, const SDFTransformation &transformation, double minDeviationRatio) {
+    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 3>& sdf, const SDFTransformation& transformation, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, transformation, minDeviationRatio, true);
     }
-    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 4> &sdf, const SDFTransformation &transformation, double minDeviationRatio) {
+    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 4>& sdf, const SDFTransformation& transformation, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, transformation, minDeviationRatio, true);
     }
-    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 3> &sdf, const Projection &projection, Range range, double minDeviationRatio) {
+    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 3>& sdf, const Projection& projection, Range range, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(projection, range), minDeviationRatio, true);
     }
-    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 4> &sdf, const Projection &projection, Range range, double minDeviationRatio) {
+    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 4>& sdf, const Projection& projection, Range range, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(projection, range), minDeviationRatio, true);
     }
-    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 3> &sdf, Range pxRange, double minDeviationRatio) {
+    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 3>& sdf, Range pxRange, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(Projection(), pxRange), minDeviationRatio, true);
     }
-    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 4> &sdf, Range pxRange, double minDeviationRatio) {
+    void msdfFastEdgeErrorCorrection(const BitmapSection<float, 4>& sdf, Range pxRange, double minDeviationRatio) {
         msdfErrorCorrectionShapeless(sdf, SDFTransformation(Projection(), pxRange), minDeviationRatio, true);
     }
 
     // Legacy version
 
-    inline static bool detectClash(const float *a, const float *b, double threshold) {
+    inline static bool detectClash(const float* a, const float* b, double threshold) {
         // Sort channels so that pairs (a0, b0), (a1, b1), (a2, b2) go from biggest to smallest absolute difference
         float a0 = a[0], a1 = a[1], a2 = a[2];
         float b0 = b[0], b1 = b[1], b2 = b[2];
@@ -141,7 +141,7 @@ namespace msdfgen {
                fabsf(a2 - .5f) >= fabsf(b2 - .5f);                         // Out of the pair, only flag the pixel farther from a shape edge
     }
 
-    template <int N> static void msdfErrorCorrectionInner_legacy(const BitmapSection<float, N> &output, const Vector2 &threshold) {
+    template <int N> static void msdfErrorCorrectionInner_legacy(const BitmapSection<float, N>& output, const Vector2& threshold) {
         std::vector<std::pair<int, int>> clashes;
         int w = output.width, h = output.height;
         for (int y = 0; y < h; ++y)
@@ -153,7 +153,7 @@ namespace msdfgen {
                     clashes.push_back(std::make_pair(x, y));
             }
         for (std::vector<std::pair<int, int>>::const_iterator clash = clashes.begin(); clash != clashes.end(); ++clash) {
-            float *pixel = output(clash->first, clash->second);
+            float* pixel = output(clash->first, clash->second);
             float med = median(pixel[0], pixel[1], pixel[2]);
             pixel[0] = med, pixel[1] = med, pixel[2] = med;
         }
@@ -168,17 +168,17 @@ namespace msdfgen {
                     clashes.push_back(std::make_pair(x, y));
             }
         for (std::vector<std::pair<int, int>>::const_iterator clash = clashes.begin(); clash != clashes.end(); ++clash) {
-            float *pixel = output(clash->first, clash->second);
+            float* pixel = output(clash->first, clash->second);
             float med = median(pixel[0], pixel[1], pixel[2]);
             pixel[0] = med, pixel[1] = med, pixel[2] = med;
         }
 #endif
     }
 
-    void msdfErrorCorrection_legacy(const BitmapSection<float, 3> &output, const Vector2 &threshold) {
+    void msdfErrorCorrection_legacy(const BitmapSection<float, 3>& output, const Vector2& threshold) {
         msdfErrorCorrectionInner_legacy(output, threshold);
     }
-    void msdfErrorCorrection_legacy(const BitmapSection<float, 4> &output, const Vector2 &threshold) {
+    void msdfErrorCorrection_legacy(const BitmapSection<float, 4>& output, const Vector2& threshold) {
         msdfErrorCorrectionInner_legacy(output, threshold);
     }
 

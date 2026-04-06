@@ -55,7 +55,7 @@ namespace msdfgen {
       public:
         class ArtifactClassifier : public BaseArtifactClassifier {
           public:
-            inline ArtifactClassifier(ShapeDistanceChecker *parent, const Vector2 &direction, double span)
+            inline ArtifactClassifier(ShapeDistanceChecker* parent, const Vector2& direction, double span)
                 : BaseArtifactClassifier(span, parent->protectedFlag), parent(parent), direction(direction) {
             }
             /// Returns true if the combined results of the tests performed on the median value m interpolated at t indicate an artifact.
@@ -86,18 +86,18 @@ namespace msdfgen {
             }
 
           private:
-            ShapeDistanceChecker *parent;
+            ShapeDistanceChecker* parent;
             Vector2 direction;
         };
         Point2 shapeCoord, sdfCoord;
-        const float *msd;
+        const float* msd;
         bool protectedFlag;
-        inline ShapeDistanceChecker(const BitmapConstSection<float, N> &sdf, const Shape &shape, const Projection &projection, DistanceMapping distanceMapping,
+        inline ShapeDistanceChecker(const BitmapConstSection<float, N>& sdf, const Shape& shape, const Projection& projection, DistanceMapping distanceMapping,
                                     double minImproveRatio)
             : distanceFinder(shape), sdf(sdf), distanceMapping(distanceMapping), minImproveRatio(minImproveRatio) {
             texelSize = projection.unprojectVector(Vector2(1));
         }
-        inline ArtifactClassifier classifier(const Vector2 &direction, double span) {
+        inline ArtifactClassifier classifier(const Vector2& direction, double span) {
             return ArtifactClassifier(this, direction, span);
         }
 
@@ -112,7 +112,7 @@ namespace msdfgen {
     MSDFErrorCorrection::MSDFErrorCorrection() {
     }
 
-    MSDFErrorCorrection::MSDFErrorCorrection(const BitmapSection<byte, 1> &stencil, const SDFTransformation &transformation)
+    MSDFErrorCorrection::MSDFErrorCorrection(const BitmapSection<byte, 1>& stencil, const SDFTransformation& transformation)
         : stencil(stencil), transformation(transformation) {
         minDeviationRatio = ErrorCorrectionConfig::defaultMinDeviationRatio;
         minImproveRatio = ErrorCorrectionConfig::defaultMinImproveRatio;
@@ -128,11 +128,11 @@ namespace msdfgen {
         this->minImproveRatio = minImproveRatio;
     }
 
-    void MSDFErrorCorrection::protectCorners(const Shape &shape) {
+    void MSDFErrorCorrection::protectCorners(const Shape& shape) {
         stencil.reorient(shape.getYAxisOrientation());
         for (std::vector<Contour>::const_iterator contour = shape.contours.begin(); contour != shape.contours.end(); ++contour)
             if (!contour->edges.empty()) {
-                const EdgeSegment *prevEdge = contour->edges.back();
+                const EdgeSegment* prevEdge = contour->edges.back();
                 for (std::vector<EdgeHolder>::const_iterator edge = contour->edges.begin(); edge != contour->edges.end(); ++edge) {
                     int commonColor = prevEdge->color & (*edge)->color;
                     // If the color changes from prevEdge to edge, this is a corner.
@@ -161,7 +161,7 @@ namespace msdfgen {
     }
 
     /// Determines if the channel contributes to an edge between the two texels a, b.
-    static bool edgeBetweenTexelsChannel(const float *a, const float *b, int channel) {
+    static bool edgeBetweenTexelsChannel(const float* a, const float* b, int channel) {
         // Find interpolation ratio t (0 < t < 1) where an edge is expected (mix(a[channel], b[channel], t) == 0.5).
         double t = (a[channel] - .5) / (a[channel] - b[channel]);
         if (t > 0 && t < 1) {
@@ -174,25 +174,25 @@ namespace msdfgen {
     }
 
     /// Returns a bit mask of which channels contribute to an edge between the two texels a, b.
-    static int edgeBetweenTexels(const float *a, const float *b) {
+    static int edgeBetweenTexels(const float* a, const float* b) {
         return (RED * edgeBetweenTexelsChannel(a, b, 0) + GREEN * edgeBetweenTexelsChannel(a, b, 1) + BLUE * edgeBetweenTexelsChannel(a, b, 2));
     }
 
     /// Marks texel as protected if one of its non-median channels is present in the channel mask.
-    static void protectExtremeChannels(byte *stencil, const float *msd, float m, int mask) {
+    static void protectExtremeChannels(byte* stencil, const float* msd, float m, int mask) {
         if ((mask & RED && msd[0] != m) || (mask & GREEN && msd[1] != m) || (mask & BLUE && msd[2] != m))
             *stencil |= (byte)MSDFErrorCorrection::PROTECTED;
     }
 
-    template <int N> void MSDFErrorCorrection::protectEdges(const BitmapConstSection<float, N> &sdf) {
+    template <int N> void MSDFErrorCorrection::protectEdges(const BitmapConstSection<float, N>& sdf) {
         float radius;
         stencil.reorient(sdf.yOrientation);
         // Horizontal texel pairs
         radius =
             float(PROTECTION_RADIUS_TOLERANCE * transformation.unprojectVector(Vector2(transformation.distanceMapping(DistanceMapping::Delta(1)), 0)).length());
         for (int y = 0; y < sdf.height; ++y) {
-            const float *left = sdf(0, y);
-            const float *right = sdf(1, y);
+            const float* left = sdf(0, y);
+            const float* right = sdf(1, y);
             for (int x = 0; x < sdf.width - 1; ++x) {
                 float lm = median(left[0], left[1], left[2]);
                 float rm = median(right[0], right[1], right[2]);
@@ -208,8 +208,8 @@ namespace msdfgen {
         radius =
             float(PROTECTION_RADIUS_TOLERANCE * transformation.unprojectVector(Vector2(0, transformation.distanceMapping(DistanceMapping::Delta(1)))).length());
         for (int y = 0; y < sdf.height - 1; ++y) {
-            const float *bottom = sdf(0, y);
-            const float *top = sdf(0, y + 1);
+            const float* bottom = sdf(0, y);
+            const float* top = sdf(0, y + 1);
             for (int x = 0; x < sdf.width; ++x) {
                 float bm = median(bottom[0], bottom[1], bottom[2]);
                 float tm = median(top[0], top[1], top[2]);
@@ -225,10 +225,10 @@ namespace msdfgen {
         radius =
             float(PROTECTION_RADIUS_TOLERANCE * transformation.unprojectVector(Vector2(transformation.distanceMapping(DistanceMapping::Delta(1)))).length());
         for (int y = 0; y < sdf.height - 1; ++y) {
-            const float *lb = sdf(0, y);
-            const float *rb = sdf(1, y);
-            const float *lt = sdf(0, y + 1);
-            const float *rt = sdf(1, y + 1);
+            const float* lb = sdf(0, y);
+            const float* rb = sdf(1, y);
+            const float* lt = sdf(0, y + 1);
+            const float* rt = sdf(1, y + 1);
             for (int x = 0; x < sdf.width - 1; ++x) {
                 float mlb = median(lb[0], lb[1], lb[2]);
                 float mrb = median(rb[0], rb[1], rb[2]);
@@ -251,24 +251,24 @@ namespace msdfgen {
 
     void MSDFErrorCorrection::protectAll() {
         for (int y = 0; y < stencil.height; ++y) {
-            byte *mask = stencil(0, y);
+            byte* mask = stencil(0, y);
             for (int x = 0; x < stencil.width; ++x)
                 *mask++ |= (byte)PROTECTED;
         }
     }
 
     /// Returns the median of the linear interpolation of texels a, b at t.
-    static float interpolatedMedian(const float *a, const float *b, double t) {
+    static float interpolatedMedian(const float* a, const float* b, double t) {
         return median(mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t));
     }
     /// Returns the median of the bilinear interpolation with the given constant, linear, and quadratic terms at t.
-    static float interpolatedMedian(const float *a, const float *l, const float *q, double t) {
+    static float interpolatedMedian(const float* a, const float* l, const float* q, double t) {
         return float(median(t * (t * q[0] + l[0]) + a[0], t * (t * q[1] + l[1]) + a[1], t * (t * q[2] + l[2]) + a[2]));
     }
 
     /// Checks if a linear interpolation artifact will occur at a point where two specific color channels are equal - such points have extreme median values.
     template <class ArtifactClassifier>
-    static bool hasLinearArtifactInner(const ArtifactClassifier &artifactClassifier, float am, float bm, const float *a, const float *b, float dA, float dB) {
+    static bool hasLinearArtifactInner(const ArtifactClassifier& artifactClassifier, float am, float bm, const float* a, const float* b, float dA, float dB) {
         // Find interpolation ratio t (0 < t < 1) where two color channels are equal (mix(dA, dB, t) == 0).
         double t = (double)dA / (dA - dB);
         if (t > ARTIFACT_T_EPSILON && t < 1 - ARTIFACT_T_EPSILON) {
@@ -281,7 +281,7 @@ namespace msdfgen {
 
     /// Checks if a bilinear interpolation artifact will occur at a point where two specific color channels are equal - such points have extreme median values.
     template <class ArtifactClassifier>
-    static bool hasDiagonalArtifactInner(const ArtifactClassifier &artifactClassifier, float am, float dm, const float *a, const float *l, const float *q,
+    static bool hasDiagonalArtifactInner(const ArtifactClassifier& artifactClassifier, float am, float dm, const float* a, const float* l, const float* q,
                                          float dA, float dBC, float dD, double tEx0, double tEx1) {
         // Find interpolation ratios t (0 < t[i] < 1) where two color channels are equal.
         double t[2];
@@ -320,7 +320,7 @@ namespace msdfgen {
     }
 
     /// Checks if a linear interpolation artifact will occur inbetween two horizontally or vertically adjacent texels a, b.
-    template <class ArtifactClassifier> static bool hasLinearArtifact(const ArtifactClassifier &artifactClassifier, float am, const float *a, const float *b) {
+    template <class ArtifactClassifier> static bool hasLinearArtifact(const ArtifactClassifier& artifactClassifier, float am, const float* a, const float* b) {
         float bm = median(b[0], b[1], b[2]);
         return (
             // Out of the pair, only report artifacts for the texel further from the edge to minimize side effects.
@@ -333,7 +333,7 @@ namespace msdfgen {
 
     /// Checks if a bilinear interpolation artifact will occur inbetween two diagonally adjacent texels a, d (with b, c forming the other diagonal).
     template <class ArtifactClassifier>
-    static bool hasDiagonalArtifact(const ArtifactClassifier &artifactClassifier, float am, const float *a, const float *b, const float *c, const float *d) {
+    static bool hasDiagonalArtifact(const ArtifactClassifier& artifactClassifier, float am, const float* a, const float* b, const float* c, const float* d) {
         float dm = median(d[0], d[1], d[2]);
         // Out of the pair, only report artifacts for the texel further from the edge to minimize side effects.
         if (fabsf(am - .5f) >= fabsf(dm - .5f)) {
@@ -352,7 +352,7 @@ namespace msdfgen {
         return false;
     }
 
-    template <int N> void MSDFErrorCorrection::findErrors(const BitmapConstSection<float, N> &sdf) {
+    template <int N> void MSDFErrorCorrection::findErrors(const BitmapConstSection<float, N>& sdf) {
         stencil.reorient(sdf.yOrientation);
         // Compute the expected deltas between values of horizontally, vertically, and diagonally adjacent texels.
         double hSpan = minDeviationRatio * transformation.unprojectVector(Vector2(transformation.distanceMapping(DistanceMapping::Delta(1)), 0)).length();
@@ -361,7 +361,7 @@ namespace msdfgen {
         // Inspect all texels.
         for (int y = 0; y < sdf.height; ++y) {
             for (int x = 0; x < sdf.width; ++x) {
-                const float *c = sdf(x, y);
+                const float* c = sdf(x, y);
                 float cm = median(c[0], c[1], c[2]);
                 bool protectedFlag = (*stencil(x, y) & PROTECTED) != 0;
                 const float *l = NULL, *b = NULL, *r = NULL, *t = NULL;
@@ -382,7 +382,7 @@ namespace msdfgen {
         }
     }
 
-    template <template <typename> class ContourCombiner, int N> void MSDFErrorCorrection::findErrors(BitmapConstSection<float, N> sdf, const Shape &shape) {
+    template <template <typename> class ContourCombiner, int N> void MSDFErrorCorrection::findErrors(BitmapConstSection<float, N> sdf, const Shape& shape) {
         sdf.reorient(shape.getYAxisOrientation());
         stencil.reorient(sdf.yOrientation);
         // Compute the expected deltas between values of horizontally, vertically, and diagonally adjacent texels.
@@ -404,7 +404,7 @@ namespace msdfgen {
                 for (int col = 0; col < sdf.width; ++col, x += xDirection) {
                     if ((*stencil(x, y) & ERROR))
                         continue;
-                    const float *c = sdf(x, y);
+                    const float* c = sdf(x, y);
                     shapeDistanceChecker.shapeCoord = transformation.unproject(Point2(x + .5, y + .5));
                     shapeDistanceChecker.sdfCoord = Point2(x + .5, y + .5);
                     shapeDistanceChecker.msd = c;
@@ -435,11 +435,11 @@ namespace msdfgen {
 
     template <int N> void MSDFErrorCorrection::apply(BitmapSection<float, N> sdf) const {
         sdf.reorient(stencil.yOrientation);
-        const byte *stencilRow = stencil.pixels;
-        float *rowStart = sdf.pixels;
+        const byte* stencilRow = stencil.pixels;
+        float* rowStart = sdf.pixels;
         for (int y = 0; y < sdf.height; ++y) {
-            const byte *mask = stencilRow;
-            float *pixel = rowStart;
+            const byte* mask = stencilRow;
+            float* pixel = rowStart;
             for (int x = 0; x < sdf.width; ++x) {
                 if (*mask & ERROR) {
                     // Set all color channels to the median.
@@ -458,14 +458,14 @@ namespace msdfgen {
         return stencil;
     }
 
-    template void MSDFErrorCorrection::protectEdges(const BitmapConstSection<float, 3> &sdf);
-    template void MSDFErrorCorrection::protectEdges(const BitmapConstSection<float, 4> &sdf);
-    template void MSDFErrorCorrection::findErrors(const BitmapConstSection<float, 3> &sdf);
-    template void MSDFErrorCorrection::findErrors(const BitmapConstSection<float, 4> &sdf);
-    template void MSDFErrorCorrection::findErrors<SimpleContourCombiner>(BitmapConstSection<float, 3> sdf, const Shape &shape);
-    template void MSDFErrorCorrection::findErrors<SimpleContourCombiner>(BitmapConstSection<float, 4> sdf, const Shape &shape);
-    template void MSDFErrorCorrection::findErrors<OverlappingContourCombiner>(BitmapConstSection<float, 3> sdf, const Shape &shape);
-    template void MSDFErrorCorrection::findErrors<OverlappingContourCombiner>(BitmapConstSection<float, 4> sdf, const Shape &shape);
+    template void MSDFErrorCorrection::protectEdges(const BitmapConstSection<float, 3>& sdf);
+    template void MSDFErrorCorrection::protectEdges(const BitmapConstSection<float, 4>& sdf);
+    template void MSDFErrorCorrection::findErrors(const BitmapConstSection<float, 3>& sdf);
+    template void MSDFErrorCorrection::findErrors(const BitmapConstSection<float, 4>& sdf);
+    template void MSDFErrorCorrection::findErrors<SimpleContourCombiner>(BitmapConstSection<float, 3> sdf, const Shape& shape);
+    template void MSDFErrorCorrection::findErrors<SimpleContourCombiner>(BitmapConstSection<float, 4> sdf, const Shape& shape);
+    template void MSDFErrorCorrection::findErrors<OverlappingContourCombiner>(BitmapConstSection<float, 3> sdf, const Shape& shape);
+    template void MSDFErrorCorrection::findErrors<OverlappingContourCombiner>(BitmapConstSection<float, 4> sdf, const Shape& shape);
     template void MSDFErrorCorrection::apply(BitmapSection<float, 3> sdf) const;
     template void MSDFErrorCorrection::apply(BitmapSection<float, 4> sdf) const;
 

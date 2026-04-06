@@ -3,7 +3,7 @@
 
 namespace Axiom {
     LRESULT CALLBACK Win32Window::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-        WindowData *wData = reinterpret_cast<WindowData *>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+        WindowData* wData = reinterpret_cast<WindowData*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
         switch (uMsg) {
         case WM_CLOSE: {
@@ -66,11 +66,11 @@ namespace Axiom {
         return DefWindowProc(hWnd, uMsg, wParam, lParam);
     }
 
-    std::unique_ptr<Window> Window::create(const WindowProps &props) {
+    std::unique_ptr<Window> Window::create(const WindowProps& props) {
         return std::make_unique<Win32Window>(props);
     }
 
-    Win32Window::Win32Window(const WindowProps &props) {
+    Win32Window::Win32Window(const WindowProps& props) {
         init(props);
     }
 
@@ -78,7 +78,7 @@ namespace Axiom {
         shutdown();
     }
 
-    void Win32Window::init(const WindowProps &props) {
+    void Win32Window::init(const WindowProps& props) {
         data.title = props.title;
         data.width = props.width;
         data.height = props.height;
@@ -86,7 +86,7 @@ namespace Axiom {
         AX_CORE_LOG_INFO("Creating a Win32 window {0} ({1}, {2})", data.title, data.width, data.height);
 
         hInstance = GetModuleHandle(nullptr);
-        const wchar_t *className = L"AxiomWindowClass";
+        const wchar_t* className = L"AxiomWindowClass";
         WNDCLASS wndClass = {};
         wndClass.lpszClassName = className;
         wndClass.hInstance = hInstance;

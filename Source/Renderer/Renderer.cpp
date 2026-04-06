@@ -1,7 +1,7 @@
 #include "Renderer.h"
 
 namespace Axiom {
-    Renderer::Renderer(Window *windowPtr) : window(windowPtr) {
+    Renderer::Renderer(Window* windowPtr) : window(windowPtr) {
         Device::CreateInfo deviceCreateInfo{};
         deviceCreateInfo.api = GraphicsApi::Vulkan;
         deviceCreateInfo.windowObjPtr = window;
@@ -41,7 +41,7 @@ namespace Axiom {
         device->waitIdle();
     }
 
-    CommandBuffer *Renderer::beginFrame() {
+    CommandBuffer* Renderer::beginFrame() {
         inFlightFences[currentFrameIndex]->wait();
 
         currentImageIndex = swapChain->acquireNextImage(imageAvailableSemaphores[currentFrameIndex].get());
@@ -51,7 +51,7 @@ namespace Axiom {
         }
 
         inFlightFences[currentFrameIndex]->reset();
-        CommandBuffer *commandBuffer = commandBuffers[currentFrameIndex].get();
+        CommandBuffer* commandBuffer = commandBuffers[currentFrameIndex].get();
         commandBuffer->begin();
         renderTargetBarrier.texture = swapChain->getImageTexture(currentImageIndex);
         commandBuffer->pipelineBarrier({renderTargetBarrier});
@@ -59,7 +59,7 @@ namespace Axiom {
     }
 
     void Renderer::endFrame() {
-        CommandBuffer *commandBuffer = commandBuffers[currentFrameIndex].get();
+        CommandBuffer* commandBuffer = commandBuffers[currentFrameIndex].get();
         presentBarrier.texture = renderTargetBarrier.texture;
         commandBuffer->pipelineBarrier({presentBarrier});
         commandBuffer->end();
@@ -75,27 +75,27 @@ namespace Axiom {
         currentFrameIndex = (currentFrameIndex + 1) % maxFramesInFlight;
     }
 
-    std::unique_ptr<Pipeline> Renderer::createPipeline(const Pipeline::CreateInfo &pipelineCreateInfo) {
+    std::unique_ptr<Pipeline> Renderer::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         return device->createPipeline(pipelineCreateInfo);
     }
 
-    std::unique_ptr<Buffer> Renderer::createBuffer(const Buffer::CreateInfo &bufferCreateInfo) {
+    std::unique_ptr<Buffer> Renderer::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
         return device->createBuffer(bufferCreateInfo);
     }
 
-    std::shared_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo &textureCreateInfo) {
+    std::shared_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo& textureCreateInfo) {
         return device->createTexture(textureCreateInfo);
     }
 
-    std::unique_ptr<Sampler> Renderer::createSampler(const Sampler::CreateInfo &samplerCreateInfo) {
+    std::unique_ptr<Sampler> Renderer::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {
         return device->createSampler(samplerCreateInfo);
     }
 
-    std::unique_ptr<ResourceLayout> Renderer::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo> &bindings) {
+    std::unique_ptr<ResourceLayout> Renderer::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
         return device->createResourceLayout(bindings);
     }
 
-    std::unique_ptr<ResourceSet> Renderer::createResourceSet(ResourceLayout *resourceLayout) {
+    std::unique_ptr<ResourceSet> Renderer::createResourceSet(ResourceLayout* resourceLayout) {
         return device->createResourceSet(resourceLayout);
     }
 
@@ -103,7 +103,7 @@ namespace Axiom {
         return device->beginSingleTimeCommands();
     }
 
-    void Renderer::endSingleTimeCommands(CommandBuffer *commandBuffer) {
+    void Renderer::endSingleTimeCommands(CommandBuffer* commandBuffer) {
         device->endSingleTimeCommands(commandBuffer);
     }
 

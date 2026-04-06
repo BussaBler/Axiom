@@ -1,7 +1,7 @@
 #include "MetalFence.h"
 
 namespace Axiom {
-    MetalFence::MetalFence(MTL::Device *device, bool isSignaled) {
+    MetalFence::MetalFence(MTL::Device* device, bool isSignaled) {
         sharedEvent = device->newSharedEvent();
         if (isSignaled) {
             sharedEvent->setSignaledValue(1);

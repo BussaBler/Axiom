@@ -10,7 +10,7 @@ namespace msdfgen {
     TrueDistanceSelector::EdgeCache::EdgeCache() : absDistance(0) {
     }
 
-    void TrueDistanceSelector::reset(const Point2 &p) {
+    void TrueDistanceSelector::reset(const Point2& p) {
         double delta = DISTANCE_DELTA_FACTOR * (p - this->p).length();
         // Since minDistance.distance is initialized to -DBL_MAX, at first glance this seems like it could make it underflow to -infinity, but in practice delta
         // would have to be extremely high for this to happen (above 9e291)
@@ -18,7 +18,7 @@ namespace msdfgen {
         this->p = p;
     }
 
-    void TrueDistanceSelector::addEdge(EdgeCache &cache, const EdgeSegment *prevEdge, const EdgeSegment *edge, const EdgeSegment *nextEdge) {
+    void TrueDistanceSelector::addEdge(EdgeCache& cache, const EdgeSegment* prevEdge, const EdgeSegment* edge, const EdgeSegment* nextEdge) {
         double delta = DISTANCE_DELTA_FACTOR * (p - cache.point).length();
         if (cache.absDistance - delta <= fabs(minDistance.distance)) {
             double dummy;
@@ -30,7 +30,7 @@ namespace msdfgen {
         }
     }
 
-    void TrueDistanceSelector::merge(const TrueDistanceSelector &other) {
+    void TrueDistanceSelector::merge(const TrueDistanceSelector& other) {
         if (other.minDistance < minDistance)
             minDistance = other.minDistance;
     }
@@ -43,7 +43,7 @@ namespace msdfgen {
         : absDistance(0), aDomainDistance(0), bDomainDistance(0), aPerpendicularDistance(0), bPerpendicularDistance(0) {
     }
 
-    bool PerpendicularDistanceSelectorBase::getPerpendicularDistance(double &distance, const Vector2 &ep, const Vector2 &edgeDir) {
+    bool PerpendicularDistanceSelectorBase::getPerpendicularDistance(double& distance, const Vector2& ep, const Vector2& edgeDir) {
         double ts = dotProduct(ep, edgeDir);
         if (ts > 0) {
             double perpendicularDistance = crossProduct(ep, edgeDir);
@@ -68,7 +68,7 @@ namespace msdfgen {
         nearEdgeParam = 0;
     }
 
-    bool PerpendicularDistanceSelectorBase::isEdgeRelevant(const EdgeCache &cache, const EdgeSegment *, const Point2 &p) const {
+    bool PerpendicularDistanceSelectorBase::isEdgeRelevant(const EdgeCache& cache, const EdgeSegment*, const Point2& p) const {
         double delta = DISTANCE_DELTA_FACTOR * (p - cache.point).length();
         return (cache.absDistance - delta <= fabs(minTrueDistance.distance) || fabs(cache.aDomainDistance) < delta || fabs(cache.bDomainDistance) < delta ||
                 (cache.aDomainDistance > 0 && (cache.aPerpendicularDistance < 0 ? cache.aPerpendicularDistance + delta >= minNegativePerpendicularDistance
@@ -77,7 +77,7 @@ namespace msdfgen {
                                                                                 : cache.bPerpendicularDistance - delta <= minPositivePerpendicularDistance)));
     }
 
-    void PerpendicularDistanceSelectorBase::addEdgeTrueDistance(const EdgeSegment *edge, const SignedDistance &distance, double param) {
+    void PerpendicularDistanceSelectorBase::addEdgeTrueDistance(const EdgeSegment* edge, const SignedDistance& distance, double param) {
         if (distance < minTrueDistance) {
             minTrueDistance = distance;
             nearEdge = edge;
@@ -92,7 +92,7 @@ namespace msdfgen {
             minPositivePerpendicularDistance = distance;
     }
 
-    void PerpendicularDistanceSelectorBase::merge(const PerpendicularDistanceSelectorBase &other) {
+    void PerpendicularDistanceSelectorBase::merge(const PerpendicularDistanceSelectorBase& other) {
         if (other.minTrueDistance < minTrueDistance) {
             minTrueDistance = other.minTrueDistance;
             nearEdge = other.nearEdge;
@@ -104,7 +104,7 @@ namespace msdfgen {
             minPositivePerpendicularDistance = other.minPositivePerpendicularDistance;
     }
 
-    double PerpendicularDistanceSelectorBase::computeDistance(const Point2 &p) const {
+    double PerpendicularDistanceSelectorBase::computeDistance(const Point2& p) const {
         double minDistance = minTrueDistance.distance < 0 ? minNegativePerpendicularDistance : minPositivePerpendicularDistance;
         if (nearEdge) {
             SignedDistance distance = minTrueDistance;
@@ -119,13 +119,13 @@ namespace msdfgen {
         return minTrueDistance;
     }
 
-    void PerpendicularDistanceSelector::reset(const Point2 &p) {
+    void PerpendicularDistanceSelector::reset(const Point2& p) {
         double delta = DISTANCE_DELTA_FACTOR * (p - this->p).length();
         PerpendicularDistanceSelectorBase::reset(delta);
         this->p = p;
     }
 
-    void PerpendicularDistanceSelector::addEdge(EdgeCache &cache, const EdgeSegment *prevEdge, const EdgeSegment *edge, const EdgeSegment *nextEdge) {
+    void PerpendicularDistanceSelector::addEdge(EdgeCache& cache, const EdgeSegment* prevEdge, const EdgeSegment* edge, const EdgeSegment* nextEdge) {
         if (isEdgeRelevant(cache, edge, p)) {
             double param;
             SignedDistance distance = edge->signedDistance(p, param);
@@ -162,7 +162,7 @@ namespace msdfgen {
         return computeDistance(p);
     }
 
-    void MultiDistanceSelector::reset(const Point2 &p) {
+    void MultiDistanceSelector::reset(const Point2& p) {
         double delta = DISTANCE_DELTA_FACTOR * (p - this->p).length();
         r.reset(delta);
         g.reset(delta);
@@ -170,7 +170,7 @@ namespace msdfgen {
         this->p = p;
     }
 
-    void MultiDistanceSelector::addEdge(EdgeCache &cache, const EdgeSegment *prevEdge, const EdgeSegment *edge, const EdgeSegment *nextEdge) {
+    void MultiDistanceSelector::addEdge(EdgeCache& cache, const EdgeSegment* prevEdge, const EdgeSegment* edge, const EdgeSegment* nextEdge) {
         if ((edge->color & RED && r.isEdgeRelevant(cache, edge, p)) || (edge->color & GREEN && g.isEdgeRelevant(cache, edge, p)) ||
             (edge->color & BLUE && b.isEdgeRelevant(cache, edge, p))) {
             double param;
@@ -222,7 +222,7 @@ namespace msdfgen {
         }
     }
 
-    void MultiDistanceSelector::merge(const MultiDistanceSelector &other) {
+    void MultiDistanceSelector::merge(const MultiDistanceSelector& other) {
         r.merge(other.r);
         g.merge(other.g);
         b.merge(other.b);

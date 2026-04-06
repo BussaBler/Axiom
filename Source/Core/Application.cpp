@@ -3,9 +3,9 @@
 #include "axpch.h"
 
 namespace Axiom {
-    Application *Application::instance = nullptr;
+    Application* Application::instance = nullptr;
 
-    Application::Application(const ApplicationInfo &appInfo) {
+    Application::Application(const ApplicationInfo& appInfo) {
         Log::init();
         FileSystem::setWorkingDirectory(appInfo.workingDirectory);
         AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
@@ -27,7 +27,7 @@ namespace Axiom {
     Application::~Application() {
     }
 
-    void Application::onEvent(Event &event) {
+    void Application::onEvent(Event& event) {
         EventDispatcher dispatcher(event);
         dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
         dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
@@ -40,16 +40,16 @@ namespace Axiom {
         }
     }
 
-    void Application::queueLayerAction(Layer *requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action) {
+    void Application::queueLayerAction(Layer* requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action) {
         layerActionQueue.emplace_back(LayerAction{requester, std::move(newLayer), action});
     }
 
-    bool Application::onWindowClose(WindowCloseEvent &e) {
+    bool Application::onWindowClose(WindowCloseEvent& e) {
         running = false;
         return true;
     }
 
-    bool Application::onWindowResize(WindowResizeEvent &e) {
+    bool Application::onWindowResize(WindowResizeEvent& e) {
         if (e.getWidth() == 0 || e.getHeight() == 0) {
             return false;
         }
@@ -57,10 +57,10 @@ namespace Axiom {
     }
 
     void Application::processLayerActions() {
-        for (auto &layerAction : layerActionQueue) {
+        for (auto& layerAction : layerActionQueue) {
 
             auto it = std::find_if(layerStack.begin(), layerStack.end(),
-                                   [&layerAction](const std::unique_ptr<Layer> &layerPtr) { return layerPtr.get() == layerAction.requester; });
+                                   [&layerAction](const std::unique_ptr<Layer>& layerPtr) { return layerPtr.get() == layerAction.requester; });
 
             if (it == layerStack.end()) {
                 AX_CORE_LOG_ERROR("Layer action requester not found in layer stack!");
@@ -101,15 +101,15 @@ namespace Axiom {
 
     void Application::run() {
         while (running) {
-            for (const auto &layer : layerStack) {
+            for (const auto& layer : layerStack) {
                 layer->onUpdate();
             }
-            for (const auto &layer : layerStack) {
+            for (const auto& layer : layerStack) {
                 layer->onUIRender();
             }
 
-            CommandBuffer *commandBuffer = renderer->beginFrame();
-            for (const auto &layer : layerStack) {
+            CommandBuffer* commandBuffer = renderer->beginFrame();
+            for (const auto& layer : layerStack) {
                 layer->onRender(commandBuffer);
             }
             renderer->endFrame();

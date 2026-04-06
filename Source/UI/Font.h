@@ -30,10 +30,10 @@ namespace Axiom {
         };
 
       public:
-        Font(const std::filesystem::path &filePath);
+        Font(const std::filesystem::path& filePath);
         ~Font() = default;
 
-        Atlas &getAsciiAtlas() {
+        Atlas& getAsciiAtlas() {
             return asciiAtlas;
         }
 
@@ -52,12 +52,12 @@ namespace Axiom {
         };
 
       private:
-        Glyph readSimpleGlyph(BinaryReader &reader) const;
-        std::vector<Point> readPoints(BinaryReader &reader, const std::vector<uint8_t> &pointsFlags) const;
-        std::unordered_map<uint32_t, uint32_t> createUnicodeToGlyphIndexMap(BinaryReader &reader) const;
+        Glyph readSimpleGlyph(BinaryReader& reader) const;
+        std::vector<Point> readPoints(BinaryReader& reader, const std::vector<uint8_t>& pointsFlags) const;
+        std::unordered_map<uint32_t, uint32_t> createUnicodeToGlyphIndexMap(BinaryReader& reader) const;
 
         Math::Vec2 bezierInterpolation(Math::Vec2 p0, Math::Vec2 p1, Math::Vec2 p2, float t) const;
-        std::vector<Contour> createRawGlyphContours(const Glyph &glyph, float scale) const;
+        std::vector<Contour> createRawGlyphContours(const Glyph& glyph, float scale) const;
 
       private:
         Glyph notFoundGlyph;

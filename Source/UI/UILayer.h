@@ -12,7 +12,7 @@ namespace Axiom {
         void onAttach() override;
         void onDetach() override;
         void onUpdate() override;
-        void onEvent(Event &event) override;
-        void onRender(CommandBuffer *commandBuffer) override;
+        void onEvent(Event& event) override;
+        void onRender(CommandBuffer* commandBuffer) override;
     };
 } // namespace Axiom

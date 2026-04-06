@@ -50,7 +50,7 @@ namespace Axiom {
         return Allocation{nullptr, 0, 0, chunks.end()};
     }
 
-    void VulkanMemoryPool::free(const Allocation &allocation) {
+    void VulkanMemoryPool::free(const Allocation& allocation) {
         auto chunkIt = allocation.chunkIt;
 
         chunkIt->isFree = true;

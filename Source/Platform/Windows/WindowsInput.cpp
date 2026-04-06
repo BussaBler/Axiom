@@ -2,7 +2,7 @@
 #include "axpch.h"
 
 namespace Axiom {
-    Input *Input::instance = new WindowsInput();
+    Input* Input::instance = new WindowsInput();
 
     bool WindowsInput::internalIsKeyPressed(KeyCode keyCode) {
         SHORT result = GetAsyncKeyState(keyCodeToWindowsKey(keyCode));

@@ -12,7 +12,7 @@ namespace Axiom {
             return nullptr;
         }
 
-        static UUID loadTexture(const std::filesystem::path &path);
+        static UUID loadTexture(const std::filesystem::path& path);
 
       private:
         static std::unordered_map<UUID, std::shared_ptr<Asset>> assets;

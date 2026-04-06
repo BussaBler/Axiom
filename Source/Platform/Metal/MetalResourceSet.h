@@ -5,13 +5,16 @@
 namespace Axiom {
     class MetalResourceSet : public ResourceSet {
       public:
-        MetalResourceSet(ResourceLayout *layout, MTL::Device *device, MTL::ArgumentEncoder *argumentEncoder);
+        MetalResourceSet(ResourceLayout* layout, MTL::Device* device, MTL::ArgumentEncoder* argumentEncoder);
         ~MetalResourceSet() override;
 
-        void update(const std::vector<Binding> &bindings) override;
+        void update(const std::vector<Binding>& bindings) override;
 
       private:
-        MTL::Buffer *argumentBuffer = nullptr;
-        MTL::ArgumentEncoder *argumentEncoder = nullptr;
+        MTL::Buffer* argumentBuffer = nullptr;
+        MTL::ArgumentEncoder* argumentEncoder = nullptr;
+
+        std::vector<MTL::Buffer*> residentBuffers;
+        std::vector<MTL::Texture*> residentTextures;
     };
 } // namespace Axiom

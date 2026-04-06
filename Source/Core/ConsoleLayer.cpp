@@ -3,14 +3,14 @@
 
 namespace Axiom {
     void ConsoleLayer::onAttach() {
-        registerCommand("echo", [this](const std::vector<std::string> &args) {
+        registerCommand("echo", [this](const std::vector<std::string>& args) {
             std::string output;
-            for (const auto &arg : args) {
+            for (const auto& arg : args) {
                 output += arg + " ";
             }
             log(output);
         });
-        registerCommand("clear", [this](const std::vector<std::string> &args) { commandHistory.clear(); });
+        registerCommand("clear", [this](const std::vector<std::string>& args) { commandHistory.clear(); });
     }
 
     void ConsoleLayer::onDetach() {
@@ -19,7 +19,7 @@ namespace Axiom {
     void ConsoleLayer::onUpdate() {
     }
 
-    void ConsoleLayer::onEvent(Event &event) {
+    void ConsoleLayer::onEvent(Event& event) {
         EventDispatcher dispatcher(event);
 
         dispatcher.dispatch<KeyPressedEvent>(std::bind(&ConsoleLayer::onKeyPressed, this, std::placeholders::_1));
@@ -53,14 +53,14 @@ namespace Axiom {
         }
     }
 
-    void ConsoleLayer::onRender(CommandBuffer *commandBuffer) {
+    void ConsoleLayer::onRender(CommandBuffer* commandBuffer) {
     }
 
-    void ConsoleLayer::registerCommand(const std::string &command, CommandCallback callback) {
+    void ConsoleLayer::registerCommand(const std::string& command, CommandCallback callback) {
         commandRegistry[command] = callback;
     }
 
-    void ConsoleLayer::executeCommand(const std::string &commandLine) {
+    void ConsoleLayer::executeCommand(const std::string& commandLine) {
         std::istringstream iss(commandLine);
         std::string command;
         iss >> command;
@@ -79,7 +79,7 @@ namespace Axiom {
         }
     }
 
-    bool ConsoleLayer::onKeyPressed(KeyPressedEvent &event) {
+    bool ConsoleLayer::onKeyPressed(KeyPressedEvent& event) {
         if (event.getKeyCode() == KeyCode::Grave) {
             isOpen = !isOpen;
             return true;
@@ -99,7 +99,7 @@ namespace Axiom {
         return true;
     }
 
-    bool ConsoleLayer::onKeyTyped(KeyTypedEvent &event) {
+    bool ConsoleLayer::onKeyTyped(KeyTypedEvent& event) {
         char c = event.getKeyChar();
 
         if (c >= 32 && c <= 126 && c != '`') {
@@ -109,7 +109,7 @@ namespace Axiom {
         return true;
     }
 
-    void ConsoleLayer::log(const std::string &message) {
+    void ConsoleLayer::log(const std::string& message) {
         commandHistory.push_back(message);
         if (commandHistory.size() > 100) {
             commandHistory.pop_front();

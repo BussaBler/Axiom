@@ -11,7 +11,7 @@ namespace Axiom {
         static Allocation allocate(Vk::Buffer buffer, Vk::MemoryPropertyFlags memoryProperties);
         static Allocation allocate(Vk::Image image, Vk::MemoryPropertyFlags memoryProperties);
 
-        static void free(const Allocation &allocation);
+        static void free(const Allocation& allocation);
 
       private:
         VulkanAllocator(Vk::Device logicalDevice, Vk::PhysicalDevice physicalDevice);
@@ -22,7 +22,7 @@ namespace Axiom {
       private:
         const size_t DEFAULT_POOL_SIZE = 256 * 1e6;
 
-        static VulkanAllocator *instance;
+        static VulkanAllocator* instance;
         Vk::Device device = nullptr;
         Vk::PhysicalDevice physicalDevice = nullptr;
         std::unordered_map<uint32_t, std::unique_ptr<VulkanMemoryPool>> memoryPools;

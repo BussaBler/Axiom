@@ -7,10 +7,10 @@
 namespace msdfgen {
 
     class RgbaFileOutput {
-        FILE *file;
+        FILE* file;
 
       public:
-        RgbaFileOutput(const char *filename, unsigned width, unsigned height) {
+        RgbaFileOutput(const char* filename, unsigned width, unsigned height) {
             if ((file = fopen(filename, "wb"))) {
                 byte header[12] = {byte('R'), byte('G'), byte('B'), byte('A')};
                 header[4] = byte(width >> 24);
@@ -34,12 +34,12 @@ namespace msdfgen {
             fwrite(rgba, 1, 4, file);
         }
 
-        operator FILE *() {
+        operator FILE*() {
             return file;
         }
     };
 
-    bool saveRgba(BitmapConstSection<byte, 1> bitmap, const char *filename) {
+    bool saveRgba(BitmapConstSection<byte, 1> bitmap, const char* filename) {
         RgbaFileOutput output(filename, bitmap.width, bitmap.height);
         if (output) {
             byte rgba[4] = {byte(0), byte(0), byte(0), byte(0xff)};
@@ -55,7 +55,7 @@ namespace msdfgen {
         return false;
     }
 
-    bool saveRgba(BitmapConstSection<byte, 3> bitmap, const char *filename) {
+    bool saveRgba(BitmapConstSection<byte, 3> bitmap, const char* filename) {
         RgbaFileOutput output(filename, bitmap.width, bitmap.height);
         if (output) {
             byte rgba[4] = {byte(0), byte(0), byte(0), byte(0xff)};
@@ -71,7 +71,7 @@ namespace msdfgen {
         return false;
     }
 
-    bool saveRgba(BitmapConstSection<byte, 4> bitmap, const char *filename) {
+    bool saveRgba(BitmapConstSection<byte, 4> bitmap, const char* filename) {
         RgbaFileOutput output(filename, bitmap.width, bitmap.height);
         if (output) {
             bitmap.reorient(Y_DOWNWARD);
@@ -82,7 +82,7 @@ namespace msdfgen {
         return false;
     }
 
-    bool saveRgba(BitmapConstSection<float, 1> bitmap, const char *filename) {
+    bool saveRgba(BitmapConstSection<float, 1> bitmap, const char* filename) {
         RgbaFileOutput output(filename, bitmap.width, bitmap.height);
         if (output) {
             byte rgba[4] = {byte(0), byte(0), byte(0), byte(0xff)};
@@ -98,7 +98,7 @@ namespace msdfgen {
         return false;
     }
 
-    bool saveRgba(BitmapConstSection<float, 3> bitmap, const char *filename) {
+    bool saveRgba(BitmapConstSection<float, 3> bitmap, const char* filename) {
         RgbaFileOutput output(filename, bitmap.width, bitmap.height);
         if (output) {
             byte rgba[4] = {byte(0), byte(0), byte(0), byte(0xff)};
@@ -116,7 +116,7 @@ namespace msdfgen {
         return false;
     }
 
-    bool saveRgba(BitmapConstSection<float, 4> bitmap, const char *filename) {
+    bool saveRgba(BitmapConstSection<float, 4> bitmap, const char* filename) {
         RgbaFileOutput output(filename, bitmap.width, bitmap.height);
         if (output) {
             byte rgba[4];

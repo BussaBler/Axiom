@@ -5,26 +5,26 @@
 
 namespace msdfgen {
 
-    static double shoelace(const Point2 &a, const Point2 &b) {
+    static double shoelace(const Point2& a, const Point2& b) {
         return (b.x - a.x) * (a.y + b.y);
     }
 
-    void Contour::addEdge(const EdgeHolder &edge) {
+    void Contour::addEdge(const EdgeHolder& edge) {
         edges.push_back(edge);
     }
 
 #ifdef MSDFGEN_USE_CPP11
-    void Contour::addEdge(EdgeHolder &&edge) {
-        edges.push_back((EdgeHolder &&)edge);
+    void Contour::addEdge(EdgeHolder&& edge) {
+        edges.push_back((EdgeHolder&&)edge);
     }
 #endif
 
-    EdgeHolder &Contour::addEdge() {
+    EdgeHolder& Contour::addEdge() {
         edges.resize(edges.size() + 1);
         return edges.back();
     }
 
-    static void boundPoint(double &xMin, double &yMin, double &xMax, double &yMax, Point2 p) {
+    static void boundPoint(double& xMin, double& yMin, double& xMax, double& yMax, Point2 p) {
         if (p.x < xMin)
             xMin = p.x;
         if (p.y < yMin)
@@ -35,12 +35,12 @@ namespace msdfgen {
             yMax = p.y;
     }
 
-    void Contour::bound(double &xMin, double &yMin, double &xMax, double &yMax) const {
+    void Contour::bound(double& xMin, double& yMin, double& xMax, double& yMax) const {
         for (std::vector<EdgeHolder>::const_iterator edge = edges.begin(); edge != edges.end(); ++edge)
             (*edge)->bound(xMin, yMin, xMax, yMax);
     }
 
-    void Contour::boundMiters(double &xMin, double &yMin, double &xMax, double &yMax, double border, double miterLimit, int polarity) const {
+    void Contour::boundMiters(double& xMin, double& yMin, double& xMax, double& yMax, double border, double miterLimit, int polarity) const {
         if (edges.empty())
             return;
         Vector2 prevDir = edges.back()->direction(1).normalize(true);

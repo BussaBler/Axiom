@@ -2,7 +2,7 @@
 #include "Math/AxMath.h"
 
 namespace Axiom {
-    VulkanSwapChain::VulkanSwapChain(const CreateInfo &createInfo) : device(createInfo.logicDevice), presentQueue(createInfo.presentQueue) {
+    VulkanSwapChain::VulkanSwapChain(const CreateInfo& createInfo) : device(createInfo.logicDevice), presentQueue(createInfo.presentQueue) {
         Vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(createInfo.swapChainDetails.formats);
         Vk::PresentModeKHR presentMode = chooseSwapPresentMode(createInfo.swapChainDetails.presentModes);
         Vk::Extent2D extent = chooseSwapExtent(createInfo.swapChainDetails.capabilities, createInfo.windowSize);
@@ -49,8 +49,8 @@ namespace Axiom {
         device.destroySwapchainKHR(swapChain);
     }
 
-    uint32_t VulkanSwapChain::acquireNextImage(Semaphore *imageAvailableSemaphore) {
-        Vk::Semaphore vkSignal = static_cast<VulkanSemaphore *>(imageAvailableSemaphore)->getHandle();
+    uint32_t VulkanSwapChain::acquireNextImage(Semaphore* imageAvailableSemaphore) {
+        Vk::Semaphore vkSignal = static_cast<VulkanSemaphore*>(imageAvailableSemaphore)->getHandle();
         Vk::ResultValue<uint32_t> acquireResult = device.acquireNextImageKHR(swapChain, (std::numeric_limits<uint64_t>::max)(), vkSignal, nullptr);
 
         if (acquireResult.result == Vk::Result::eErrorOutOfDateKHR) {
@@ -63,12 +63,12 @@ namespace Axiom {
         return acquireResult.value;
     }
 
-    Texture *VulkanSwapChain::getImageTexture(uint32_t index) {
+    Texture* VulkanSwapChain::getImageTexture(uint32_t index) {
         return swapChainTextures[index].get();
     }
 
-    bool VulkanSwapChain::present(uint32_t imageIndex, Semaphore *waitSemaphore) {
-        Vk::Semaphore vkWait = static_cast<VulkanSemaphore *>(waitSemaphore)->getHandle();
+    bool VulkanSwapChain::present(uint32_t imageIndex, Semaphore* waitSemaphore) {
+        Vk::Semaphore vkWait = static_cast<VulkanSemaphore*>(waitSemaphore)->getHandle();
         Vk::PresentInfoKHR presentInfo(vkWait, swapChain, imageIndex);
 
         Vk::Result presentResult = presentQueue.presentKHR(presentInfo);
@@ -95,8 +95,8 @@ namespace Axiom {
         return swapChainExtent.height;
     }
 
-    Vk::SurfaceFormatKHR VulkanSwapChain::chooseSwapSurfaceFormat(const std::vector<Vk::SurfaceFormatKHR> &availableFormats) {
-        for (const auto &availableFormat : availableFormats) {
+    Vk::SurfaceFormatKHR VulkanSwapChain::chooseSwapSurfaceFormat(const std::vector<Vk::SurfaceFormatKHR>& availableFormats) {
+        for (const auto& availableFormat : availableFormats) {
             if (availableFormat.format == Vk::Format::eB8G8R8A8Srgb && availableFormat.colorSpace == Vk::ColorSpaceKHR::eSrgbNonlinear) {
                 return availableFormat;
             }
@@ -105,8 +105,8 @@ namespace Axiom {
         return availableFormats[0];
     }
 
-    Vk::PresentModeKHR VulkanSwapChain::chooseSwapPresentMode(const std::vector<Vk::PresentModeKHR> &availablePresentModes) {
-        for (const auto &availablePresentMode : availablePresentModes) {
+    Vk::PresentModeKHR VulkanSwapChain::chooseSwapPresentMode(const std::vector<Vk::PresentModeKHR>& availablePresentModes) {
+        for (const auto& availablePresentMode : availablePresentModes) {
             if (availablePresentMode == Vk::PresentModeKHR::eMailbox) {
                 return availablePresentMode;
             }
@@ -115,7 +115,7 @@ namespace Axiom {
         return Vk::PresentModeKHR::eFifo;
     }
 
-    Vk::Extent2D VulkanSwapChain::chooseSwapExtent(const Vk::SurfaceCapabilitiesKHR &capabilities, Vk::Extent2D windowSize) const {
+    Vk::Extent2D VulkanSwapChain::chooseSwapExtent(const Vk::SurfaceCapabilitiesKHR& capabilities, Vk::Extent2D windowSize) const {
         if (capabilities.currentExtent.width != (std::numeric_limits<uint32_t>::max)()) {
             return capabilities.currentExtent;
         } else {

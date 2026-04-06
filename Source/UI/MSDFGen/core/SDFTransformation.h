@@ -18,7 +18,7 @@ namespace msdfgen {
         inline SDFTransformation() {
         }
 
-        inline SDFTransformation(const Projection &projection, const DistanceMapping &distanceMapping)
+        inline SDFTransformation(const Projection& projection, const DistanceMapping& distanceMapping)
             : Projection(projection), distanceMapping(distanceMapping) {
         }
     };

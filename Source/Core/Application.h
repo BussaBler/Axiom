@@ -17,11 +17,11 @@ namespace Axiom {
 
     class Application {
       public:
-        Application(const ApplicationInfo &appInfo);
+        Application(const ApplicationInfo& appInfo);
         virtual ~Application();
 
         void run();
-        void onEvent(Event &event);
+        void onEvent(Event& event);
 
         template <typename T>
             requires std::derived_from<T, Layer>
@@ -44,27 +44,27 @@ namespace Axiom {
             layerStack.popOverlay<T>();
         }
 
-        void queueLayerAction(Layer *requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action);
+        void queueLayerAction(Layer* requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action);
 
-        static Application *get() {
+        static Application* get() {
             return instance;
         }
-        static Renderer *getRenderer() {
+        static Renderer* getRenderer() {
             return instance->renderer.get();
         }
-        static Window *getWindow() {
+        static Window* getWindow() {
             return instance->window.get();
         }
 
       private:
-        bool onWindowClose(WindowCloseEvent &e);
-        bool onWindowResize(WindowResizeEvent &e);
+        bool onWindowClose(WindowCloseEvent& e);
+        bool onWindowResize(WindowResizeEvent& e);
 
         void processLayerActions();
 
       private:
         struct LayerAction {
-            Layer *requester;
+            Layer* requester;
             std::unique_ptr<Layer> newLayer;
             Layer::ActionType action;
         };
@@ -77,8 +77,8 @@ namespace Axiom {
         std::vector<LayerAction> layerActionQueue;
 
       private:
-        static Application *instance;
+        static Application* instance;
     };
 
-    Application *createApplication(const ApplicationInfo &appInfo);
+    Application* createApplication(const ApplicationInfo& appInfo);
 } // namespace Axiom

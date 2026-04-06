@@ -9,7 +9,7 @@ namespace Axiom {
     enum class StoreOp { Store, DontCare };
 
     struct RenderAttachment {
-        Texture *texture = nullptr;
+        Texture* texture = nullptr;
         LoadOp loadOp = LoadOp::DontCare;
         StoreOp storeOp = StoreOp::DontCare;
         Math::Vec4 clearColor = Math::Vec4(0.0f, 0.0f, 0.0f, 0.0f);

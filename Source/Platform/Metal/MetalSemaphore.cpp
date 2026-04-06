@@ -1,7 +1,7 @@
 #include "MetalSemaphore.h"
 
 namespace Axiom {
-    MetalSemaphore::MetalSemaphore(MTL::Device *device) {
+    MetalSemaphore::MetalSemaphore(MTL::Device* device) {
         event = device->newEvent();
     }
 

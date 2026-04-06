@@ -15,7 +15,7 @@ typedef struct objc_object NSWindow;
 namespace Axiom {
     class MacOSWindow : public Window {
       public:
-        MacOSWindow(const WindowProps &props);
+        MacOSWindow(const WindowProps& props);
         ~MacOSWindow();
 
         void onUpdate() override;
@@ -25,7 +25,7 @@ namespace Axiom {
         uint32_t getHeight() const override {
             return data.height;
         }
-        void setEventCallback(const EventCallback &callback) override {
+        void setEventCallback(const EventCallback& callback) override {
             data.eventCallback = callback;
         }
 
@@ -34,22 +34,22 @@ namespace Axiom {
             return data.vSync;
         }
 
-        void *getNativeWindow() override {
+        void* getNativeWindow() override {
             return window;
         }
-        void *getNativeDisplay() const override {
+        void* getNativeDisplay() const override {
             return nullptr;
         }
         uint32_t getWindowDPI() const override;
 
-        void attachMetalLayer(void *metalLayer);
+        void attachMetalLayer(void* metalLayer);
 
       private:
-        void init(const WindowProps &props);
+        void init(const WindowProps& props);
         void shutdown();
 
       private:
-        NSWindow *window;
+        NSWindow* window;
         struct WindowData {
             std::string title;
             uint32_t width, height;

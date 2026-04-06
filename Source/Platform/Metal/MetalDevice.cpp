@@ -6,7 +6,7 @@
 #include "Platform/MacOS/MacOSWindow.h"
 
 namespace Axiom {
-    MetalDevice::MetalDevice(const CreateInfo &createInfo) : Device() {
+    MetalDevice::MetalDevice(const CreateInfo& createInfo) : Device() {
         metalDevice = MTL::CreateSystemDefaultDevice();
         metalLayer = CA::MetalLayer::layer();
         AX_CORE_ASSERT(metalDevice, "Failed to create Metal device");
@@ -14,7 +14,7 @@ namespace Axiom {
 
         metalLayer->setDevice(metalDevice);
         metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
-        reinterpret_cast<MacOSWindow *>(createInfo.windowObjPtr)->attachMetalLayer(metalLayer);
+        reinterpret_cast<MacOSWindow*>(createInfo.windowObjPtr)->attachMetalLayer(metalLayer);
 
         commandQueue = metalDevice->newCommandQueue();
         AX_CORE_ASSERT(commandQueue, "Failed to create Metal command queue");
@@ -39,7 +39,7 @@ namespace Axiom {
         return std::make_unique<MetalSwapChain>(metalDevice, metalLayer, width, height);
     }
 
-    std::unique_ptr<Pipeline> MetalDevice::createPipeline(const Pipeline::CreateInfo &pipelineCreateInfo) {
+    std::unique_ptr<Pipeline> MetalDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         return std::make_unique<MetalPipeline>(pipelineCreateInfo, metalDevice);
     }
 
@@ -55,15 +55,15 @@ namespace Axiom {
         return std::make_unique<MetalFence>(metalDevice, isSignaled);
     }
 
-    std::unique_ptr<Buffer> MetalDevice::createBuffer(const Buffer::CreateInfo &bufferCreateInfo) {
+    std::unique_ptr<Buffer> MetalDevice::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
         return std::make_unique<MetalBuffer>(bufferCreateInfo, metalDevice);
     }
 
-    std::shared_ptr<Texture> MetalDevice::createTexture(const Texture::CreateInfo &textureCreateInfo) {
+    std::shared_ptr<Texture> MetalDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
         return std::make_shared<MetalTexture>(textureCreateInfo, metalDevice);
     }
 
-    std::unique_ptr<Sampler> MetalDevice::createSampler(const Sampler::CreateInfo &samplerCreateInfo) {
+    std::unique_ptr<Sampler> MetalDevice::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {
         return std::make_unique<MetalSampler>(samplerCreateInfo, metalDevice);
     }
 } // namespace Axiom

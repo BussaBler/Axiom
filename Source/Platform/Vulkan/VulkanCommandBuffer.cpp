@@ -25,13 +25,13 @@ namespace Axiom {
         AX_CORE_ASSERT(commandBuffer.end() == Vk::Result::eSuccess, "Failed to end recording Vulkan command buffer");
     }
 
-    void VulkanCommandBuffer::beginRendering(const RenderPass &renderPass) {
+    void VulkanCommandBuffer::beginRendering(const RenderPass& renderPass) {
         std::vector<Vk::RenderingAttachmentInfo> colorAttachments;
         colorAttachments.reserve(renderPass.colorAttachmentCount);
 
         for (size_t i = 0; i < renderPass.colorAttachmentCount; i++) {
-            const auto &attachment = renderPass.colorAttachments[i];
-            VulkanTexture *vulkanTexture = static_cast<VulkanTexture *>(attachment.texture);
+            const auto& attachment = renderPass.colorAttachments[i];
+            VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture);
             Vk::ClearValue clearValue{};
             clearValue.setColor(Vk::ClearColorValue(
                 std::array<float, 4>{attachment.clearColor.x(), attachment.clearColor.y(), attachment.clearColor.z(), attachment.clearColor.w()}));
@@ -47,7 +47,7 @@ namespace Axiom {
 
         Vk::RenderingAttachmentInfo depthAttachmentInfo{};
         if (renderPass.hasDepthAttachment) {
-            VulkanTexture *vulkanTexture = static_cast<VulkanTexture *>(renderPass.depthAttachment.texture);
+            VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(renderPass.depthAttachment.texture);
             Vk::ClearValue clearValue{};
             clearValue.setDepthStencil(Vk::ClearDepthStencilValue{renderPass.depthAttachment.clearDepth, renderPass.depthAttachment.clearStencil});
             depthAttachmentInfo.setImageView(vulkanTexture->getImageView());
@@ -73,9 +73,9 @@ namespace Axiom {
         commandBuffer.endRendering();
     }
 
-    void VulkanCommandBuffer::bindPipeline(Pipeline *pipeline) {
-        Vk::Pipeline vkPipeline = static_cast<VulkanPipeline *>(pipeline)->getHandle();
-        currentPipelineLayout = static_cast<VulkanPipeline *>(pipeline)->getPipelineLayout();
+    void VulkanCommandBuffer::bindPipeline(Pipeline* pipeline) {
+        Vk::Pipeline vkPipeline = static_cast<VulkanPipeline*>(pipeline)->getHandle();
+        currentPipelineLayout = static_cast<VulkanPipeline*>(pipeline)->getPipelineLayout();
 
         commandBuffer.bindPipeline(Vk::PipelineBindPoint::eGraphics, vkPipeline);
     }
@@ -90,31 +90,31 @@ namespace Axiom {
         commandBuffer.setScissor(0, scissor);
     }
 
-    void VulkanCommandBuffer::bindResources(const std::vector<ResourceSet *> &resourceSets, uint32_t firstSet) {
+    void VulkanCommandBuffer::bindResources(const std::vector<ResourceSet*>& resourceSets, uint32_t firstSet) {
         std::vector<Vk::DescriptorSet> vkDescriptorSets(resourceSets.size());
 
         for (size_t i = 0; i < resourceSets.size(); i++) {
-            vkDescriptorSets[i] = static_cast<VulkanResourceSet *>(resourceSets[i])->getHandle();
+            vkDescriptorSets[i] = static_cast<VulkanResourceSet*>(resourceSets[i])->getHandle();
         }
         commandBuffer.bindDescriptorSets(Vk::PipelineBindPoint::eGraphics, currentPipelineLayout, firstSet, vkDescriptorSets, {});
     }
 
-    void VulkanCommandBuffer::bindPushConstants(const void *data, uint32_t size, uint32_t offset) {
+    void VulkanCommandBuffer::bindPushConstants(const void* data, uint32_t size, uint32_t offset) {
         commandBuffer.pushConstants(currentPipelineLayout, Vk::ShaderStageFlagBits::eVertex | Vk::ShaderStageFlagBits::eFragment, offset, size, data);
     }
 
-    void VulkanCommandBuffer::bindVertexBuffers(const std::vector<Buffer *> &vertexBuffers) {
+    void VulkanCommandBuffer::bindVertexBuffers(const std::vector<Buffer*>& vertexBuffers) {
         std::vector<Vk::Buffer> vkBuffers(vertexBuffers.size());
         std::vector<Vk::DeviceSize> offsets(vertexBuffers.size(), 0);
 
         for (size_t i = 0; i < vertexBuffers.size(); i++) {
-            vkBuffers[i] = static_cast<VulkanBuffer *>(vertexBuffers[i])->getHandle();
+            vkBuffers[i] = static_cast<VulkanBuffer*>(vertexBuffers[i])->getHandle();
         }
         commandBuffer.bindVertexBuffers(0, vkBuffers, offsets);
     }
 
-    void VulkanCommandBuffer::bindIndexBuffer(Buffer *indexBuffer) {
-        Vk::Buffer vkBuffer = static_cast<VulkanBuffer *>(indexBuffer)->getHandle();
+    void VulkanCommandBuffer::bindIndexBuffer(Buffer* indexBuffer) {
+        Vk::Buffer vkBuffer = static_cast<VulkanBuffer*>(indexBuffer)->getHandle();
         commandBuffer.bindIndexBuffer(vkBuffer, 0, Vk::IndexType::eUint32); // TODO: support uint16 indices
     }
 
@@ -126,12 +126,12 @@ namespace Axiom {
         commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
     }
 
-    void VulkanCommandBuffer::pipelineBarrier(const std::vector<Texture::Barrier> &textureBarries) {
+    void VulkanCommandBuffer::pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) {
         std::vector<Vk::ImageMemoryBarrier2> imageBarriers(textureBarries.size());
 
         for (size_t i = 0; i < textureBarries.size(); i++) {
-            const auto &barrier = textureBarries[i];
-            VulkanTexture *vulkanTexture = static_cast<VulkanTexture *>(barrier.texture);
+            const auto& barrier = textureBarries[i];
+            VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(barrier.texture);
             imageBarriers[i].setImage(vulkanTexture->getImage());
             imageBarriers[i].setSrcQueueFamilyIndex(Vk::QueueFamilyIgnored);
             imageBarriers[i].setDstQueueFamilyIndex(Vk::QueueFamilyIgnored);
@@ -221,18 +221,18 @@ namespace Axiom {
         commandBuffer.pipelineBarrier2(dependencyInfo);
     }
 
-    void VulkanCommandBuffer::copyBuffer(Buffer *srcBuffer, Buffer *dstBuffer, uint64_t size, uint64_t srcOffset, uint64_t dstOffset) {
+    void VulkanCommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, uint64_t size, uint64_t srcOffset, uint64_t dstOffset) {
         AX_CORE_ASSERT(size + dstOffset <= dstBuffer->getSize(), "Copy will not fit in the destination buffer");
 
-        Vk::Buffer vkSrcBuffer = static_cast<VulkanBuffer *>(srcBuffer)->getHandle();
-        Vk::Buffer vkDstBuffer = static_cast<VulkanBuffer *>(dstBuffer)->getHandle();
+        Vk::Buffer vkSrcBuffer = static_cast<VulkanBuffer*>(srcBuffer)->getHandle();
+        Vk::Buffer vkDstBuffer = static_cast<VulkanBuffer*>(dstBuffer)->getHandle();
 
         Vk::BufferCopy copyRegion(srcOffset, dstOffset, size);
 
         commandBuffer.copyBuffer(vkSrcBuffer, vkDstBuffer, copyRegion);
     }
 
-    void VulkanCommandBuffer::copyBufferToTexture(Buffer *srcBuffer, Texture *dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel,
+    void VulkanCommandBuffer::copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel,
                                                   uint32_t arrayLayer) {
         Texture::Barrier transferBarrier = {.texture = dstTexture,
                                             .oldState = TextureState::Undefined,
@@ -253,8 +253,8 @@ namespace Axiom {
         copyRegion.setImageOffset({0, 0, 0});
         copyRegion.setImageExtent({width, height, 1});
 
-        Vk::Buffer vkSrcBuffer = static_cast<VulkanBuffer *>(srcBuffer)->getHandle();
-        Vk::Image vkDstImage = static_cast<VulkanTexture *>(dstTexture)->getImage();
+        Vk::Buffer vkSrcBuffer = static_cast<VulkanBuffer*>(srcBuffer)->getHandle();
+        Vk::Image vkDstImage = static_cast<VulkanTexture*>(dstTexture)->getImage();
 
         commandBuffer.copyBufferToImage(vkSrcBuffer, vkDstImage, Vk::ImageLayout::eTransferDstOptimal, copyRegion);
 

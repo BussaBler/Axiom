@@ -2,10 +2,10 @@
 #include "Core/Application.h"
 
 namespace Axiom {
-    UI *UI::instance = nullptr;
+    UI* UI::instance = nullptr;
 
     UI::UI() {
-        auto &asciiAtlas = jetBrainsMonoFont.getAsciiAtlas();
+        auto& asciiAtlas = jetBrainsMonoFont.getAsciiAtlas();
         Texture::CreateInfo fontAtlasCreateInfo = {.width = asciiAtlas.width,
                                                    .height = asciiAtlas.height,
                                                    .mipLevels = 1,
@@ -61,7 +61,7 @@ namespace Axiom {
         instance->shouldConsumeMouse = (instance->hotItem != 0 || instance->activeItem != 0);
     }
 
-    void UI::render(CommandBuffer *commandBuffer) {
+    void UI::render(CommandBuffer* commandBuffer) {
         Math::Vec2 renderTargetSize = Application::getRenderer()->getCurrentRenderTargetSize();
         Math::Mat4 projection = Math::Mat4::orthographic(0.0f, renderTargetSize.x(), 0.0f, renderTargetSize.y(), -1.0f, 1.0f);
 
@@ -123,7 +123,7 @@ namespace Axiom {
         return instance->shouldConsumeMouse;
     }
 
-    void UI::addBaseQuad(const Math::Vec2 &pos, const Math::Vec2 &size, const Math::Vec4 &color) {
+    void UI::addBaseQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec4& color) {
         // Top-Left
         baseVertices.push_back(UIVertex(pos, Math::Vec2(0.0f), color));
         // Bottom-Left
@@ -134,7 +134,7 @@ namespace Axiom {
         baseVertices.push_back(UIVertex(pos + Math::Vec2(0.0f, size.y()), Math::Vec2(0.0f, 1.0f), color));
     }
 
-    void UI::addFontQuad(const Math::Vec2 &pos, const Math::Vec2 &size, const Math::Vec2 &uv0, const Math::Vec2 &uv1, const Math::Vec4 &color) {
+    void UI::addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Math::Vec4& color) {
         fontVertices.push_back(UIVertex(pos, uv0, color));
         fontVertices.push_back(UIVertex(pos + Math::Vec2(size.x(), 0.0f), Math::Vec2(uv1.x(), uv0.y()), color));
         fontVertices.push_back(UIVertex(pos + size, uv1, color));
@@ -284,7 +284,7 @@ namespace Axiom {
         fontPipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
     }
 
-    bool UI::button(const std::string &label, Math::Vec2 pos, Math::Vec2 size) {
+    bool UI::button(const std::string& label, Math::Vec2 pos, Math::Vec2 size) {
         if (instance->baseVertices.size() / 4 >= maxButtonQuads) {
             AX_CORE_LOG_WARN("UI Quad limit reached! Cannot draw button: {0}", label);
             return false;
@@ -321,8 +321,8 @@ namespace Axiom {
         return isClicked;
     }
 
-    void UI::text(const std::string &text, Math::Vec2 pos, Math::Vec4 color, uint16_t size) {
-        auto &atlas = instance->jetBrainsMonoFont.getAsciiAtlas();
+    void UI::text(const std::string& text, Math::Vec2 pos, Math::Vec4 color, uint16_t size) {
+        auto& atlas = instance->jetBrainsMonoFont.getAsciiAtlas();
 
         float cursorX = pos.x();
         float cursorY = pos.y();
@@ -345,7 +345,7 @@ namespace Axiom {
                 continue;
             }
 
-            const GlyphMetrics &metrics = glyphIt->second;
+            const GlyphMetrics& metrics = glyphIt->second;
 
             float minX = cursorX + (metrics.quadMin.x() * fontScale);
             float minY = cursorY - (metrics.quadMax.y() * fontScale);

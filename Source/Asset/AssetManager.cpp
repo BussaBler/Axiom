@@ -3,7 +3,7 @@
 #include "Core/Application.h"
 
 namespace Axiom {
-    UUID AssetManager::loadTexture(const std::filesystem::path &path) {
+    UUID AssetManager::loadTexture(const std::filesystem::path& path) {
         if (assetHandles.find(path.string()) != assetHandles.end()) {
             return assetHandles[path.string()];
         }

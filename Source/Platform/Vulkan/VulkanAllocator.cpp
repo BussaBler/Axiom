@@ -1,7 +1,7 @@
 #include "VulkanAllocator.h"
 
 namespace Axiom {
-    VulkanAllocator *VulkanAllocator::instance = nullptr;
+    VulkanAllocator* VulkanAllocator::instance = nullptr;
 
     VulkanAllocator::VulkanAllocator(Vk::Device logicalDevice, Vk::PhysicalDevice physicalDevice) : device(logicalDevice), physicalDevice(physicalDevice) {
     }
@@ -42,7 +42,7 @@ namespace Axiom {
             instance->memoryPools[memoryTypeIndex] = std::make_unique<VulkanMemoryPool>(instance->device, instance->DEFAULT_POOL_SIZE, memoryTypeIndex);
         }
 
-        VulkanMemoryPool *pool = instance->memoryPools[memoryTypeIndex].get();
+        VulkanMemoryPool* pool = instance->memoryPools[memoryTypeIndex].get();
         Allocation alloc = pool->allocate(memoryRequirements.size, memoryRequirements.alignment);
         alloc.memoryTypeIndex = memoryTypeIndex;
         return alloc;
@@ -56,13 +56,13 @@ namespace Axiom {
             instance->memoryPools[memoryTypeIndex] = std::make_unique<VulkanMemoryPool>(instance->device, instance->DEFAULT_POOL_SIZE, memoryTypeIndex);
         }
 
-        VulkanMemoryPool *pool = instance->memoryPools[memoryTypeIndex].get();
+        VulkanMemoryPool* pool = instance->memoryPools[memoryTypeIndex].get();
         Allocation alloc = pool->allocate(memoryRequirements.size, memoryRequirements.alignment);
         alloc.memoryTypeIndex = memoryTypeIndex;
         return alloc;
     }
 
-    void VulkanAllocator::free(const Allocation &allocation) {
+    void VulkanAllocator::free(const Allocation& allocation) {
         instance->memoryPools[allocation.memoryTypeIndex]->free(allocation);
     }
 } // namespace Axiom

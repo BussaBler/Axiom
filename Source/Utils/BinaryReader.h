@@ -5,7 +5,7 @@
 namespace Axiom {
     class BinaryReader {
       public:
-        BinaryReader(const std::filesystem::path &filePath, bool bigEndian = false);
+        BinaryReader(const std::filesystem::path& filePath, bool bigEndian = false);
         ~BinaryReader() = default;
 
         void skip(size_t bytes);

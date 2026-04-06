@@ -1,10 +1,10 @@
 #include "VulkanResourceLayout.h"
 
 namespace Axiom {
-    VulkanResourceLayout::VulkanResourceLayout(Vk::Device logicalDevice, const std::vector<BindingCreateInfo> &bindings) : device(logicalDevice) {
+    VulkanResourceLayout::VulkanResourceLayout(Vk::Device logicalDevice, const std::vector<BindingCreateInfo>& bindings) : device(logicalDevice) {
         std::vector<Vk::DescriptorSetLayoutBinding> layoutBindings;
 
-        for (const auto &bindingCreateInfo : bindings) {
+        for (const auto& bindingCreateInfo : bindings) {
             Vk::DescriptorSetLayoutBinding layoutBinding{};
             layoutBinding.setBinding(bindingCreateInfo.binding);
             layoutBinding.setDescriptorCount(bindingCreateInfo.count);

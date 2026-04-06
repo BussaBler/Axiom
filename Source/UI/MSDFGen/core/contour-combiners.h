@@ -13,9 +13,9 @@ namespace msdfgen {
         typedef EdgeSelector EdgeSelectorType;
         typedef typename EdgeSelector::DistanceType DistanceType;
 
-        explicit SimpleContourCombiner(const Shape &shape);
-        void reset(const Point2 &p);
-        EdgeSelector &edgeSelector(int i);
+        explicit SimpleContourCombiner(const Shape& shape);
+        void reset(const Point2& p);
+        EdgeSelector& edgeSelector(int i);
         DistanceType distance() const;
 
       private:
@@ -29,9 +29,9 @@ namespace msdfgen {
         typedef EdgeSelector EdgeSelectorType;
         typedef typename EdgeSelector::DistanceType DistanceType;
 
-        explicit OverlappingContourCombiner(const Shape &shape);
-        void reset(const Point2 &p);
-        EdgeSelector &edgeSelector(int i);
+        explicit OverlappingContourCombiner(const Shape& shape);
+        void reset(const Point2& p);
+        EdgeSelector& edgeSelector(int i);
         DistanceType distance() const;
 
       private:

@@ -6,17 +6,17 @@
 
 namespace msdfgen {
 
-    static void initDistance(double &distance) {
+    static void initDistance(double& distance) {
         distance = -DBL_MAX;
     }
 
-    static void initDistance(MultiDistance &distance) {
+    static void initDistance(MultiDistance& distance) {
         distance.r = -DBL_MAX;
         distance.g = -DBL_MAX;
         distance.b = -DBL_MAX;
     }
 
-    static void initDistance(MultiAndTrueDistance &distance) {
+    static void initDistance(MultiAndTrueDistance& distance) {
         distance.r = -DBL_MAX;
         distance.g = -DBL_MAX;
         distance.b = -DBL_MAX;
@@ -27,18 +27,18 @@ namespace msdfgen {
         return distance;
     }
 
-    static double resolveDistance(const MultiDistance &distance) {
+    static double resolveDistance(const MultiDistance& distance) {
         return median(distance.r, distance.g, distance.b);
     }
 
-    template <class EdgeSelector> SimpleContourCombiner<EdgeSelector>::SimpleContourCombiner(const Shape &) {
+    template <class EdgeSelector> SimpleContourCombiner<EdgeSelector>::SimpleContourCombiner(const Shape&) {
     }
 
-    template <class EdgeSelector> void SimpleContourCombiner<EdgeSelector>::reset(const Point2 &p) {
+    template <class EdgeSelector> void SimpleContourCombiner<EdgeSelector>::reset(const Point2& p) {
         shapeEdgeSelector.reset(p);
     }
 
-    template <class EdgeSelector> EdgeSelector &SimpleContourCombiner<EdgeSelector>::edgeSelector(int) {
+    template <class EdgeSelector> EdgeSelector& SimpleContourCombiner<EdgeSelector>::edgeSelector(int) {
         return shapeEdgeSelector;
     }
 
@@ -51,21 +51,21 @@ namespace msdfgen {
     template class SimpleContourCombiner<MultiDistanceSelector>;
     template class SimpleContourCombiner<MultiAndTrueDistanceSelector>;
 
-    template <class EdgeSelector> OverlappingContourCombiner<EdgeSelector>::OverlappingContourCombiner(const Shape &shape) {
+    template <class EdgeSelector> OverlappingContourCombiner<EdgeSelector>::OverlappingContourCombiner(const Shape& shape) {
         windings.reserve(shape.contours.size());
         for (std::vector<Contour>::const_iterator contour = shape.contours.begin(); contour != shape.contours.end(); ++contour)
             windings.push_back(contour->winding());
         edgeSelectors.resize(shape.contours.size());
     }
 
-    template <class EdgeSelector> void OverlappingContourCombiner<EdgeSelector>::reset(const Point2 &p) {
+    template <class EdgeSelector> void OverlappingContourCombiner<EdgeSelector>::reset(const Point2& p) {
         this->p = p;
         for (typename std::vector<EdgeSelector>::iterator contourEdgeSelector = edgeSelectors.begin(); contourEdgeSelector != edgeSelectors.end();
              ++contourEdgeSelector)
             contourEdgeSelector->reset(p);
     }
 
-    template <class EdgeSelector> EdgeSelector &OverlappingContourCombiner<EdgeSelector>::edgeSelector(int i) {
+    template <class EdgeSelector> EdgeSelector& OverlappingContourCombiner<EdgeSelector>::edgeSelector(int i) {
         return edgeSelectors[i];
     }
 

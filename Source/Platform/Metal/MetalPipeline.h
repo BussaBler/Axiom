@@ -5,12 +5,12 @@
 namespace Axiom {
     class MetalPipeline : public Pipeline {
       public:
-        MetalPipeline(const CreateInfo &createInfo, MTL::Device *device);
+        MetalPipeline(const CreateInfo& createInfo, MTL::Device* device);
         ~MetalPipeline() override;
 
-        std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout *resourceLayout) override;
+        std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) override;
 
-        MTL::RenderPipelineState *getHandle() const {
+        MTL::RenderPipelineState* getHandle() const {
             return pipelineState;
         }
         MTL::Winding getFaceWinding() const {
@@ -24,10 +24,10 @@ namespace Axiom {
         }
 
       private:
-        MTL::RenderPipelineState *pipelineState;
+        MTL::RenderPipelineState* pipelineState;
         MTL::Winding faceWinding;
         MTL::CullMode cullMode;
         MTL::TriangleFillMode fillMode;
-        std::unordered_map<ResourceLayout *, MTL::ArgumentEncoder *> argumentEncoders;
+        std::unordered_map<ResourceLayout*, MTL::ArgumentEncoder*> argumentEncoders;
     };
 } // namespace Axiom

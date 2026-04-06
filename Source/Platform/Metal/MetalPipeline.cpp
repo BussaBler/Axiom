@@ -5,37 +5,37 @@
 #include "Utils/FileSystem.h"
 
 namespace Axiom {
-    MetalPipeline::MetalPipeline(const CreateInfo &createInfo, MTL::Device *device) {
+    MetalPipeline::MetalPipeline(const CreateInfo& createInfo, MTL::Device* device) {
         std::string shaderCode = FileSystem::readFileStr(createInfo.uniqueShaderPath);
-        NS::String *shaderSource = NS::String::string(shaderCode.c_str(), NS::UTF8StringEncoding);
+        NS::String* shaderSource = NS::String::string(shaderCode.c_str(), NS::UTF8StringEncoding);
 
-        MTL::CompileOptions *compileOptions = MTL::CompileOptions::alloc()->init();
-        NS::Error *error = nullptr;
+        MTL::CompileOptions* compileOptions = MTL::CompileOptions::alloc()->init();
+        NS::Error* error = nullptr;
 
-        MTL::Library *library = device->newLibrary(shaderSource, compileOptions, &error);
+        MTL::Library* library = device->newLibrary(shaderSource, compileOptions, &error);
         AX_CORE_ASSERT(error == nullptr, "Failed to compile shader library: {}", error->localizedDescription()->utf8String());
         AX_CORE_ASSERT(library, "Failed to create shader library");
 
         compileOptions->release();
         shaderSource->release();
 
-        MTL::Function *vertexFunction = library->newFunction(NS::String::string("vertex", NS::UTF8StringEncoding), nullptr, &error);
+        MTL::Function* vertexFunction = library->newFunction(NS::String::string("vertex", NS::UTF8StringEncoding), nullptr, &error);
         AX_CORE_ASSERT(error == nullptr, "Failed to create vertex function: {}", error->localizedDescription()->utf8String());
         AX_CORE_ASSERT(vertexFunction, "Failed to create vertex function");
 
-        MTL::Function *fragmentFunction = library->newFunction(NS::String::string("fragment", NS::UTF8StringEncoding), nullptr, &error);
+        MTL::Function* fragmentFunction = library->newFunction(NS::String::string("fragment", NS::UTF8StringEncoding), nullptr, &error);
         AX_CORE_ASSERT(error == nullptr, "Failed to create fragment function: {}", error->localizedDescription()->utf8String());
         AX_CORE_ASSERT(fragmentFunction, "Failed to create fragment function");
 
-        MTL::RenderPipelineDescriptor *pipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
+        MTL::RenderPipelineDescriptor* pipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
         pipelineDescriptor->setVertexFunction(vertexFunction);
         pipelineDescriptor->setFragmentFunction(fragmentFunction);
 
         uint32_t resourceIndex = 1; // Index 0 is reserved for push constants
         for (size_t i = 0; i < createInfo.resourceLayouts.size(); i++) {
-            ResourceLayout *layout = createInfo.resourceLayouts[i];
+            ResourceLayout* layout = createInfo.resourceLayouts[i];
 
-            MTL::ArgumentEncoder *encoder = vertexFunction->newArgumentEncoder(resourceIndex);
+            MTL::ArgumentEncoder* encoder = vertexFunction->newArgumentEncoder(resourceIndex);
             if (!encoder) {
                 encoder = fragmentFunction->newArgumentEncoder(resourceIndex);
             }
@@ -53,10 +53,10 @@ namespace Axiom {
         fragmentFunction->release();
         library->release();
 
-        MTL::VertexDescriptor *vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
+        MTL::VertexDescriptor* vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
 
         for (size_t i = 0; i < createInfo.vertexBindings.size(); i++) {
-            MTL::VertexBufferLayoutDescriptor *layout = MTL::VertexBufferLayoutDescriptor::alloc()->init();
+            MTL::VertexBufferLayoutDescriptor* layout = MTL::VertexBufferLayoutDescriptor::alloc()->init();
             layout->setStride(createInfo.vertexBindings[i].stride);
             layout->setStepFunction(createInfo.vertexBindings[i].inputRate == VertexInputRate::Vertex ? MTL::VertexStepFunctionPerVertex
                                                                                                       : MTL::VertexStepFunctionPerInstance);
@@ -65,7 +65,7 @@ namespace Axiom {
         }
 
         for (size_t i = 0; i < createInfo.vertexAttributes.size(); i++) {
-            MTL::VertexAttributeDescriptor *attribute = MTL::VertexAttributeDescriptor::alloc()->init();
+            MTL::VertexAttributeDescriptor* attribute = MTL::VertexAttributeDescriptor::alloc()->init();
             attribute->setFormat(axToMetalVertexFormat(createInfo.vertexAttributes[i].format));
             attribute->setOffset(createInfo.vertexAttributes[i].offset);
             attribute->setBufferIndex(createInfo.vertexAttributes[i].binding);
@@ -107,7 +107,7 @@ namespace Axiom {
     }
 
     MetalPipeline::~MetalPipeline() {
-        for (auto &pair : argumentEncoders) {
+        for (auto& pair : argumentEncoders) {
             pair.second->release();
         }
         argumentEncoders.clear();
@@ -117,7 +117,7 @@ namespace Axiom {
         }
     }
 
-    std::unique_ptr<ResourceSet> MetalPipeline::createResourceSet(ResourceLayout *resourceLayout) {
+    std::unique_ptr<ResourceSet> MetalPipeline::createResourceSet(ResourceLayout* resourceLayout) {
         auto it = argumentEncoders.find(resourceLayout);
         AX_CORE_ASSERT(it != argumentEncoders.end(), "Resource layout not found in pipeline's argument encoders");
 

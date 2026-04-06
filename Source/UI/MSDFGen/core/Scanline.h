@@ -29,13 +29,13 @@ namespace msdfgen {
             int direction;
         };
 
-        static double overlap(const Scanline &a, const Scanline &b, double xFrom, double xTo, FillRule fillRule);
+        static double overlap(const Scanline& a, const Scanline& b, double xFrom, double xTo, FillRule fillRule);
 
         Scanline();
         /// Populates the intersection list.
-        void setIntersections(const std::vector<Intersection> &intersections);
+        void setIntersections(const std::vector<Intersection>& intersections);
 #ifdef MSDFGEN_USE_CPP11
-        void setIntersections(std::vector<Intersection> &&intersections);
+        void setIntersections(std::vector<Intersection>&& intersections);
 #endif
         /// Returns the number of intersections left of x.
         int countIntersections(double x) const;

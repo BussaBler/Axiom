@@ -12,7 +12,7 @@ namespace msdfgen {
         return (float)clamp(mapping(dist) + .5);
     }
 
-    void renderSDF(const BitmapSection<float, 1> &output, const BitmapConstSection<float, 1> &sdf, Range sdfPxRange, float sdThreshold) {
+    void renderSDF(const BitmapSection<float, 1>& output, const BitmapConstSection<float, 1>& sdf, Range sdfPxRange, float sdThreshold) {
         Vector2 scale((double)sdf.width / output.width, (double)sdf.height / output.height);
         if (sdfPxRange.lower == sdfPxRange.upper) {
             for (int y = 0; y < output.height; ++y) {
@@ -36,7 +36,7 @@ namespace msdfgen {
         }
     }
 
-    void renderSDF(const BitmapSection<float, 3> &output, const BitmapConstSection<float, 1> &sdf, Range sdfPxRange, float sdThreshold) {
+    void renderSDF(const BitmapSection<float, 3>& output, const BitmapConstSection<float, 1>& sdf, Range sdfPxRange, float sdThreshold) {
         Vector2 scale((double)sdf.width / output.width, (double)sdf.height / output.height);
         if (sdfPxRange.lower == sdfPxRange.upper) {
             for (int y = 0; y < output.height; ++y) {
@@ -66,7 +66,7 @@ namespace msdfgen {
         }
     }
 
-    void renderSDF(const BitmapSection<float, 1> &output, const BitmapConstSection<float, 3> &sdf, Range sdfPxRange, float sdThreshold) {
+    void renderSDF(const BitmapSection<float, 1>& output, const BitmapConstSection<float, 3>& sdf, Range sdfPxRange, float sdThreshold) {
         Vector2 scale((double)sdf.width / output.width, (double)sdf.height / output.height);
         if (sdfPxRange.lower == sdfPxRange.upper) {
             for (int y = 0; y < output.height; ++y) {
@@ -90,7 +90,7 @@ namespace msdfgen {
         }
     }
 
-    void renderSDF(const BitmapSection<float, 3> &output, const BitmapConstSection<float, 3> &sdf, Range sdfPxRange, float sdThreshold) {
+    void renderSDF(const BitmapSection<float, 3>& output, const BitmapConstSection<float, 3>& sdf, Range sdfPxRange, float sdThreshold) {
         Vector2 scale((double)sdf.width / output.width, (double)sdf.height / output.height);
         if (sdfPxRange.lower == sdfPxRange.upper) {
             for (int y = 0; y < output.height; ++y) {
@@ -118,7 +118,7 @@ namespace msdfgen {
         }
     }
 
-    void renderSDF(const BitmapSection<float, 1> &output, const BitmapConstSection<float, 4> &sdf, Range sdfPxRange, float sdThreshold) {
+    void renderSDF(const BitmapSection<float, 1>& output, const BitmapConstSection<float, 4>& sdf, Range sdfPxRange, float sdThreshold) {
         Vector2 scale((double)sdf.width / output.width, (double)sdf.height / output.height);
         if (sdfPxRange.lower == sdfPxRange.upper) {
             for (int y = 0; y < output.height; ++y) {
@@ -142,7 +142,7 @@ namespace msdfgen {
         }
     }
 
-    void renderSDF(const BitmapSection<float, 4> &output, const BitmapConstSection<float, 4> &sdf, Range sdfPxRange, float sdThreshold) {
+    void renderSDF(const BitmapSection<float, 4>& output, const BitmapConstSection<float, 4>& sdf, Range sdfPxRange, float sdThreshold) {
         Vector2 scale((double)sdf.width / output.width, (double)sdf.height / output.height);
         if (sdfPxRange.lower == sdfPxRange.upper) {
             for (int y = 0; y < output.height; ++y) {
@@ -172,21 +172,21 @@ namespace msdfgen {
         }
     }
 
-    void simulate8bit(const BitmapSection<float, 1> &bitmap) {
-        const float *end = bitmap.pixels + 1 * bitmap.width * bitmap.height;
-        for (float *p = bitmap.pixels; p < end; ++p)
+    void simulate8bit(const BitmapSection<float, 1>& bitmap) {
+        const float* end = bitmap.pixels + 1 * bitmap.width * bitmap.height;
+        for (float* p = bitmap.pixels; p < end; ++p)
             *p = pixelByteToFloat(pixelFloatToByte(*p));
     }
 
-    void simulate8bit(const BitmapSection<float, 3> &bitmap) {
-        const float *end = bitmap.pixels + 3 * bitmap.width * bitmap.height;
-        for (float *p = bitmap.pixels; p < end; ++p)
+    void simulate8bit(const BitmapSection<float, 3>& bitmap) {
+        const float* end = bitmap.pixels + 3 * bitmap.width * bitmap.height;
+        for (float* p = bitmap.pixels; p < end; ++p)
             *p = pixelByteToFloat(pixelFloatToByte(*p));
     }
 
-    void simulate8bit(const BitmapSection<float, 4> &bitmap) {
-        const float *end = bitmap.pixels + 4 * bitmap.width * bitmap.height;
-        for (float *p = bitmap.pixels; p < end; ++p)
+    void simulate8bit(const BitmapSection<float, 4>& bitmap) {
+        const float* end = bitmap.pixels + 4 * bitmap.width * bitmap.height;
+        for (float* p = bitmap.pixels; p < end; ++p)
             *p = pixelByteToFloat(pixelFloatToByte(*p));
     }
 

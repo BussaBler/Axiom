@@ -9,7 +9,7 @@
 
 namespace msdfgen {
 
-    int readCharF(FILE *input) {
+    int readCharF(FILE* input) {
         int c = '\0';
         do {
             c = fgetc(input);
@@ -17,7 +17,7 @@ namespace msdfgen {
         return c;
     }
 
-    int readCharS(const char **input) {
+    int readCharS(const char** input) {
         int c = '\0';
         do {
             c = *(*input)++;
@@ -29,12 +29,12 @@ namespace msdfgen {
         return c;
     }
 
-    int readCoordF(FILE *input, Point2 &coord) {
+    int readCoordF(FILE* input, Point2& coord) {
         return fscanf(input, "%lf , %lf", &coord.x, &coord.y);
     }
 
-    int readCoordS(const char **input, Point2 &coord) {
-        char *end = NULL;
+    int readCoordS(const char** input, Point2& coord) {
+        char* end = NULL;
         coord.x = strtod(*input, &end);
         if (end <= *input)
             return 0;
@@ -51,8 +51,8 @@ namespace msdfgen {
         return 2;
     }
 
-    bool matchStringS(const char **input, const char *str) {
-        const char *cur = *input;
+    bool matchStringS(const char** input, const char* str) {
+        const char* cur = *input;
         while (*cur && *str && *cur == *str)
             ++cur, ++str;
         if (!*str) {
@@ -62,12 +62,12 @@ namespace msdfgen {
         return false;
     }
 
-    static bool writeCoord(FILE *output, Point2 coord) {
+    static bool writeCoord(FILE* output, Point2 coord) {
         fprintf(output, "%.12g, %.12g", coord.x, coord.y);
         return true;
     }
 
-    template <typename T, int (*readChar)(T *), int (*readCoord)(T *, Point2 &)> static int readControlPoints(T *input, Point2 *output) {
+    template <typename T, int (*readChar)(T*), int (*readCoord)(T*, Point2&)> static int readControlPoints(T* input, Point2* output) {
         int result = readCoord(input, output[0]);
         if (result == 2) {
             switch (readChar(input)) {
@@ -86,8 +86,8 @@ namespace msdfgen {
         return -1;
     }
 
-    template <typename T, int (*readChar)(T *), int (*readCoord)(T *, Point2 &)>
-    static bool readContour(T *input, Contour &output, const Point2 *first, int terminator, bool &colorsSpecified) {
+    template <typename T, int (*readChar)(T*), int (*readCoord)(T*, Point2&)>
+    static bool readContour(T* input, Contour& output, const Point2* first, int terminator, bool& colorsSpecified) {
         Point2 p[4], start;
         if (first)
             p[0] = *first;
@@ -187,7 +187,7 @@ namespace msdfgen {
         return true;
     }
 
-    bool readShapeDescription(FILE *input, Shape &output, bool *colorsSpecified) {
+    bool readShapeDescription(FILE* input, Shape& output, bool* colorsSpecified) {
         bool locColorsSpec = false;
         output.contours.clear();
         output.setYAxisOrientation(MSDFGEN_Y_AXIS_DEFAULT_ORIENTATION);
@@ -229,14 +229,14 @@ namespace msdfgen {
         }
     }
 
-    bool readShapeDescription(const char *input, Shape &output, bool *colorsSpecified) {
+    bool readShapeDescription(const char* input, Shape& output, bool* colorsSpecified) {
         bool locColorsSpec = false;
         output.contours.clear();
         output.setYAxisOrientation(MSDFGEN_Y_AXIS_DEFAULT_ORIENTATION);
         Point2 p;
         int result = readCoordS(&input, p);
         if (result == 2) {
-            return readContour<const char *, readCharS, readCoordS>(&input, output.addContour(), &p, EOF, locColorsSpec);
+            return readContour<const char*, readCharS, readCoordS>(&input, output.addContour(), &p, EOF, locColorsSpec);
         } else if (result == 1)
             return false;
         else {
@@ -253,7 +253,7 @@ namespace msdfgen {
                 c = readCharS(&input);
             }
             for (; c == '{'; c = readCharS(&input))
-                if (!readContour<const char *, readCharS, readCoordS>(&input, output.addContour(), NULL, '}', locColorsSpec))
+                if (!readContour<const char*, readCharS, readCoordS>(&input, output.addContour(), NULL, '}', locColorsSpec))
                     return false;
             if (colorsSpecified)
                 *colorsSpecified = locColorsSpec;
@@ -261,7 +261,7 @@ namespace msdfgen {
         }
     }
 
-    static bool isColored(const Shape &shape) {
+    static bool isColored(const Shape& shape) {
         for (std::vector<Contour>::const_iterator contour = shape.contours.begin(); contour != shape.contours.end(); ++contour)
             for (std::vector<EdgeHolder>::const_iterator edge = contour->edges.begin(); edge != contour->edges.end(); ++edge)
                 if ((*edge)->color != WHITE)
@@ -269,7 +269,7 @@ namespace msdfgen {
         return false;
     }
 
-    bool writeShapeDescription(FILE *output, const Shape &shape) {
+    bool writeShapeDescription(FILE* output, const Shape& shape) {
         if (!shape.validate())
             return false;
         bool writeColors = isColored(shape);
@@ -303,7 +303,7 @@ namespace msdfgen {
                         default:;
                         }
                     }
-                    const Point2 *p = (*edge)->controlPoints();
+                    const Point2* p = (*edge)->controlPoints();
                     switch ((*edge)->type()) {
                     case (int)LinearSegment::EDGE_TYPE:
                         fprintf(output, "\t");

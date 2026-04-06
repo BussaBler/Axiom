@@ -1,7 +1,7 @@
 #include "VulkanTexture.h"
 
 namespace Axiom {
-    VulkanTexture::VulkanTexture(Vk::Device logicalDevice, const CreateInfo &createInfo) : device(logicalDevice), ownsImage(true) {
+    VulkanTexture::VulkanTexture(Vk::Device logicalDevice, const CreateInfo& createInfo) : device(logicalDevice), ownsImage(true) {
         Vk::ImageCreateInfo imageCreateInfo({}, Vk::ImageType::e2D, axToVkFormat(createInfo.format), {createInfo.width, createInfo.height, 1},
                                             createInfo.mipLevels, createInfo.arrayLayers, Vk::SampleCountFlagBits::e1, Vk::ImageTiling::eOptimal,
                                             axToVkImageUsage(createInfo.usage));
