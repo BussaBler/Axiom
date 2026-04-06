@@ -54,7 +54,7 @@ namespace Math {
         return (value != 0 && (value & (value - 1)) == 0);
     }
 
-    static std::mt19937& axRandomEngine() {
+    static std::mt19937 &axRandomEngine() {
         thread_local std::mt19937 engine([] {
             std::random_device rd;
             std::seed_seq seq{rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd()};

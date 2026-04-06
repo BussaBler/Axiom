@@ -8,11 +8,10 @@
 #include <Windows.h>
 
 namespace Axiom {
-	class WindowsInput : public Input {
-	protected:
-		bool internalIsKeyPressed(KeyCode keyCode) override;
-		float internalGetMouseX() override;
-		float internalgetMouseY() override;
-	};
-}
-
+    class WindowsInput : public Input {
+      protected:
+        bool internalIsKeyPressed(KeyCode keyCode) override;
+        float internalGetMouseX() override;
+        float internalgetMouseY() override;
+    };
+} // namespace Axiom

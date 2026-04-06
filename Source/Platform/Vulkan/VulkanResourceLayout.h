@@ -3,16 +3,17 @@
 #include "VulkanUtils.h"
 
 namespace Axiom {
-	class VulkanResourceLayout : public ResourceLayout {
-	public:
-		VulkanResourceLayout(Vk::Device logicalDevice, const std::vector<BindingCreateInfo>& bindings);
-		~VulkanResourceLayout() override;
+    class VulkanResourceLayout : public ResourceLayout {
+      public:
+        VulkanResourceLayout(Vk::Device logicalDevice, const std::vector<BindingCreateInfo> &bindings);
+        ~VulkanResourceLayout() override;
 
-		inline Vk::DescriptorSetLayout getHandle() const { return descriptorSetLayout; }
+        inline Vk::DescriptorSetLayout getHandle() const {
+            return descriptorSetLayout;
+        }
 
-	private:
-		Vk::Device device = nullptr;
-		Vk::DescriptorSetLayout descriptorSetLayout = nullptr;
-	};
-}
-
+      private:
+        Vk::Device device = nullptr;
+        Vk::DescriptorSetLayout descriptorSetLayout = nullptr;
+    };
+} // namespace Axiom

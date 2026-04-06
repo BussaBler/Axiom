@@ -1,9 +1,9 @@
 #pragma once
 #include "Application.h"
 
-extern Axiom::Application* Axiom::createApplication(const Axiom::ApplicationInfo& appInfo);
+extern Axiom::Application *Axiom::createApplication(const Axiom::ApplicationInfo &appInfo);
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     auto app = Axiom::createApplication({"Axiom Application", "../../.."});
     app->run();
     delete app;

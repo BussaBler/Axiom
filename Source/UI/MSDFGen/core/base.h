@@ -10,6 +10,6 @@
 
 namespace msdfgen {
 
-typedef unsigned char byte;
+    typedef unsigned char byte;
 
 }

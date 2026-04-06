@@ -1,11 +1,11 @@
 #pragma once
-#include "axpch.h"
 #include "Core/Assert.h"
+#include "axpch.h"
 
 namespace Axiom {
     class BinaryReader {
-    public:
-        BinaryReader(const std::filesystem::path& filePath, bool bigEndian = false);
+      public:
+        BinaryReader(const std::filesystem::path &filePath, bool bigEndian = false);
         ~BinaryReader() = default;
 
         void skip(size_t bytes);
@@ -27,11 +27,11 @@ namespace Axiom {
             return (flag & (1 << index)) != 0;
         }
 
-    private:
+      private:
         std::fstream fileStream;
         bool isBigEndian;
         uint16_t swap16(uint16_t value) const;
         uint32_t swap32(uint32_t value) const;
         uint64_t swap64(uint64_t value) const;
     };
-}
+} // namespace Axiom

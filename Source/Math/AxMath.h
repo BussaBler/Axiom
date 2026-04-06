@@ -47,10 +47,10 @@ namespace Math {
 #include "Vec.h"
 
 // ------- Axiom Math Type Formatters -------
-template<typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<T, N>, CharT> {
+template <typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<T, N>, CharT> {
     std::formatter<T, CharT> elem;
 
-    constexpr auto parse(std::basic_format_parse_context<CharT>& ctx) {
+    constexpr auto parse(std::basic_format_parse_context<CharT> &ctx) {
         auto it = ctx.begin();
         auto end = ctx.end();
         if (it == end || *it == CharT('}'))
@@ -58,7 +58,7 @@ template<typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<T
         return elem.parse(ctx);
     }
 
-    template<typename FormatContext> auto format(const Math::Vec<T, N>& v, FormatContext& ctx) const {
+    template <typename FormatContext> auto format(const Math::Vec<T, N> &v, FormatContext &ctx) const {
         auto out = ctx.out();
         *out++ = CharT('V');
         *out++ = CharT('e');
@@ -81,12 +81,12 @@ template<typename T, size_t N, typename CharT> struct std::formatter<Math::Vec<T
     }
 };
 
-template<typename T, size_t N, typename CharT> struct std::formatter<Math::Mat<T, N>, CharT> {
+template <typename T, size_t N, typename CharT> struct std::formatter<Math::Mat<T, N>, CharT> {
     std::formatter<T, CharT> elem_;
 
     std::formatter<std::size_t, CharT> idx_;
 
-    constexpr auto parse(std::basic_format_parse_context<CharT>& ctx) {
+    constexpr auto parse(std::basic_format_parse_context<CharT> &ctx) {
         auto it = ctx.begin();
         auto end = ctx.end();
         if (it == end || *it == CharT('}'))
@@ -94,7 +94,7 @@ template<typename T, size_t N, typename CharT> struct std::formatter<Math::Mat<T
         return elem_.parse(ctx);
     }
 
-    template<typename FormatContext> auto format(const Math::Mat<T, N>& m, FormatContext& ctx) const {
+    template <typename FormatContext> auto format(const Math::Mat<T, N> &m, FormatContext &ctx) const {
         auto out = ctx.out();
 
         *out++ = CharT('M');

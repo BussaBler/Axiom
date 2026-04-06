@@ -1,143 +1,158 @@
 #include "VulkanPipeline.h"
 #include "Utils/FileSystem.h"
+#include "VulkanResourceSet.h"
 #include <shaderc/shaderc.hpp>
 
 namespace Axiom {
-	VulkanPipeline::VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice) : device(logicDevice) {
-		Vk::ShaderModule vertShaderModule = createShaderModule(createInfo.vertexShaderPath);
-		Vk::ShaderModule fragShaderModule = createShaderModule(createInfo.fragmentShaderPath);
+    VulkanPipeline::VulkanPipeline(const CreateInfo &createInfo, Vk::Device logicDevice, Vk::DescriptorPool descriptorPool)
+        : device(logicDevice), descriptorPool(descriptorPool) {
+        Vk::ShaderModule vertShaderModule = createShaderModule(createInfo.vertexShaderPath);
+        Vk::ShaderModule fragShaderModule = createShaderModule(createInfo.fragmentShaderPath);
 
-		Vk::PipelineShaderStageCreateInfo vertShaderStageInfo({}, Vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main");
-		Vk::PipelineShaderStageCreateInfo fragShaderStageInfo({}, Vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main");
-		std::array<Vk::PipelineShaderStageCreateInfo, 2> shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
+        Vk::PipelineShaderStageCreateInfo vertShaderStageInfo({}, Vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main");
+        Vk::PipelineShaderStageCreateInfo fragShaderStageInfo({}, Vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main");
+        std::array<Vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertShaderStageInfo, fragShaderStageInfo};
 
-		std::vector<Vk::VertexInputBindingDescription> bindingDescriptions(createInfo.vertexBindings.size());
-		for (size_t i = 0; i < createInfo.vertexBindings.size(); i++) {
-			const auto& binding = createInfo.vertexBindings[i];
-			bindingDescriptions[i] = Vk::VertexInputBindingDescription(binding.binding, binding.stride, (binding.inputRate == VertexInputRate::Vertex) ? Vk::VertexInputRate::eVertex : Vk::VertexInputRate::eInstance);
-		}
-		std::vector<Vk::VertexInputAttributeDescription> attributeDescriptions(createInfo.vertexAttributes.size());
-		for (size_t i = 0; i < createInfo.vertexAttributes.size(); i++) {
-			const auto& attribute = createInfo.vertexAttributes[i];
-			attributeDescriptions[i] = Vk::VertexInputAttributeDescription(attribute.location, attribute.binding, axToVkFormat(attribute.format), attribute.offset);
-		}
-		Vk::PipelineVertexInputStateCreateInfo vertexInputInfo({}, bindingDescriptions, attributeDescriptions);
+        std::vector<Vk::VertexInputBindingDescription> bindingDescriptions(createInfo.vertexBindings.size());
+        for (size_t i = 0; i < createInfo.vertexBindings.size(); i++) {
+            const auto &binding = createInfo.vertexBindings[i];
+            bindingDescriptions[i] = Vk::VertexInputBindingDescription(binding.binding, binding.stride,
+                                                                       (binding.inputRate == VertexInputRate::Vertex) ? Vk::VertexInputRate::eVertex
+                                                                                                                      : Vk::VertexInputRate::eInstance);
+        }
+        std::vector<Vk::VertexInputAttributeDescription> attributeDescriptions(createInfo.vertexAttributes.size());
+        for (size_t i = 0; i < createInfo.vertexAttributes.size(); i++) {
+            const auto &attribute = createInfo.vertexAttributes[i];
+            attributeDescriptions[i] =
+                Vk::VertexInputAttributeDescription(attribute.location, attribute.binding, axToVkFormat(attribute.format), attribute.offset);
+        }
+        Vk::PipelineVertexInputStateCreateInfo vertexInputInfo({}, bindingDescriptions, attributeDescriptions);
 
-		Vk::PrimitiveTopology vkTopology = (createInfo.topology == Axiom::PrimitiveTopology::LineList) ? Vk::PrimitiveTopology::eLineList : Vk::PrimitiveTopology::eTriangleList;
-		Vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vkTopology, Vk::False);
-		
-		Vk::PipelineViewportStateCreateInfo viewportState({}, 1, nullptr, 1, nullptr);
-		std::array<Vk::DynamicState, 2> dynamicStates = { Vk::DynamicState::eViewport, Vk::DynamicState::eScissor };
-		Vk::PipelineDynamicStateCreateInfo dynamicState({}, dynamicStates);
+        Vk::PrimitiveTopology vkTopology =
+            (createInfo.topology == Axiom::PrimitiveTopology::LineList) ? Vk::PrimitiveTopology::eLineList : Vk::PrimitiveTopology::eTriangleList;
+        Vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vkTopology, Vk::False);
 
-		Vk::FrontFace vkFrontFace = createInfo.frontFaceClockwise ? Vk::FrontFace::eClockwise : Vk::FrontFace::eCounterClockwise;
-		Vk::PipelineRasterizationStateCreateInfo rasterizer({}, Vk::False, Vk::False, axPolygonToVkPolygon(createInfo.polygonMode), axCullModeToVkCullMode(createInfo.cullMode), vkFrontFace);
-		rasterizer.setLineWidth(1.0f);
+        Vk::PipelineViewportStateCreateInfo viewportState({}, 1, nullptr, 1, nullptr);
+        std::array<Vk::DynamicState, 2> dynamicStates = {Vk::DynamicState::eViewport, Vk::DynamicState::eScissor};
+        Vk::PipelineDynamicStateCreateInfo dynamicState({}, dynamicStates);
 
-		Vk::PipelineMultisampleStateCreateInfo multisampling({}, Vk::SampleCountFlagBits::e1);
+        Vk::FrontFace vkFrontFace = createInfo.frontFaceClockwise ? Vk::FrontFace::eClockwise : Vk::FrontFace::eCounterClockwise;
+        Vk::PipelineRasterizationStateCreateInfo rasterizer({}, Vk::False, Vk::False, axPolygonToVkPolygon(createInfo.polygonMode),
+                                                            axCullModeToVkCullMode(createInfo.cullMode), vkFrontFace);
+        rasterizer.setLineWidth(1.0f);
 
-		Vk::PipelineDepthStencilStateCreateInfo depthStencil({},
-			createInfo.enableDepthTest ? Vk::True : Vk::False,
-			createInfo.enableDepthWrite ? Vk::True : Vk::False,
-			Vk::CompareOp::eLess, Vk::False, Vk::False
-		);
+        Vk::PipelineMultisampleStateCreateInfo multisampling({}, Vk::SampleCountFlagBits::e1);
 
-		Vk::PipelineColorBlendAttachmentState colorBlendAttachment(createInfo.enableBlending ? Vk::True : Vk::False);
-		colorBlendAttachment.setColorWriteMask(Vk::ColorComponentFlagBits::eR | Vk::ColorComponentFlagBits::eG | Vk::ColorComponentFlagBits::eB | Vk::ColorComponentFlagBits::eA);
-		if (createInfo.enableBlending) {
-			colorBlendAttachment.setSrcColorBlendFactor(Vk::BlendFactor::eSrcAlpha);
-			colorBlendAttachment.setDstColorBlendFactor(Vk::BlendFactor::eOneMinusSrcAlpha);
-			colorBlendAttachment.setColorBlendOp(Vk::BlendOp::eAdd);
-			colorBlendAttachment.setSrcAlphaBlendFactor(Vk::BlendFactor::eOne);
-			colorBlendAttachment.setDstAlphaBlendFactor(Vk::BlendFactor::eZero);
-			colorBlendAttachment.setAlphaBlendOp(Vk::BlendOp::eAdd);
-		}
+        Vk::PipelineDepthStencilStateCreateInfo depthStencil({}, createInfo.enableDepthTest ? Vk::True : Vk::False,
+                                                             createInfo.enableDepthWrite ? Vk::True : Vk::False, Vk::CompareOp::eLess, Vk::False, Vk::False);
 
-		Vk::PipelineColorBlendStateCreateInfo colorBlending({}, Vk::False, Vk::LogicOp::eCopy, 1, &colorBlendAttachment);
-		colorBlending.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
+        Vk::PipelineColorBlendAttachmentState colorBlendAttachment(createInfo.enableBlending ? Vk::True : Vk::False);
+        colorBlendAttachment.setColorWriteMask(Vk::ColorComponentFlagBits::eR | Vk::ColorComponentFlagBits::eG | Vk::ColorComponentFlagBits::eB |
+                                               Vk::ColorComponentFlagBits::eA);
+        if (createInfo.enableBlending) {
+            colorBlendAttachment.setSrcColorBlendFactor(Vk::BlendFactor::eSrcAlpha);
+            colorBlendAttachment.setDstColorBlendFactor(Vk::BlendFactor::eOneMinusSrcAlpha);
+            colorBlendAttachment.setColorBlendOp(Vk::BlendOp::eAdd);
+            colorBlendAttachment.setSrcAlphaBlendFactor(Vk::BlendFactor::eOne);
+            colorBlendAttachment.setDstAlphaBlendFactor(Vk::BlendFactor::eZero);
+            colorBlendAttachment.setAlphaBlendOp(Vk::BlendOp::eAdd);
+        }
 
-		std::vector<Vk::DescriptorSetLayout> vkDescriptorSetLayouts;
-		for (auto layout : createInfo.resourceLayouts) {
-			auto vulkanLayout = static_cast<VulkanResourceLayout*>(layout);
-			vkDescriptorSetLayouts.push_back(vulkanLayout->getHandle());
-		}
-		std::array<Vk::PushConstantRange, 1> pushConstantRanges = { Vk::PushConstantRange(Vk::ShaderStageFlagBits::eVertex | Vk::ShaderStageFlagBits::eFragment, 0, sizeof(Math::Mat4)) };
+        Vk::PipelineColorBlendStateCreateInfo colorBlending({}, Vk::False, Vk::LogicOp::eCopy, 1, &colorBlendAttachment);
+        colorBlending.setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f});
 
-		Vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, vkDescriptorSetLayouts, pushConstantRanges);
-		Vk::ResultValue<Vk::PipelineLayout> pipelineLayoutResult = device.createPipelineLayout(pipelineLayoutInfo);
+        std::vector<Vk::DescriptorSetLayout> vkDescriptorSetLayouts;
+        for (auto layout : createInfo.resourceLayouts) {
+            auto vulkanLayout = static_cast<VulkanResourceLayout *>(layout);
+            vkDescriptorSetLayouts.push_back(vulkanLayout->getHandle());
+        }
+        std::array<Vk::PushConstantRange, 1> pushConstantRanges = {
+            Vk::PushConstantRange(Vk::ShaderStageFlagBits::eVertex | Vk::ShaderStageFlagBits::eFragment, 0, sizeof(Math::Mat4))};
 
-		AX_CORE_ASSERT(pipelineLayoutResult.result == Vk::Result::eSuccess, "Failed to create pipeline layout!");
-		pipelineLayout = pipelineLayoutResult.value;
+        Vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, vkDescriptorSetLayouts, pushConstantRanges);
+        Vk::ResultValue<Vk::PipelineLayout> pipelineLayoutResult = device.createPipelineLayout(pipelineLayoutInfo);
 
-		std::vector<Vk::Format> vkColorFormats;
-		for (auto fmt : createInfo.colorAttachmentFormats) {
-			vkColorFormats.push_back(axToVkFormat(fmt));
-		}
-		Vk::Format vkDepthFormat = axToVkFormat(createInfo.depthAttachmentFormat);
+        AX_CORE_ASSERT(pipelineLayoutResult.result == Vk::Result::eSuccess, "Failed to create pipeline layout!");
+        pipelineLayout = pipelineLayoutResult.value;
 
-		Vk::PipelineRenderingCreateInfo renderingInfo({}, vkColorFormats, vkDepthFormat, Vk::Format::eUndefined);
-	
-		Vk::GraphicsPipelineCreateInfo pipelineInfo(
-			{}, shaderStages, &vertexInputInfo, &inputAssembly, nullptr,
-			&viewportState, &rasterizer, &multisampling, &depthStencil,
-			&colorBlending, &dynamicState, pipelineLayout
-		);
-		pipelineInfo.setPNext(&renderingInfo);
-		Vk::ResultValue<Vk::Pipeline> pipelineResult = device.createGraphicsPipeline(nullptr, pipelineInfo);
+        std::vector<Vk::Format> vkColorFormats;
+        for (auto fmt : createInfo.colorAttachmentFormats) {
+            vkColorFormats.push_back(axToVkFormat(fmt));
+        }
+        Vk::Format vkDepthFormat = axToVkFormat(createInfo.depthAttachmentFormat);
 
-		AX_CORE_ASSERT(pipelineResult.result == Vk::Result::eSuccess, "Failed to create graphics pipeline!");
-		pipeline = pipelineResult.value;
+        Vk::PipelineRenderingCreateInfo renderingInfo({}, vkColorFormats, vkDepthFormat, Vk::Format::eUndefined);
 
-		device.destroyShaderModule(vertShaderModule);
-		device.destroyShaderModule(fragShaderModule);
-	}
+        Vk::GraphicsPipelineCreateInfo pipelineInfo({}, shaderStages, &vertexInputInfo, &inputAssembly, nullptr, &viewportState, &rasterizer, &multisampling,
+                                                    &depthStencil, &colorBlending, &dynamicState, pipelineLayout);
+        pipelineInfo.setPNext(&renderingInfo);
+        Vk::ResultValue<Vk::Pipeline> pipelineResult = device.createGraphicsPipeline(nullptr, pipelineInfo);
 
-	VulkanPipeline::~VulkanPipeline() {
-		if (pipelineLayout) {
-			device.destroyPipelineLayout(pipelineLayout);
-		}
-		if (pipeline) {
-			device.destroyPipeline(pipeline);
-		}
-	}
+        AX_CORE_ASSERT(pipelineResult.result == Vk::Result::eSuccess, "Failed to create graphics pipeline!");
+        pipeline = pipelineResult.value;
 
-	Vk::ShaderModule VulkanPipeline::createShaderModule(std::filesystem::path shaderPath) {
-		std::vector<uint8_t> shaderSource = FileSystem::readFile(shaderPath);
+        device.destroyShaderModule(vertShaderModule);
+        device.destroyShaderModule(fragShaderModule);
+    }
 
-		shaderc::Compiler compiler = {};
-		shaderc::CompileOptions options = {};
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
-		shaderc::SpvCompilationResult compilationResult = compiler.CompileGlslToSpv(
-			reinterpret_cast<const char*>(shaderSource.data()), shaderSource.size(),
-			shaderc_shader_kind::shaderc_glsl_infer_from_source, shaderPath.string().c_str(), "main", options
-		);
+    VulkanPipeline::~VulkanPipeline() {
+        if (pipelineLayout) {
+            device.destroyPipelineLayout(pipelineLayout);
+        }
+        if (pipeline) {
+            device.destroyPipeline(pipeline);
+        }
+    }
 
-		AX_CORE_ASSERT(compilationResult.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader: {0}", compilationResult.GetErrorMessage());
-		
-		size_t codeSize = std::distance(compilationResult.cbegin(), compilationResult.cend()) * sizeof(uint32_t);
-		const uint32_t* shaderCode = compilationResult.cbegin();
+    std::unique_ptr<ResourceSet> VulkanPipeline::createResourceSet(ResourceLayout *resourceLayout) {
+        return std::make_unique<VulkanResourceSet>(device, descriptorPool, static_cast<VulkanResourceLayout *>(resourceLayout)->getHandle());
+    }
 
-		Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, codeSize, shaderCode);
-		Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = device.createShaderModule(shaderModuleCreateInfo);
-		AX_CORE_ASSERT(shaderModuleResult.result == Vk::Result::eSuccess, "Failed to create shader module!");
-		return shaderModuleResult.value;
-	}
+    Vk::ShaderModule VulkanPipeline::createShaderModule(std::filesystem::path shaderPath) {
+        std::vector<uint8_t> shaderSource = FileSystem::readFile(shaderPath);
 
-	Vk::PolygonMode VulkanPipeline::axPolygonToVkPolygon(PolygonMode mode) {
-		switch (mode) {
-			case Axiom::PolygonMode::Fill: return Vk::PolygonMode::eFill;
-			case Axiom::PolygonMode::Line: return Vk::PolygonMode::eLine;
-			case Axiom::PolygonMode::Point: return Vk::PolygonMode::ePoint;
-			default: return Vk::PolygonMode::eFill;
-		}
-	}
+        shaderc::Compiler compiler = {};
+        shaderc::CompileOptions options = {};
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+        shaderc::SpvCompilationResult compilationResult =
+            compiler.CompileGlslToSpv(reinterpret_cast<const char *>(shaderSource.data()), shaderSource.size(),
+                                      shaderc_shader_kind::shaderc_glsl_infer_from_source, shaderPath.string().c_str(), "main", options);
 
-	Vk::CullModeFlags VulkanPipeline::axCullModeToVkCullMode(CullMode mode) {
-		switch (mode) {
-			case Axiom::CullMode::None: return Vk::CullModeFlagBits::eNone;
-			case Axiom::CullMode::Front: return Vk::CullModeFlagBits::eFront;
-			case Axiom::CullMode::Back: return Vk::CullModeFlagBits::eBack;
-			default: return Vk::CullModeFlagBits::eBack;
-		}
-	}
-}
+        AX_CORE_ASSERT(compilationResult.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader: {0}",
+                       compilationResult.GetErrorMessage());
+
+        size_t codeSize = std::distance(compilationResult.cbegin(), compilationResult.cend()) * sizeof(uint32_t);
+        const uint32_t *shaderCode = compilationResult.cbegin();
+
+        Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, codeSize, shaderCode);
+        Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = device.createShaderModule(shaderModuleCreateInfo);
+        AX_CORE_ASSERT(shaderModuleResult.result == Vk::Result::eSuccess, "Failed to create shader module!");
+        return shaderModuleResult.value;
+    }
+
+    Vk::PolygonMode VulkanPipeline::axPolygonToVkPolygon(PolygonMode mode) {
+        switch (mode) {
+        case Axiom::PolygonMode::Fill:
+            return Vk::PolygonMode::eFill;
+        case Axiom::PolygonMode::Line:
+            return Vk::PolygonMode::eLine;
+        case Axiom::PolygonMode::Point:
+            return Vk::PolygonMode::ePoint;
+        default:
+            return Vk::PolygonMode::eFill;
+        }
+    }
+
+    Vk::CullModeFlags VulkanPipeline::axCullModeToVkCullMode(CullMode mode) {
+        switch (mode) {
+        case Axiom::CullMode::None:
+            return Vk::CullModeFlagBits::eNone;
+        case Axiom::CullMode::Front:
+            return Vk::CullModeFlagBits::eFront;
+        case Axiom::CullMode::Back:
+            return Vk::CullModeFlagBits::eBack;
+        default:
+            return Vk::CullModeFlagBits::eBack;
+        }
+    }
+} // namespace Axiom

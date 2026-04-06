@@ -1,65 +1,51 @@
 #include "VulkanTexture.h"
 
 namespace Axiom {
-	VulkanTexture::VulkanTexture(Vk::Device logicalDevice, const CreateInfo& createInfo) : device(logicalDevice), ownsImage(true) {
-		Vk::ImageCreateInfo imageCreateInfo(
-			{},
-			Vk::ImageType::e2D,
-			axToVkFormat(createInfo.format),
-			{ createInfo.width, createInfo.height, 1 },
-			createInfo.mipLevels,
-			createInfo.arrayLayers,
-			Vk::SampleCountFlagBits::e1,
-			Vk::ImageTiling::eOptimal,
-			axToVkImageUsage(createInfo.usage)
-		);
-		imageCreateInfo.setInitialLayout(axToVkImageLayout(createInfo.initialState));
-		Vk::ResultValue<Vk::Image> imageResult = device.createImage(imageCreateInfo);
-		
-		AX_CORE_ASSERT(imageResult.result == Vk::Result::eSuccess, "Failed to create image for texture!");
-		image = imageResult.value;
+    VulkanTexture::VulkanTexture(Vk::Device logicalDevice, const CreateInfo &createInfo) : device(logicalDevice), ownsImage(true) {
+        Vk::ImageCreateInfo imageCreateInfo({}, Vk::ImageType::e2D, axToVkFormat(createInfo.format), {createInfo.width, createInfo.height, 1},
+                                            createInfo.mipLevels, createInfo.arrayLayers, Vk::SampleCountFlagBits::e1, Vk::ImageTiling::eOptimal,
+                                            axToVkImageUsage(createInfo.usage));
+        imageCreateInfo.setInitialLayout(axToVkImageLayout(createInfo.initialState));
+        Vk::ResultValue<Vk::Image> imageResult = device.createImage(imageCreateInfo);
 
-		imageAllocation = VulkanAllocator::allocate(image, axToVkMemProperty(createInfo.memoryUsage));
+        AX_CORE_ASSERT(imageResult.result == Vk::Result::eSuccess, "Failed to create image for texture!");
+        image = imageResult.value;
 
-		Vk::Result result = device.bindImageMemory(image, imageAllocation.memory, imageAllocation.offset);
-		AX_CORE_ASSERT(result == Vk::Result::eSuccess, "Failed to bind image memory");
+        imageAllocation = VulkanAllocator::allocate(image, axToVkMemProperty(createInfo.memoryUsage));
 
-		createImageView(imageCreateInfo.format, axToVkImageAspectFlags(createInfo.aspect));
-	}
+        Vk::Result result = device.bindImageMemory(image, imageAllocation.memory, imageAllocation.offset);
+        AX_CORE_ASSERT(result == Vk::Result::eSuccess, "Failed to bind image memory");
 
-	VulkanTexture::VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage) : device(logicalDevice),
-			image(existingImage), ownsImage(false) {
-	}
+        createImageView(imageCreateInfo.format, axToVkImageAspectFlags(createInfo.aspect));
+    }
 
-	VulkanTexture::~VulkanTexture() {
-		if (ownsImage) {
-			VulkanAllocator::free(imageAllocation);
-			if (image) {
-				device.destroyImage(image);
-			}
-		}
-		if (imageView) {
-			device.destroyImageView(imageView);
-		}
-	}
+    VulkanTexture::VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage) : device(logicalDevice), image(existingImage), ownsImage(false) {
+    }
 
-	Format VulkanTexture::getFormat() const {
-		return vkToAxFormat(imageFormat);
-	}
+    VulkanTexture::~VulkanTexture() {
+        if (ownsImage) {
+            VulkanAllocator::free(imageAllocation);
+            if (image) {
+                device.destroyImage(image);
+            }
+        }
+        if (imageView) {
+            device.destroyImageView(imageView);
+        }
+    }
 
-	void VulkanTexture::createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags) {
-		imageFormat = format;
-		Vk::ImageViewCreateInfo createInfo(
-			{},
-			image,
-			Vk::ImageViewType::e2D,
-			format,
-			{ Vk::ComponentSwizzle::eR, Vk::ComponentSwizzle::eG, Vk::ComponentSwizzle::eB, Vk::ComponentSwizzle::eA },
-			{ aspectFlags, 0, 1, 0, 1 }
-		);
-		Vk::ResultValue<Vk::ImageView> imageViewResult = device.createImageView(createInfo);
+    Format VulkanTexture::getFormat() const {
+        return vkToAxFormat(imageFormat);
+    }
 
-		AX_CORE_ASSERT(imageViewResult.result == Vk::Result::eSuccess, "Failed to create image view for texture!");
-		imageView = imageViewResult.value;
-	}
-}
+    void VulkanTexture::createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags) {
+        imageFormat = format;
+        Vk::ImageViewCreateInfo createInfo({}, image, Vk::ImageViewType::e2D, format,
+                                           {Vk::ComponentSwizzle::eR, Vk::ComponentSwizzle::eG, Vk::ComponentSwizzle::eB, Vk::ComponentSwizzle::eA},
+                                           {aspectFlags, 0, 1, 0, 1});
+        Vk::ResultValue<Vk::ImageView> imageViewResult = device.createImageView(createInfo);
+
+        AX_CORE_ASSERT(imageViewResult.result == Vk::Result::eSuccess, "Failed to create image view for texture!");
+        imageView = imageViewResult.value;
+    }
+} // namespace Axiom

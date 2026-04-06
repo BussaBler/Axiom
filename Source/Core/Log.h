@@ -2,21 +2,21 @@
 #include "Logger.h"
 
 namespace Axiom {
-	class Log {
-	public:
-		static void init();
+    class Log {
+      public:
+        static void init();
 
-		static std::shared_ptr<Logger> getCoreLogger() {
-			return coreLogger;
-		}
-		static std::shared_ptr<Logger> getClientLogger() {
-			return clientLogger;
-		}
+        static std::shared_ptr<Logger> getCoreLogger() {
+            return coreLogger;
+        }
+        static std::shared_ptr<Logger> getClientLogger() {
+            return clientLogger;
+        }
 
-	private:
-		static std::shared_ptr<Logger> coreLogger;
-		static std::shared_ptr<Logger> clientLogger;
-	};
+      private:
+        static std::shared_ptr<Logger> coreLogger;
+        static std::shared_ptr<Logger> clientLogger;
+    };
 
 #define AX_CORE_LOG_TRACE(...) Log::getCoreLogger()->trace(__VA_ARGS__)
 
@@ -41,5 +41,4 @@ namespace Axiom {
 #define AX_LOG_WARN(...) Log::getClientLogger()->warn(__VA_ARGS__)
 #define AX_LOG_ERROR(...) Log::getClientLogger()->error(__VA_ARGS__)
 
-}
-
+} // namespace Axiom

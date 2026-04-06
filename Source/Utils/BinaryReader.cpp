@@ -1,7 +1,7 @@
 #include "BinaryReader.h"
 
 namespace Axiom {
-    BinaryReader::BinaryReader(const std::filesystem::path& filePath, bool bigEndian) : isBigEndian(bigEndian) {
+    BinaryReader::BinaryReader(const std::filesystem::path &filePath, bool bigEndian) : isBigEndian(bigEndian) {
         fileStream.open(filePath, std::ios::binary | std::ios::in);
         AX_CORE_ASSERT(fileStream.is_open(), "Failed to open file: {0}", filePath.string());
     }
@@ -20,25 +20,25 @@ namespace Axiom {
 
     uint8_t BinaryReader::readUInt8() {
         uint8_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
         return value;
     }
 
     uint16_t BinaryReader::readUInt16() {
         uint16_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
         return isBigEndian ? swap16(value) : value;
     }
 
     uint32_t BinaryReader::readUInt32() {
         uint32_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
         return isBigEndian ? swap32(value) : value;
     }
 
     uint64_t BinaryReader::readUInt64() {
         uint64_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        fileStream.read(reinterpret_cast<char *>(&value), sizeof(value));
         return isBigEndian ? swap64(value) : value;
     }
 
@@ -69,14 +69,12 @@ namespace Axiom {
     }
 
     uint32_t BinaryReader::swap32(uint32_t value) const {
-        return ((value >> 24) & 0x000000FF) | ((value >> 8) & 0x0000FF00) | ((value << 8) & 0x00FF0000) |
-               ((value << 24) & 0xFF000000);
+        return ((value >> 24) & 0x000000FF) | ((value >> 8) & 0x0000FF00) | ((value << 8) & 0x00FF0000) | ((value << 24) & 0xFF000000);
     }
 
     uint64_t BinaryReader::swap64(uint64_t value) const {
-        return ((value >> 56) & 0x00000000000000FF) | ((value >> 40) & 0x000000000000FF00) |
-               ((value >> 24) & 0x0000000000FF0000) | ((value >> 8) & 0x00000000FF000000) |
-               ((value << 8) & 0x000000FF00000000) | ((value << 24) & 0x0000FF0000000000) |
+        return ((value >> 56) & 0x00000000000000FF) | ((value >> 40) & 0x000000000000FF00) | ((value >> 24) & 0x0000000000FF0000) |
+               ((value >> 8) & 0x00000000FF000000) | ((value << 8) & 0x000000FF00000000) | ((value << 24) & 0x0000FF0000000000) |
                ((value << 40) & 0x00FF000000000000) | ((value << 56) & 0xFF00000000000000);
     }
 } // namespace Axiom

@@ -1,27 +1,33 @@
 #pragma once
-#include "Renderer/Pipeline.h"
 #include "Core/Assert.h"
-#include "VulkanUtils.h"
+#include "Renderer/Pipeline.h"
 #include "VulkanResourceLayout.h"
+#include "VulkanUtils.h"
 
 namespace Axiom {
-	class VulkanPipeline : public Pipeline {
-	public:
-		VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice);
-		~VulkanPipeline() override;
+    class VulkanPipeline : public Pipeline {
+      public:
+        VulkanPipeline(const CreateInfo &createInfo, Vk::Device logicDevice, Vk::DescriptorPool descriptorPool);
+        ~VulkanPipeline() override;
 
-		inline Vk::Pipeline getHandle() const { return pipeline; }
-		inline Vk::PipelineLayout getPipelineLayout() const { return pipelineLayout; }
+        std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout *resourceLayout) override;
 
-	private:
-		Vk::ShaderModule createShaderModule(std::filesystem::path shaderPath);
-		Vk::PolygonMode axPolygonToVkPolygon(PolygonMode mode);
-		Vk::CullModeFlags axCullModeToVkCullMode(CullMode mode);
+        inline Vk::Pipeline getHandle() const {
+            return pipeline;
+        }
+        inline Vk::PipelineLayout getPipelineLayout() const {
+            return pipelineLayout;
+        }
 
-	private:
-		Vk::Device device = nullptr;
-		Vk::Pipeline pipeline = nullptr;
-		Vk::PipelineLayout pipelineLayout = nullptr;
-	};
-}
+      private:
+        Vk::ShaderModule createShaderModule(std::filesystem::path shaderPath);
+        Vk::PolygonMode axPolygonToVkPolygon(PolygonMode mode);
+        Vk::CullModeFlags axCullModeToVkCullMode(CullMode mode);
 
+      private:
+        Vk::Device device = nullptr;
+        Vk::DescriptorPool descriptorPool = nullptr;
+        Vk::Pipeline pipeline = nullptr;
+        Vk::PipelineLayout pipelineLayout = nullptr;
+    };
+} // namespace Axiom

@@ -1,9 +1,9 @@
-#include "axpch.h"
 #include "Log.h"
+#include "axpch.h"
 
 namespace Axiom {
-	std::shared_ptr<Logger> Log::coreLogger = nullptr;
-	std::shared_ptr<Logger> Log::clientLogger = nullptr;
+    std::shared_ptr<Logger> Log::coreLogger = nullptr;
+    std::shared_ptr<Logger> Log::clientLogger = nullptr;
 
     void Log::init() {
         coreLogger = std::make_shared<Logger>();
@@ -16,4 +16,4 @@ namespace Axiom {
         clientLogger->setInitialString("[APP] ");
         clientLogger->setTimestampFormat("%Y-%m-%d %H:%M:%S");
     }
-}
+} // namespace Axiom

@@ -1,127 +1,122 @@
-#include "axpch.h"
 #include "Application.h"
 #include "UI/UILayer.h"
+#include "axpch.h"
 
 namespace Axiom {
-	Application* Application::instance = nullptr;
+    Application *Application::instance = nullptr;
 
-	Application::Application(const ApplicationInfo& appInfo) {
-		Log::init();
-		FileSystem::setWorkingDirectory(appInfo.workingDirectory);
-		AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
-		
-		AX_CORE_LOG_INFO("Application started: {0}", appInfo.name);
-		AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
-		
-		AX_CORE_ASSERT(!instance, "Application already exists!");
-		instance = this;
+    Application::Application(const ApplicationInfo &appInfo) {
+        Log::init();
+        FileSystem::setWorkingDirectory(appInfo.workingDirectory);
+        AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
 
-		window = Window::create(WindowProps());
-		window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
+        AX_CORE_LOG_INFO("Application started: {0}", appInfo.name);
+        AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
 
-		renderer = std::make_unique<Renderer>(window.get());
+        AX_CORE_ASSERT(!instance, "Application already exists!");
+        instance = this;
 
-		pushOverlay<UILayer>();
-	}
+        window = Window::create(WindowProps());
+        window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
-	Application::~Application() {
+        renderer = std::make_unique<Renderer>(window.get());
 
-	}
+        pushOverlay<UILayer>();
+    }
 
-	void Application::onEvent(Event& event) {
-		EventDispatcher dispatcher(event);
-		dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
-		dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
+    Application::~Application() {
+    }
 
-		for (auto it = layerStack.rbegin(); it != layerStack.rend(); it++) {
-			if (event.isHandled()) {
-				break;
-			}
-			(*it)->onEvent(event);
-		}
-	}
+    void Application::onEvent(Event &event) {
+        EventDispatcher dispatcher(event);
+        dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
+        dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
 
-	void Application::queueLayerAction(Layer* requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action) {
-		layerActionQueue.emplace_back(LayerAction{ requester, std::move(newLayer), action });
-	}
+        for (auto it = layerStack.rbegin(); it != layerStack.rend(); it++) {
+            if (event.isHandled()) {
+                break;
+            }
+            (*it)->onEvent(event);
+        }
+    }
 
-	bool Application::onWindowClose(WindowCloseEvent& e) {
-		running = false;
-		return true;
-	}
+    void Application::queueLayerAction(Layer *requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action) {
+        layerActionQueue.emplace_back(LayerAction{requester, std::move(newLayer), action});
+    }
 
-	bool Application::onWindowResize(WindowResizeEvent& e) {
-		if (e.getWidth() == 0 || e.getHeight() == 0) {
-			return false;
-		}
-		return true;
-	}
+    bool Application::onWindowClose(WindowCloseEvent &e) {
+        running = false;
+        return true;
+    }
 
-	void Application::processLayerActions() {
-		for (auto& layerAction : layerActionQueue) {
+    bool Application::onWindowResize(WindowResizeEvent &e) {
+        if (e.getWidth() == 0 || e.getHeight() == 0) {
+            return false;
+        }
+        return true;
+    }
 
-			auto it = std::find_if(layerStack.begin(), layerStack.end(),
-				[&layerAction](const std::unique_ptr<Layer>& layerPtr) {
-					return layerPtr.get() == layerAction.requester;
-				}
-			);
+    void Application::processLayerActions() {
+        for (auto &layerAction : layerActionQueue) {
 
-			if (it == layerStack.end()) {
-				AX_CORE_LOG_ERROR("Layer action requester not found in layer stack!");
-				continue;
-			}
+            auto it = std::find_if(layerStack.begin(), layerStack.end(),
+                                   [&layerAction](const std::unique_ptr<Layer> &layerPtr) { return layerPtr.get() == layerAction.requester; });
 
-			switch (layerAction.action) {
-			case Layer::ActionType::Transition:
-				(*it)->onDetach();
-				layerAction.newLayer->onAttach();
+            if (it == layerStack.end()) {
+                AX_CORE_LOG_ERROR("Layer action requester not found in layer stack!");
+                continue;
+            }
 
-				*it = std::move(layerAction.newLayer);
-				break;
+            switch (layerAction.action) {
+            case Layer::ActionType::Transition:
+                (*it)->onDetach();
+                layerAction.newLayer->onAttach();
 
-			case Layer::ActionType::Suspend:
-				(*it)->onSuspend();
-				(*it)->isSuspended = true;
-				layerAction.newLayer->onAttach();
+                *it = std::move(layerAction.newLayer);
+                break;
 
-				layerStack.insertLayer(it + 1, std::move(layerAction.newLayer));
-				break;
+            case Layer::ActionType::Suspend:
+                (*it)->onSuspend();
+                (*it)->isSuspended = true;
+                layerAction.newLayer->onAttach();
 
-			case Layer::ActionType::Pop:
-				(*it)->onDetach();
+                layerStack.insertLayer(it + 1, std::move(layerAction.newLayer));
+                break;
 
-				if (it != layerStack.begin()) {
-					auto prevIt = std::prev(it);
-					(*prevIt)->isSuspended = false;
-					(*prevIt)->onResume();
-				}
-				layerStack.eraseLayer(it);
-				break;
-			}
-		}
+            case Layer::ActionType::Pop:
+                (*it)->onDetach();
 
-		layerActionQueue.clear();
-	}
+                if (it != layerStack.begin()) {
+                    auto prevIt = std::prev(it);
+                    (*prevIt)->isSuspended = false;
+                    (*prevIt)->onResume();
+                }
+                layerStack.eraseLayer(it);
+                break;
+            }
+        }
 
-	void Application::run() {
-		while (running)
-		{
-			for (const auto& layer : layerStack) {
-				layer->onUpdate();
-			}
-			for (const auto& layer : layerStack) {
-				layer->onUIRender();
-			}
+        layerActionQueue.clear();
+    }
 
-			CommandBuffer* commandBuffer = renderer->beginFrame();
-			for (const auto& layer : layerStack) {
-				layer->onRender(commandBuffer);
-			}
-			renderer->endFrame();
+    void Application::run() {
+        while (running) {
+            for (const auto &layer : layerStack) {
+                layer->onUpdate();
+            }
+            for (const auto &layer : layerStack) {
+                layer->onUIRender();
+            }
 
-			window->onUpdate();
-			processLayerActions();
-		}
-		renderer->waitIdle();
-	}
-}
+            CommandBuffer *commandBuffer = renderer->beginFrame();
+            for (const auto &layer : layerStack) {
+                layer->onRender(commandBuffer);
+            }
+            renderer->endFrame();
+
+            window->onUpdate();
+            processLayerActions();
+        }
+        renderer->waitIdle();
+    }
+} // namespace Axiom

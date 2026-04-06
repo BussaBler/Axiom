@@ -1,12 +1,12 @@
 #pragma once
 
 namespace Axiom {
-	class Fence {
-	public:
-		Fence() = default;
-		virtual ~Fence() = default;
+    class Fence {
+      public:
+        Fence() = default;
+        virtual ~Fence() = default;
 
-		virtual void wait() = 0;
-		virtual void reset() = 0;
-	};
-}
+        virtual void wait() = 0;
+        virtual void reset() = 0;
+    };
+} // namespace Axiom

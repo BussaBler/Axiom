@@ -3,7 +3,7 @@
 namespace Axiom {
     // KeyCode enum class for representing keyboard keys based on Windows virtual key codes
     enum class KeyCode {
-		None = 0x00,
+        None = 0x00,
         LeftButton = 0x01,
         RightButton = 0x02,
         Cancel = 0x03,
@@ -77,7 +77,7 @@ namespace Axiom {
         Y = 0x59,
         Z = 0x5A,
 
-        LeftSuper = 0x5B, // Left Windows key
+        LeftSuper = 0x5B,  // Left Windows key
         RightSuper = 0x5C, // Right Windows key
         Apps = 0x5D,
         Sleep = 0x5F,
@@ -133,7 +133,7 @@ namespace Axiom {
         RightShift = 0xA1,
         LeftControl = 0xA2,
         RightControl = 0xA3,
-        LeftMenu = 0xA4, // Left Alt
+        LeftMenu = 0xA4,  // Left Alt
         RightMenu = 0xA5, // Right Alt
 
         // Punctuation
@@ -142,6 +142,6 @@ namespace Axiom {
         Comma = 0xBC,
         Minus = 0xBD,
         Period = 0xBE,
-		Grave = 0xC0, // Grave accent
+        Grave = 0xC0, // Grave accent
     };
-}
+} // namespace Axiom

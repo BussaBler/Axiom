@@ -2,14 +2,15 @@
 #include "MSDFGen/msdfgen.h"
 
 namespace Axiom {
-    static msdfgen::Shape createMSDFGenShape(const std::vector<Font::Contour>& contours) {
+    static msdfgen::Shape createMSDFGenShape(const std::vector<Font::Contour> &contours) {
         msdfgen::Shape shape;
 
-        for (const auto& contour : contours) {
-            const auto& pts = contour.points;
-            if (pts.size() < 3) continue;
+        for (const auto &contour : contours) {
+            const auto &pts = contour.points;
+            if (pts.size() < 3)
+                continue;
 
-            msdfgen::Contour& msdfContour = shape.addContour();
+            msdfgen::Contour &msdfContour = shape.addContour();
 
             auto it = pts.begin();
             while (it != pts.end()) {
@@ -29,8 +30,7 @@ namespace Axiom {
 
                 if ((dx * dx + dy * dy) < 0.001f) {
                     msdfContour.addEdge(new msdfgen::LinearSegment(mp0, mp2));
-                }
-                else {
+                } else {
                     msdfContour.addEdge(new msdfgen::QuadraticSegment(mp0, mp1, mp2));
                 }
 
@@ -49,7 +49,7 @@ namespace Axiom {
         return shape;
     }
 
-    Font::Font(const std::filesystem::path& filePath) {
+    Font::Font(const std::filesystem::path &filePath) {
         BinaryReader reader(filePath, true);
 
         reader.skip(4);
@@ -72,8 +72,8 @@ namespace Axiom {
 
         reader.seek(tableOffsets["maxp"] + 4);
         uint16_t numGlyphs = reader.readUInt16();
-		reader.seek(tableOffsets["head"] + 18);
-		uint16_t unitsPerEm = reader.readUInt16();
+        reader.seek(tableOffsets["head"] + 18);
+        uint16_t unitsPerEm = reader.readUInt16();
         reader.seek(tableOffsets["head"] + 50);
         bool isTwoByteEntry = reader.readInt16() == 0;
 
@@ -90,15 +90,14 @@ namespace Axiom {
         reader.seek(tableOffsets["cmap"]);
         auto charCodeToGlyphIndex = createUnicodeToGlyphIndexMap(reader);
 
-		reader.seek(tableOffsets["hhea"] + 34);
-		uint16_t numOfLongHorMetrics = reader.readUInt16();
+        reader.seek(tableOffsets["hhea"] + 34);
+        uint16_t numOfLongHorMetrics = reader.readUInt16();
         uint32_t hmtxOffset = tableOffsets["hmtx"];
         auto getGlyphAdvance = [&](uint32_t glyphIndex) -> uint16_t {
             if (glyphIndex < numOfLongHorMetrics) {
                 reader.seek(hmtxOffset + glyphIndex * 4);
                 return reader.readUInt16();
-            }
-            else {
+            } else {
                 reader.seek(hmtxOffset + (numOfLongHorMetrics - 1) * 4);
                 return reader.readUInt16();
             }
@@ -106,32 +105,26 @@ namespace Axiom {
 
         uint32_t glyphSize = 64;
         uint16_t collumns = 16;
-		uint16_t rows = 6; // 16 * 6 = 96 glyphs, which is enough for basic ASCII
+        uint16_t rows = 6; // 16 * 6 = 96 glyphs, which is enough for basic ASCII
 
-        asciiAtlas = {
-            .width = collumns * glyphSize,
-            .height = rows * glyphSize,
-            .channels = 4,
-			.unitsPerEm = unitsPerEm
-        };
-		asciiAtlas.pixels.resize(asciiAtlas.width * asciiAtlas.height * asciiAtlas.channels);
+        asciiAtlas = {.width = collumns * glyphSize, .height = rows * glyphSize, .channels = 4, .unitsPerEm = unitsPerEm};
+        asciiAtlas.pixels.resize(asciiAtlas.width * asciiAtlas.height * asciiAtlas.channels);
 
-		double pxRange = 4.0;
+        double pxRange = 4.0;
         for (uint32_t charCode = 32; charCode < 126; charCode++) {
             uint32_t glyphIndex = charCodeToGlyphIndex[charCode];
 
-			uint32_t gridX = (charCode - 32) % collumns;
-			uint32_t gridY = (charCode - 32) / collumns;
-			uint32_t startPxX = gridX * glyphSize;
-			uint32_t startPxY = gridY * glyphSize;
+            uint32_t gridX = (charCode - 32) % collumns;
+            uint32_t gridY = (charCode - 32) / collumns;
+            uint32_t startPxX = gridX * glyphSize;
+            uint32_t startPxY = gridY * glyphSize;
 
             GlyphMetrics metrics = {
                 .uv0 = Math::Vec2(static_cast<float>(startPxX) / asciiAtlas.width, static_cast<float>(startPxY) / asciiAtlas.height),
                 .uv1 = Math::Vec2(static_cast<float>(startPxX + glyphSize) / asciiAtlas.width, static_cast<float>(startPxY + glyphSize) / asciiAtlas.height),
                 .quadMin = Math::Vec2(0.0f, 0.0f),
                 .quadMax = Math::Vec2(0.0f, 0.0f),
-                .advance = static_cast<float>(getGlyphAdvance(glyphIndex))
-            };
+                .advance = static_cast<float>(getGlyphAdvance(glyphIndex))};
 
             if (glyphIndex == 0 && charCode != 32) {
                 asciiAtlas.glyphs[charCode] = metrics;
@@ -148,31 +141,25 @@ namespace Axiom {
 
             reader.seek(currentGlyphOffset);
             Glyph glyph = readSimpleGlyph(reader);
-			
-			auto contours = createRawGlyphContours(glyph, 1.0f);
+
+            auto contours = createRawGlyphContours(glyph, 1.0f);
             if (contours.empty()) {
                 asciiAtlas.glyphs[charCode] = metrics;
                 continue;
             }
 
-			msdfgen::Shape shape = createMSDFGenShape(contours);
+            msdfgen::Shape shape = createMSDFGenShape(contours);
             msdfgen::Shape::Bounds bounds = shape.getBounds();
             msdfgen::Bitmap<float, 3> localMsdf(glyphSize, glyphSize);
 
-            double scale = std::min<double>(
-                (glyphSize - 2.0 * pxRange) / (bounds.r - bounds.l),
-                (glyphSize - 2.0 * pxRange) / (bounds.t - bounds.b)
-            );
+            double scale = std::min<double>((glyphSize - 2.0 * pxRange) / (bounds.r - bounds.l), (glyphSize - 2.0 * pxRange) / (bounds.t - bounds.b));
 
-            msdfgen::Vector2 translate(
-                0.5 * glyphSize / scale - 0.5 * (bounds.l + bounds.r),
-                0.5 * glyphSize / scale - 0.5 * (bounds.b + bounds.t)
-            );
+            msdfgen::Vector2 translate(0.5 * glyphSize / scale - 0.5 * (bounds.l + bounds.r), 0.5 * glyphSize / scale - 0.5 * (bounds.b + bounds.t));
 
             msdfgen::Projection projection(scale, translate);
             msdfgen::MSDFGeneratorConfig config;
             config.overlapSupport = true;
-			config.errorCorrection.mode = msdfgen::ErrorCorrectionConfig::EDGE_PRIORITY;
+            config.errorCorrection.mode = msdfgen::ErrorCorrectionConfig::EDGE_PRIORITY;
             msdfgen::generateMSDF(localMsdf, shape, projection, pxRange / scale, config);
 
             for (int y = 0; y < glyphSize; y++) {
@@ -185,7 +172,7 @@ namespace Axiom {
                     uint8_t rByte = (uint8_t)std::max(0.0f, std::min(255.0f, r * 255.0f));
                     uint8_t gByte = (uint8_t)std::max(0.0f, std::min(255.0f, g * 255.0f));
                     uint8_t bByte = (uint8_t)std::max(0.0f, std::min(255.0f, b * 255.0f));
-					uint8_t aByte = 255; // padding
+                    uint8_t aByte = 255; // padding
 
                     int atlasPxX = startPxX + x;
                     int atlasPxY = startPxY + flippedY;
@@ -194,7 +181,7 @@ namespace Axiom {
                     asciiAtlas.pixels[index + 0] = rByte;
                     asciiAtlas.pixels[index + 1] = gByte;
                     asciiAtlas.pixels[index + 2] = bByte;
-					asciiAtlas.pixels[index + 3] = aByte;
+                    asciiAtlas.pixels[index + 3] = aByte;
                 }
             }
 
@@ -211,11 +198,11 @@ namespace Axiom {
         }
     }
 
-    Font::Glyph Font::readSimpleGlyph(BinaryReader& reader) const {
+    Font::Glyph Font::readSimpleGlyph(BinaryReader &reader) const {
         int16_t numberOfContours = reader.readInt16();
         if (numberOfContours <= 0) {
-			AX_CORE_LOG_WARN("Glyph with {} contours is not supported", numberOfContours);
-			return notFoundGlyph;
+            AX_CORE_LOG_WARN("Glyph with {} contours is not supported", numberOfContours);
+            return notFoundGlyph;
         }
 
         int16_t xMin = reader.readInt16();
@@ -245,12 +232,12 @@ namespace Axiom {
         std::vector<Point> points = readPoints(reader, pointsFlags);
         Math::iVec2 boundsMin = Math::iVec2(xMin, yMin);
         Math::iVec2 boundsMax = Math::iVec2(xMax, yMax);
-		bool hasOverlaps = BinaryReader::isFlagBitSet(pointsFlags[0], 6);
+        bool hasOverlaps = BinaryReader::isFlagBitSet(pointsFlags[0], 6);
 
         return Glyph{boundsMax, boundsMin, std::move(points), std::move(contourEndPoints), hasOverlaps};
     }
 
-    std::vector<Font::Point> Font::readPoints(BinaryReader& reader, const std::vector<uint8_t>& pointsFlags) const {
+    std::vector<Font::Point> Font::readPoints(BinaryReader &reader, const std::vector<uint8_t> &pointsFlags) const {
         std::vector<Point> points(pointsFlags.size());
 
         // 1. Read all X coordinates using a running sum
@@ -262,8 +249,7 @@ namespace Axiom {
             if (BinaryReader::isFlagBitSet(flags, 1)) { // X_SHORT
                 uint8_t offset = reader.readUInt8();
                 currentX += BinaryReader::isFlagBitSet(flags, 4) ? offset : -offset;
-            }
-            else if (!BinaryReader::isFlagBitSet(flags, 4)) { // NOT X_SAME
+            } else if (!BinaryReader::isFlagBitSet(flags, 4)) { // NOT X_SAME
                 currentX += reader.readInt16();
             }
             points[i].position.x() = currentX;
@@ -277,8 +263,7 @@ namespace Axiom {
             if (BinaryReader::isFlagBitSet(flags, 2)) { // Y_SHORT
                 uint8_t offset = reader.readUInt8();
                 currentY += BinaryReader::isFlagBitSet(flags, 5) ? offset : -offset;
-            }
-            else if (!BinaryReader::isFlagBitSet(flags, 5)) { // NOT Y_SAME
+            } else if (!BinaryReader::isFlagBitSet(flags, 5)) { // NOT Y_SAME
                 currentY += reader.readInt16();
             }
             points[i].position.y() = currentY;
@@ -287,7 +272,7 @@ namespace Axiom {
         return points;
     }
 
-    std::unordered_map<uint32_t, uint32_t> Font::createUnicodeToGlyphIndexMap(BinaryReader& reader) const {
+    std::unordered_map<uint32_t, uint32_t> Font::createUnicodeToGlyphIndexMap(BinaryReader &reader) const {
         size_t cmapPos = reader.tell();
         std::unordered_map<uint32_t, uint32_t> charCodeToGlyphIndex;
         uint16_t cmapVersion = reader.readUInt16();
@@ -373,8 +358,7 @@ namespace Axiom {
                     uint32_t glyphIndex = 0;
                     if (idRangeOffsets[i].first == 0) {
                         glyphIndex = (currCode + idDeltas[i]) % 65536;
-                    }
-                    else {
+                    } else {
                         uint32_t offset = idRangeOffsets[i].second + 2 * (currCode - startCodes[i]) + idRangeOffsets[i].first;
                         size_t currentPos = reader.tell();
                         reader.seek(offset);
@@ -401,34 +385,34 @@ namespace Axiom {
         return Math::linearInterpolation(interA, interB, t);
     }
 
-    std::vector<Font::Contour> Font::createRawGlyphContours(const Glyph& glyph, float scale) const {
-		std::vector<Contour> contours;
-		uint32_t contourStart = 0;
+    std::vector<Font::Contour> Font::createRawGlyphContours(const Glyph &glyph, float scale) const {
+        std::vector<Contour> contours;
+        uint32_t contourStart = 0;
 
         for (uint16_t contourEnd : glyph.contourEndPoints) {
-			std::vector<Point> originalContour(glyph.points.begin() + contourStart, glyph.points.begin() + contourEnd + 1);
+            std::vector<Point> originalContour(glyph.points.begin() + contourStart, glyph.points.begin() + contourEnd + 1);
             uint32_t pointOffset;
-			for (pointOffset = 0; pointOffset < originalContour.size(); pointOffset++) {
+            for (pointOffset = 0; pointOffset < originalContour.size(); pointOffset++) {
                 if (originalContour[pointOffset].onCurve) {
                     break;
                 }
             }
 
-			Contour newContour;
-			for (size_t i = 0; i < originalContour.size(); i++) {
-				const Point& currPoint = originalContour[(pointOffset + i + 0) % originalContour.size()];
-				const Point& nextPoint = originalContour[(pointOffset + i + 1) % originalContour.size()];
-				newContour.points.push_back(Math::Vec2(currPoint.position) * scale);
+            Contour newContour;
+            for (size_t i = 0; i < originalContour.size(); i++) {
+                const Point &currPoint = originalContour[(pointOffset + i + 0) % originalContour.size()];
+                const Point &nextPoint = originalContour[(pointOffset + i + 1) % originalContour.size()];
+                newContour.points.push_back(Math::Vec2(currPoint.position) * scale);
 
                 if (currPoint.onCurve == nextPoint.onCurve) {
-					Math::Vec2 midPoint = Math::Vec2(currPoint.position + nextPoint.position) * 0.5f * scale;
-					newContour.points.push_back(midPoint);
+                    Math::Vec2 midPoint = Math::Vec2(currPoint.position + nextPoint.position) * 0.5f * scale;
+                    newContour.points.push_back(midPoint);
                 }
             }
-			contours.push_back(std::move(newContour));
+            contours.push_back(std::move(newContour));
             contourStart = contourEnd + 1;
         }
 
-		return contours;
+        return contours;
     }
 } // namespace Axiom

@@ -1,16 +1,16 @@
-#include "axpch.h"
 #include "WindowsInput.h"
+#include "axpch.h"
 
 namespace Axiom {
-	Input* Input::instance = new WindowsInput();
+    Input *Input::instance = new WindowsInput();
 
-	bool WindowsInput::internalIsKeyPressed(KeyCode keyCode) {
-		SHORT result = GetAsyncKeyState(keyCodeToWindowsKey(keyCode));
-		if (result & 0x8000) {
-			return true;
-		}
-		return false;
-	}
+    bool WindowsInput::internalIsKeyPressed(KeyCode keyCode) {
+        SHORT result = GetAsyncKeyState(keyCodeToWindowsKey(keyCode));
+        if (result & 0x8000) {
+            return true;
+        }
+        return false;
+    }
 
     float WindowsInput::internalGetMouseX() {
         POINT pt;
@@ -24,11 +24,11 @@ namespace Axiom {
         RECT r;
         GetClientRect(hwnd, &r);
 
-		float x = static_cast<float>(pt.x);
-		return std::clamp(x, static_cast<float>(r.left), static_cast<float>(r.right));
+        float x = static_cast<float>(pt.x);
+        return std::clamp(x, static_cast<float>(r.left), static_cast<float>(r.right));
     }
 
-	float WindowsInput::internalgetMouseY() {
+    float WindowsInput::internalgetMouseY() {
         POINT pt;
         HWND hwnd = reinterpret_cast<HWND>(Application::getWindow()->getNativeWindow());
         if (!hwnd || !GetCursorPos(&pt))
@@ -42,6 +42,6 @@ namespace Axiom {
 
         float y = static_cast<float>(pt.y);
         return std::clamp(y, static_cast<float>(r.top), static_cast<float>(r.bottom));
-	}
+    }
 
-}
+} // namespace Axiom
