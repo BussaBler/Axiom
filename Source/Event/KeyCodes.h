@@ -135,6 +135,7 @@ namespace Axiom {
         RightControl = 0xA3,
         LeftMenu = 0xA4,  // Left Alt
         RightMenu = 0xA5, // Right Alt
+        Function = 0xA6,
 
         // Punctuation
         Semicolon = 0xBA,
@@ -143,5 +144,21 @@ namespace Axiom {
         Minus = 0xBD,
         Period = 0xBE,
         Grave = 0xC0, // Grave accent
+
+        // Variable keys (used for OEM specific keys)
+        OEM1 = 0xBA, // ';:' for US
+        OEM2 = 0xBF, // '/?' for US
+        OEM3 = 0xC0, // '`~' for US
+        OEM4 = 0xDB, // '[{' for US
+        OEM5 = 0xDC, // '\|' for US
+        OEM6 = 0xDD, // ']}' for US
+        OEM7 = 0xDE, // ''"' for US
+        OEM8 = 0xDF,
+        OEM102 = 0xE2, // '<>' or '\|' on RT 102-key keyboards
+
+        // Media control keys
+        VolumeMute = 0xAD,
+        VolumeDown = 0xAE,
+        VolumeUp = 0xAF,
     };
 } // namespace Axiom

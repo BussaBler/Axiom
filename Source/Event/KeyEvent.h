@@ -35,9 +35,9 @@ namespace Axiom {
         int repeatCount;
     };
 
-    class KeyReleassedEvent : public KeyEvent {
+    class KeyReleasedEvent : public KeyEvent {
       public:
-        KeyReleassedEvent(KeyCode keycode) : KeyEvent(keycode) {
+        KeyReleasedEvent(KeyCode keycode) : KeyEvent(keycode) {
         }
 
         std::string toString() const override {

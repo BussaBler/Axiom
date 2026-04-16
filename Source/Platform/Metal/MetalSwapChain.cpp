@@ -3,31 +3,45 @@
 namespace Axiom {
     MetalSwapChain::MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height)
         : SwapChain(), device(metalDevice), metalLayer(metalLayer) {
+        metalLayer->setDrawableSize({static_cast<CGFloat>(width), static_cast<CGFloat>(height)});
+        metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
+        metalLayer->setFramebufferOnly(true);
+        textureFormat = Format::B8G8R8A8Unorm;
     }
 
     MetalSwapChain::~MetalSwapChain() {
     }
 
-    uint32_t MetalSwapChain::acquireNextImage(Semaphore* imageAvailableSemaphore) {
-        currentDrawable = metalLayer->nextDrawable();
-        return 0;
-    }
+    bool MetalSwapChain::acquireNextImage() {
+        CA::MetalDrawable* drawable = metalLayer->nextDrawable();
 
-    Texture* MetalSwapChain::getImageTexture(uint32_t index) {
-        MTL::Texture* metalTexture = currentDrawable->texture();
+        if (!drawable) {
+            return false;
+        }
 
-        // TODO: translate MTL::Texture to Axiom::Texture
-
-        return nullptr;
-    }
-
-    bool MetalSwapChain::present(uint32_t imageIndex, Semaphore* waitSemaphore) {
-        // there is nothing to do here, I think
+        currentDrawable = drawable->retain();
+        currentDrawableTexture = std::make_unique<MetalTexture>(currentDrawable->texture());
+        textureFormat = currentDrawableTexture->getFormat();
         return true;
     }
 
-    uint32_t MetalSwapChain::getImageCount() const {
-        return metalLayer->maximumDrawableCount();
+    Texture* MetalSwapChain::getCurrentTexture() {
+        return currentDrawableTexture.get();
+    }
+
+    Format MetalSwapChain::getTextureFormat() const {
+        return textureFormat;
+    }
+
+    bool MetalSwapChain::present() {
+        if (currentDrawable) {
+            currentDrawable->present();
+            currentDrawable->release();
+            currentDrawable = nullptr;
+            currentDrawableTexture.reset();
+        }
+
+        return true;
     }
 
     uint32_t MetalSwapChain::getWidth() const {

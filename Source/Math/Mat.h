@@ -26,13 +26,9 @@ namespace Math {
         }
 
         // Returns a the i-th column vector
-        constexpr Vec<T, N>& operator[](size_t i) {
-            return data[i];
-        }
+        constexpr Vec<T, N>& operator[](size_t i) { return data[i]; }
         // Returns a the i-th column vector
-        constexpr const Vec<T, N>& operator[](size_t i) const {
-            return data[i];
-        }
+        constexpr const Vec<T, N>& operator[](size_t i) const { return data[i]; }
 
         constexpr Mat<T, N> operator+(const Mat<T, N>& other) const {
             Mat<T, N> result;
@@ -88,9 +84,7 @@ namespace Math {
                     data[i][j] /= scalar;
             return *this;
         }
-        friend constexpr Mat<T, N> operator*(const T& scalar, const Mat<T, N>& m) {
-            return m * scalar;
-        }
+        friend constexpr Mat<T, N> operator*(const T& scalar, const Mat<T, N>& m) { return m * scalar; }
         friend constexpr Vec<T, N> operator*(const Mat<T, N>& m, const Vec<T, N>& v) {
             Vec<T, N> result;
             for (size_t i = 0; i < N; ++i) {
@@ -112,11 +106,12 @@ namespace Math {
         static Mat<float, 4> orthographic(float left, float right, float bottom, float top, float zNear, float zFar) {
             Mat<float, 4> result;
             result[0] = Vec4(2.0f / (right - left), 0.0f, 0.0f, 0.0f);
-            result[1] = Vec4(0.0f, 2.0f / (top - bottom), 0.0f, 0.0f);
+            result[1] = Vec4(0.0f, -2.0f / (top - bottom), 0.0f, 0.0f);
             result[2] = Vec4(0.0f, 0.0f, 1.0f / (zNear - zFar), 0.0f);
-            result[3] = Vec4(-(right + left) / (right - left), -(top + bottom) / (top - bottom), zNear / (zNear - zFar), 1.0f);
+            result[3] = Vec4(-(right + left) / (right - left), (top + bottom) / (top - bottom), zNear / (zNear - zFar), 1.0f);
             return result;
         }
+
         static Mat<float, 4> perspective(float fov, float aspectRatio, float zNear, float zFar) {
             Mat<float, 4> result;
             float tanHalfFov = std::tan(fov * 0.5f);
@@ -237,15 +232,9 @@ namespace Math {
             result[3] = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
             return result;
         }
-        static Mat<float, 4> rotateX(float radians) {
-            return rotate(Vec3(1.0f, 0.0f, 0.0f), radians);
-        }
-        static Mat<float, 4> rotateY(float radians) {
-            return rotate(Vec3(0.0f, 1.0f, 0.0f), radians);
-        }
-        static Mat<float, 4> rotateZ(float radians) {
-            return rotate(Vec3(0.0f, 0.0f, 1.0f), radians);
-        }
+        static Mat<float, 4> rotateX(float radians) { return rotate(Vec3(1.0f, 0.0f, 0.0f), radians); }
+        static Mat<float, 4> rotateY(float radians) { return rotate(Vec3(0.0f, 1.0f, 0.0f), radians); }
+        static Mat<float, 4> rotateZ(float radians) { return rotate(Vec3(0.0f, 0.0f, 1.0f), radians); }
         Vec3 getForward() const
             requires(N >= 4)
         {

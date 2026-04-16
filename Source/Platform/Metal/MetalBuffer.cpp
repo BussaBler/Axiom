@@ -20,6 +20,6 @@ namespace Axiom {
 
     void MetalBuffer::setData(const void* data, uint64_t size, uint64_t offset) {
         AX_CORE_ASSERT(offset + size <= bufferSize, "Data size exceeds buffer capacity");
-        std::memcpy(metalBuffer->contents() + offset, data, size);
+        std::memcpy(static_cast<uint8_t*>(metalBuffer->contents()) + offset, data, size);
     }
 } // namespace Axiom

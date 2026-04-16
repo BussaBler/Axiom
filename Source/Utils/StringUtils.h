@@ -1,4 +1,6 @@
 #pragma once
+#include "axpch.h"
+
 namespace Axiom {
     class StringUtils {
       public:

@@ -1,6 +1,4 @@
 #include "Application.h"
-#include "UI/UILayer.h"
-#include "axpch.h"
 
 namespace Axiom {
     Application* Application::instance = nullptr;
@@ -20,8 +18,8 @@ namespace Axiom {
         window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
         renderer = std::make_unique<Renderer>(window.get());
-
-        pushOverlay<UILayer>();
+        uiContext = std::make_unique<UIContext>();
+        UI::init(*uiContext);
     }
 
     Application::~Application() {
@@ -31,7 +29,7 @@ namespace Axiom {
         EventDispatcher dispatcher(event);
         dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
         dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
-
+        UI::onEvent(event);
         for (auto it = layerStack.rbegin(); it != layerStack.rend(); it++) {
             if (event.isHandled()) {
                 break;
@@ -53,6 +51,7 @@ namespace Axiom {
         if (e.getWidth() == 0 || e.getHeight() == 0) {
             return false;
         }
+        renderer->recreateSwapChain();
         return true;
     }
 
@@ -101,6 +100,8 @@ namespace Axiom {
 
     void Application::run() {
         while (running) {
+            window->beginFrame();
+            UI::beginFrame();
             for (const auto& layer : layerStack) {
                 layer->onUpdate();
             }
@@ -112,9 +113,12 @@ namespace Axiom {
             for (const auto& layer : layerStack) {
                 layer->onRender(commandBuffer);
             }
+            UI::endFrame();
+            UI::render(commandBuffer);
             renderer->endFrame();
 
             window->onUpdate();
+            window->endFrame();
             processLayerActions();
         }
         renderer->waitIdle();

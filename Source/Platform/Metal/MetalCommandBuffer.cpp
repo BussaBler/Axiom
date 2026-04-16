@@ -1,6 +1,7 @@
 #include "MetalCommandBuffer.h"
 #include "MetalBuffer.h"
 #include "MetalPipeline.h"
+#include "MetalResourceSet.h"
 #include "MetalTexture.h"
 
 namespace Axiom {
@@ -16,8 +17,7 @@ namespace Axiom {
     }
 
     void MetalCommandBuffer::end() {
-        commandBuffer->commit();
-        commandBuffer = nullptr;
+        // nothing to fo here
     }
 
     void MetalCommandBuffer::beginRendering(const RenderPass& renderPass) {
@@ -68,7 +68,24 @@ namespace Axiom {
 
     void MetalCommandBuffer::bindResources(const std::vector<ResourceSet*>& resourceSets, uint32_t firstSet) {
         for (size_t i = 0; i < resourceSets.size(); i++) {
-            ResourceSet* resourceSet = resourceSets[i];
+            MetalResourceSet* metalResourceSet = static_cast<MetalResourceSet*>(resourceSets[i]);
+            uint32_t pushConstantOffset = 8;
+
+            MTL::Buffer* argBuffer = metalResourceSet->getArgumentBuffer();
+            renderEncoder->setVertexBuffer(argBuffer, 0, firstSet + i + pushConstantOffset);
+            renderEncoder->setFragmentBuffer(argBuffer, 0, firstSet + i + pushConstantOffset);
+
+            const auto& textures = metalResourceSet->getResidentTextures();
+            if (!textures.empty()) {
+                renderEncoder->useResources(reinterpret_cast<const MTL::Resource* const*>(textures.data()), textures.size(), MTL::ResourceUsageRead,
+                                            MTL::RenderStageVertex | MTL::RenderStageFragment);
+            }
+
+            const auto& buffers = metalResourceSet->getResidentBuffers();
+            if (!buffers.empty()) {
+                renderEncoder->useResources(reinterpret_cast<const MTL::Resource* const*>(buffers.data()), buffers.size(), MTL::ResourceUsageRead,
+                                            MTL::RenderStageVertex | MTL::RenderStageFragment);
+            }
         }
     }
 
@@ -82,9 +99,10 @@ namespace Axiom {
     }
 
     void MetalCommandBuffer::bindVertexBuffers(const std::vector<Buffer*>& vertexBuffers) {
+        uint32_t vertexBufferOffset = 1; // Start from 1 since 0 is reserved for push constants
         for (size_t i = 0; i < vertexBuffers.size(); i++) {
             Buffer* vertexBuffer = vertexBuffers[i];
-            renderEncoder->setVertexBuffer(static_cast<MetalBuffer*>(vertexBuffer)->getHandle(), 0, i);
+            renderEncoder->setVertexBuffer(static_cast<MetalBuffer*>(vertexBuffer)->getHandle(), 0, i + vertexBufferOffset);
         }
     }
 
@@ -98,8 +116,8 @@ namespace Axiom {
 
     void MetalCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
         renderEncoder->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, indexCount, MTL::IndexTypeUInt32,
-                                             static_cast<MetalBuffer*>(currentIndexBuffer)->getHandle(), firstIndex, instanceCount, vertexOffset,
-                                             firstInstance);
+                                             static_cast<MetalBuffer*>(currentIndexBuffer)->getHandle(), firstIndex * sizeof(uint32_t), instanceCount,
+                                             vertexOffset, firstInstance);
     }
 
     void MetalCommandBuffer::pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) {
@@ -127,7 +145,7 @@ namespace Axiom {
         NS::UInteger bytesPerRow = width * bytesPerPixel;
         NS::UInteger bytesPerImage = bytesPerRow * height;
 
-        blitEncoder->copyFromBuffer(source->getHandle(), 0, bytesPerRow, bytesPerImage, sourceSize, dst->getHandle(), arrayLayer, mipLevel, origin);
+        blitEncoder->copyFromBuffer(source->getHandle(), 0, bytesPerRow, 0, sourceSize, dst->getHandle(), arrayLayer, mipLevel, origin);
 
         blitEncoder->endEncoding();
     }

@@ -5,25 +5,6 @@
 #include "axpch.h"
 
 namespace Axiom {
-    enum class Format {
-        Undefined,
-        B8G8R8A8Unorm,
-        R8Unorm,
-        R8G8Unorm,
-        R8G8B8Unorm,
-        R8G8B8A8Unorm,
-        B8G8R8A8Srgb,
-        R8Srgb,
-        R8G8Srgb,
-        R8G8B8Srgb,
-        R8G8B8A8Srgb,
-        D24UnormS8Uint,
-        D32sFloat,
-        R32G32Sfloat,
-        R32G32B32Sfloat,
-        R32G32B32A32Sfloat
-    };
-
     enum class VertexInputRate { Vertex, Instance };
 
     enum class PrimitiveTopology { TriangleList, LineList, PointList };

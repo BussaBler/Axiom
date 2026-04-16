@@ -17,43 +17,28 @@ namespace Axiom {
         std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);
         std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo);
         std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings);
-        std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout);
 
         std::unique_ptr<CommandBuffer> beginSingleTimeCommands();
         void endSingleTimeCommands(CommandBuffer* commandBuffer);
 
-        inline Texture* getCurrentRenderTarget() {
-            return swapChain->getImageTexture(currentImageIndex);
-        }
-        inline Math::uVec2 getCurrentRenderTargetSize() {
-            return {swapChain->getWidth(), swapChain->getHeight()};
-        }
-        inline Texture* getDefaultTexture() {
-            return defaultTexture.get();
-        }
-        inline Sampler* getLinearSampler() {
-            return linearSampler.get();
-        }
-        inline Sampler* getNearestSampler() {
-            return nearestSampler.get();
-        }
+        inline Texture* getCurrentRenderTarget() { return swapChain->getCurrentTexture(); }
+        inline Format getRenderTargetFormat() { return swapChain->getTextureFormat(); }
+        inline Math::uVec2 getCurrentRenderTargetSize() { return {swapChain->getWidth(), swapChain->getHeight()}; }
+        inline Texture* getDefaultTexture() { return defaultTexture.get(); }
+        inline Sampler* getLinearSampler() { return linearSampler.get(); }
+        inline Sampler* getNearestSampler() { return nearestSampler.get(); }
+
+        void recreateSwapChain();
 
       private:
-        void recreateSwapChain();
         void createDefaultTexture();
         void createDefaultSamplers();
 
       private:
-        uint32_t currentFrameIndex = 0;
-        uint32_t maxFramesInFlight = 0;
-        uint32_t currentImageIndex = 0;
+        // TODO: remove this pointer handle the resizes through the event system
         Window* window = nullptr;
         std::unique_ptr<Device> device = nullptr;
         std::unique_ptr<SwapChain> swapChain = nullptr;
-        std::vector<std::unique_ptr<CommandBuffer>> commandBuffers;
-        std::vector<std::unique_ptr<Semaphore>> imageAvailableSemaphores;
-        std::vector<std::unique_ptr<Semaphore>> renderFinishedSemaphores;
-        std::vector<std::unique_ptr<Fence>> inFlightFences;
         Texture::Barrier renderTargetBarrier;
         Texture::Barrier presentBarrier;
         std::shared_ptr<Texture> defaultTexture = nullptr;

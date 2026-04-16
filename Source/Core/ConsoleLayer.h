@@ -1,4 +1,5 @@
 #pragma once
+#include "CommandRegistry.h"
 #include "Event/KeyEvent.h"
 #include "Layer.h"
 #include "axpch.h"
@@ -6,8 +7,7 @@
 namespace Axiom {
     class ConsoleLayer : public Layer {
       public:
-        ConsoleLayer() : Layer("ConsoleLayer") {
-        }
+        ConsoleLayer() : Layer("ConsoleLayer") {}
         ~ConsoleLayer() = default;
 
         void onAttach() override;
@@ -17,11 +17,6 @@ namespace Axiom {
         void onUIRender() override;
         void onRender(CommandBuffer* commandBuffer) override;
 
-        void log(const std::string& message);
-        using CommandCallback = std::function<void(const std::vector<std::string>& args)>;
-        void registerCommand(const std::string& command, CommandCallback callback);
-        void executeCommand(const std::string& commandLine);
-
       private:
         bool onKeyPressed(KeyPressedEvent& event);
         bool onKeyTyped(KeyTypedEvent& event);
@@ -29,10 +24,9 @@ namespace Axiom {
       private:
         bool isOpen = false;
         std::string inputBuffer;
-        std::deque<std::string> commandHistory;
-        std::unordered_map<std::string, CommandCallback> commandRegistry;
+        bool checkboxValue = false;
 
         float consoleHeightRatio = 0.5f;
-        uint16_t fontSize = 16;
+        uint16_t fontSize = 8;
     };
 } // namespace Axiom

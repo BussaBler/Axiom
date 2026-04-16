@@ -6,8 +6,10 @@
 #include "Log.h"
 #include "Math/AxMath.h"
 #include "Renderer/Renderer.h"
+#include "UI/UI.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
+#include "axpch.h"
 
 namespace Axiom {
     struct ApplicationInfo {
@@ -46,15 +48,9 @@ namespace Axiom {
 
         void queueLayerAction(Layer* requester, std::unique_ptr<Layer> newLayer, Layer::ActionType action);
 
-        static Application* get() {
-            return instance;
-        }
-        static Renderer* getRenderer() {
-            return instance->renderer.get();
-        }
-        static Window* getWindow() {
-            return instance->window.get();
-        }
+        static Application* get() { return instance; }
+        static Renderer* getRenderer() { return instance->renderer.get(); }
+        static Window* getWindow() { return instance->window.get(); }
 
       private:
         bool onWindowClose(WindowCloseEvent& e);
@@ -75,6 +71,7 @@ namespace Axiom {
         bool running = true;
         LayerStack layerStack;
         std::vector<LayerAction> layerActionQueue;
+        std::unique_ptr<UIContext> uiContext;
 
       private:
         static Application* instance;

@@ -1,6 +1,5 @@
 #pragma once
 #include "Renderer/SwapChain.h"
-#include "VulkanSemaphore.h"
 #include "VulkanTexture.h"
 #include "VulkanUtils.h"
 
@@ -14,16 +13,21 @@ namespace Axiom {
             SwapChainSupportDetails swapChainDetails;
             QueueFamilyIndices queueFamilyIndices;
             Vk::Extent2D windowSize;
+            uint32_t maxFramesInFlight;
         };
 
         VulkanSwapChain(const CreateInfo& createInfo);
         ~VulkanSwapChain() override;
-        uint32_t acquireNextImage(Semaphore* imageAvailableSemaphore) override;
-        Texture* getImageTexture(uint32_t index) override;
-        bool present(uint32_t imageIndex, Semaphore* waitSemaphore) override;
-        uint32_t getImageCount() const override;
+        bool acquireNextImage() override;
+        Texture* getCurrentTexture() override;
+        Format getTextureFormat() const override;
+        bool present() override;
         uint32_t getWidth() const override;
         uint32_t getHeight() const override;
+
+        Vk::Semaphore getImageAvailableSemaphore(uint32_t index) const { return imageAvailableSemaphores[index]; }
+        Vk::Semaphore getRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentImageIndex]; }
+        void setCurrentFrameIndex(uint32_t index) { currentFrameIndex = index; }
 
       private:
         Vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<Vk::SurfaceFormatKHR>& availableFormats);
@@ -34,7 +38,11 @@ namespace Axiom {
         Vk::Device device = nullptr;
         Vk::SwapchainKHR swapChain = nullptr;
         Vk::Queue presentQueue = nullptr;
+        uint32_t currentImageIndex = 0;
+        uint32_t currentFrameIndex = 0;
         std::vector<std::unique_ptr<VulkanTexture>> swapChainTextures;
+        std::vector<Vk::Semaphore> imageAvailableSemaphores;
+        std::vector<Vk::Semaphore> renderFinishedSemaphores;
         Vk::Extent2D swapChainExtent = {0, 0};
         Vk::Format swapChainImageFormat = Vk::Format::eUndefined;
     };

@@ -7,24 +7,7 @@ namespace Axiom {
         deviceCreateInfo.windowObjPtr = window;
 
         device = Device::create(deviceCreateInfo);
-        swapChain = device->createSwapchain(window->getWidth(), window->getHeight());
-
-        maxFramesInFlight = 2; // This is a common choice for double buffering
-
-        commandBuffers.resize(maxFramesInFlight);
-        imageAvailableSemaphores.resize(maxFramesInFlight);
-        inFlightFences.resize(maxFramesInFlight);
-
-        for (size_t i = 0; i < maxFramesInFlight; i++) {
-            commandBuffers[i] = device->createCommandBuffer();
-            imageAvailableSemaphores[i] = device->createSemaphore();
-            inFlightFences[i] = device->createFence(true);
-        }
-
-        renderFinishedSemaphores.resize(swapChain->getImageCount());
-        for (size_t i = 0; i < swapChain->getImageCount(); i++) {
-            renderFinishedSemaphores[i] = device->createSemaphore();
-        }
+        swapChain = device->createSwapchain(window->getFramebufferWidth(), window->getFramebufferHeight());
 
         renderTargetBarrier = {.oldState = TextureState::Undefined, .newState = TextureState::RenderTarget, .aspect = TextureAspect::Color};
         presentBarrier = {.oldState = TextureState::RenderTarget, .newState = TextureState::Present, .aspect = TextureAspect::Color};
@@ -42,37 +25,30 @@ namespace Axiom {
     }
 
     CommandBuffer* Renderer::beginFrame() {
-        inFlightFences[currentFrameIndex]->wait();
-
-        currentImageIndex = swapChain->acquireNextImage(imageAvailableSemaphores[currentFrameIndex].get());
-        if (currentImageIndex == std::numeric_limits<uint32_t>::max()) {
+        if (!device->beginFrame(swapChain.get())) {
             recreateSwapChain();
             return nullptr;
         }
 
-        inFlightFences[currentFrameIndex]->reset();
-        CommandBuffer* commandBuffer = commandBuffers[currentFrameIndex].get();
+        CommandBuffer* commandBuffer = device->getCurrentCommandBuffer();
         commandBuffer->begin();
-        renderTargetBarrier.texture = swapChain->getImageTexture(currentImageIndex);
+
+        renderTargetBarrier.texture = swapChain->getCurrentTexture();
         commandBuffer->pipelineBarrier({renderTargetBarrier});
         return commandBuffer;
     }
 
     void Renderer::endFrame() {
-        CommandBuffer* commandBuffer = commandBuffers[currentFrameIndex].get();
+        CommandBuffer* commandBuffer = device->getCurrentCommandBuffer();
         presentBarrier.texture = renderTargetBarrier.texture;
         commandBuffer->pipelineBarrier({presentBarrier});
         commandBuffer->end();
 
-        device->submitCommandBuffers({commandBuffer}, {imageAvailableSemaphores[currentFrameIndex].get()}, {renderFinishedSemaphores[currentImageIndex].get()},
-                                     inFlightFences[currentFrameIndex].get());
-        bool presentResult = swapChain->present(currentImageIndex, renderFinishedSemaphores[currentImageIndex].get());
+        device->submitCommandBuffers({commandBuffer}, swapChain.get());
 
-        if (!presentResult) {
+        if (!swapChain->present()) {
             recreateSwapChain();
         }
-
-        currentFrameIndex = (currentFrameIndex + 1) % maxFramesInFlight;
     }
 
     std::unique_ptr<Pipeline> Renderer::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
@@ -95,10 +71,6 @@ namespace Axiom {
         return device->createResourceLayout(bindings);
     }
 
-    std::unique_ptr<ResourceSet> Renderer::createResourceSet(ResourceLayout* resourceLayout) {
-        return device->createResourceSet(resourceLayout);
-    }
-
     std::unique_ptr<CommandBuffer> Renderer::beginSingleTimeCommands() {
         return device->beginSingleTimeCommands();
     }
@@ -108,24 +80,12 @@ namespace Axiom {
     }
 
     void Renderer::recreateSwapChain() {
-        uint32_t width = window->getWidth();
-        uint32_t height = window->getHeight();
-
-        while (width == 0 || height == 0) {
-            window->onUpdate();
-            width = window->getWidth();
-            height = window->getHeight();
-        }
+        uint32_t width = window->getFramebufferWidth();
+        uint32_t height = window->getFramebufferHeight();
 
         device->waitIdle();
         swapChain.reset();
         swapChain = device->createSwapchain(width, height);
-
-        renderFinishedSemaphores.clear();
-        renderFinishedSemaphores.resize(swapChain->getImageCount());
-        for (size_t i = 0; i < swapChain->getImageCount(); i++) {
-            renderFinishedSemaphores[i] = device->createSemaphore();
-        }
     }
 
     void Renderer::createDefaultTexture() {

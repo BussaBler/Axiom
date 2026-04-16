@@ -1,5 +1,4 @@
 #include "StringUtils.h"
-#include "axpch.h"
 
 namespace Axiom {
     std::string StringUtils::trim(const std::string& str) {

@@ -9,6 +9,7 @@ namespace Axiom {
         samplerDescriptor->setMinFilter(axToMetalFilterMode(createInfo.filterMode));
         samplerDescriptor->setMagFilter(axToMetalFilterMode(createInfo.filterMode));
         samplerDescriptor->setMipFilter(axToMetalMipmapFilterMode(createInfo.mipmapFilterMode));
+        samplerDescriptor->setSupportArgumentBuffers(true);
         samplerState = device->newSamplerState(samplerDescriptor);
         samplerDescriptor->release();
     }

@@ -43,33 +43,54 @@ namespace Axiom {
             swapChainTextures.push_back(std::make_unique<VulkanTexture>(device, swapChainImagesResult.value[i]));
             swapChainTextures[i]->createImageView(swapChainImageFormat, Vk::ImageAspectFlagBits::eColor);
         }
+
+        imageAvailableSemaphores.resize(createInfo.maxFramesInFlight);
+        for (size_t i = 0; i < createInfo.maxFramesInFlight; i++) {
+            Vk::SemaphoreCreateInfo semaphoreCreateInfo;
+            Vk::ResultValue<Vk::Semaphore> imageAvailableSemaphoreResult = device.createSemaphore(semaphoreCreateInfo);
+            AX_CORE_ASSERT(imageAvailableSemaphoreResult.result == Vk::Result::eSuccess, "Failed to create image available semaphore!");
+            imageAvailableSemaphores[i] = imageAvailableSemaphoreResult.value;
+        }
+
+        renderFinishedSemaphores.resize(swapChainTextures.size());
+        for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+            Vk::SemaphoreCreateInfo semaphoreCreateInfo;
+            Vk::ResultValue<Vk::Semaphore> renderFinishedSemaphoreResult = device.createSemaphore(semaphoreCreateInfo);
+            AX_CORE_ASSERT(renderFinishedSemaphoreResult.result == Vk::Result::eSuccess, "Failed to create render finished semaphore!");
+            renderFinishedSemaphores[i] = renderFinishedSemaphoreResult.value;
+        }
     }
 
     VulkanSwapChain::~VulkanSwapChain() {
         device.destroySwapchainKHR(swapChain);
     }
 
-    uint32_t VulkanSwapChain::acquireNextImage(Semaphore* imageAvailableSemaphore) {
-        Vk::Semaphore vkSignal = static_cast<VulkanSemaphore*>(imageAvailableSemaphore)->getHandle();
+    bool VulkanSwapChain::acquireNextImage() {
+        Vk::Semaphore vkSignal = imageAvailableSemaphores[currentFrameIndex];
         Vk::ResultValue<uint32_t> acquireResult = device.acquireNextImageKHR(swapChain, (std::numeric_limits<uint64_t>::max)(), vkSignal, nullptr);
 
         if (acquireResult.result == Vk::Result::eErrorOutOfDateKHR) {
-            return -1;
+            return false;
         } else if (acquireResult.result != Vk::Result::eSuccess && acquireResult.result != Vk::Result::eSuboptimalKHR) {
             AX_CORE_ASSERT(false, "Failed to acquire swap chain image!");
-            return -1;
+            return false;
         }
 
-        return acquireResult.value;
+        currentImageIndex = acquireResult.value;
+        return true;
     }
 
-    Texture* VulkanSwapChain::getImageTexture(uint32_t index) {
-        return swapChainTextures[index].get();
+    Texture* VulkanSwapChain::getCurrentTexture() {
+        return swapChainTextures[currentImageIndex].get();
     }
 
-    bool VulkanSwapChain::present(uint32_t imageIndex, Semaphore* waitSemaphore) {
-        Vk::Semaphore vkWait = static_cast<VulkanSemaphore*>(waitSemaphore)->getHandle();
-        Vk::PresentInfoKHR presentInfo(vkWait, swapChain, imageIndex);
+    Format VulkanSwapChain::getTextureFormat() const {
+        return vkToAxFormat(swapChainImageFormat);
+    }
+
+    bool VulkanSwapChain::present() {
+        Vk::Semaphore vkWait = renderFinishedSemaphores[currentImageIndex];
+        Vk::PresentInfoKHR presentInfo(vkWait, swapChain, currentImageIndex);
 
         Vk::Result presentResult = presentQueue.presentKHR(presentInfo);
 
@@ -81,10 +102,6 @@ namespace Axiom {
         }
 
         return true;
-    }
-
-    uint32_t VulkanSwapChain::getImageCount() const {
-        return static_cast<uint32_t>(swapChainTextures.size());
     }
 
     uint32_t VulkanSwapChain::getWidth() const {

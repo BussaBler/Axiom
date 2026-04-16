@@ -86,6 +86,39 @@ namespace Axiom {
         }
     }
 
+    inline Format metalToAxPixelFormat(MTL::PixelFormat pixelFormat) {
+        switch (pixelFormat) {
+        case MTL::PixelFormatInvalid:
+            return Format::Undefined;
+        case MTL::PixelFormatBGRA8Unorm:
+            return Format::B8G8R8A8Unorm;
+        case MTL::PixelFormatR8Unorm:
+            return Format::R8Unorm;
+        case MTL::PixelFormatRG8Unorm:
+            return Format::R8G8Unorm;
+        case MTL::PixelFormatRGBA8Unorm:
+            return Format::R8G8B8A8Unorm;
+        case MTL::PixelFormatBGRA8Unorm_sRGB:
+            return Format::B8G8R8A8Srgb;
+        case MTL::PixelFormatR8Unorm_sRGB:
+            return Format::R8Srgb;
+        case MTL::PixelFormatRG8Unorm_sRGB:
+            return Format::R8G8Srgb;
+        case MTL::PixelFormatRGBA8Unorm_sRGB:
+            return Format::R8G8B8A8Srgb;
+        case MTL::PixelFormatDepth24Unorm_Stencil8:
+            return Format::D24UnormS8Uint;
+        case MTL::PixelFormatDepth32Float:
+            return Format::D32sFloat;
+        case MTL::PixelFormatRG32Float:
+            return Format::R32G32Sfloat;
+        case MTL::PixelFormatRGBA32Float:
+            return Format::R32G32B32A32Sfloat; // Metal doesn't have a separate RGBA32Float format, using RGBA32Float for both
+        default:
+            return Format::Undefined;
+        }
+    }
+
     inline MTL::LoadAction axToMetalLoadAction(LoadOp loadOp) {
         switch (loadOp) {
         case LoadOp::Load:

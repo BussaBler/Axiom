@@ -8,6 +8,7 @@ compiler = buildInfo['compiler']
 config = buildInfo['config']
 configName = config.capitalize()
 vsproj = buildInfo['vsproj']
+renderer = buildInfo['renderer']
 
 localEnv = (debugEnv if config.lower() == 'debug' else releaseEnv).Clone()
 
@@ -33,10 +34,16 @@ def configurePlatform(env, platformName):
 coreSources = Glob('Source/*.cpp')
 coreSources += Glob('Source/*/*.cpp')
 coreSources += Glob('Source/UI/MSDFGen/core/*.cpp')
-# TODO: temp solution to add platform-specific code, should be changed to add more renderer backends
-vulkanSources = Glob('Source/Platform/Vulkan/*.cpp')
 
-sources = coreSources + vulkanSources
+if renderer.lower() == 'vulkan':
+    rendererSources = Glob('Source/Platform/Vulkan/*.cpp')
+elif renderer.lower() == 'metal':
+    rendererSources = Glob('Source/Platform/Metal/*.cpp')
+    rendererSources += Glob('Source/Platform/Metal/*.mm')
+elif renderer.lower() == 'dx12': 
+    rendererSources = Glob('Source/Platform/DX12/*.cpp')
+
+sources = coreSources + rendererSources
 platformSpecificSources = configurePlatform(localEnv, platform)
 
 for source in platformSpecificSources:

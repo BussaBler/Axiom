@@ -53,6 +53,16 @@ namespace Axiom {
         createLogicalDevice();
         VULKAN_HPP_DEFAULT_DISPATCHER.init(logicalDevice);
         createCommandPool();
+        maxFramesInFlight = createInfo.maxFramesInFlight;
+        commandBuffers.reserve(maxFramesInFlight);
+        inFlightFences.reserve(maxFramesInFlight);
+        for (size_t i = 0; i < maxFramesInFlight; i++) {
+            commandBuffers.push_back(std::make_unique<VulkanCommandBuffer>(logicalDevice, commandPool));
+            Vk::FenceCreateInfo fenceCreateInfo({}, 0);
+            Vk::ResultValue<Vk::Fence> fenceResult = logicalDevice.createFence(fenceCreateInfo, nullptr);
+            AX_CORE_ASSERT(fenceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan fence: {}", Vk::to_string(fenceResult.result));
+            inFlightFences.push_back(fenceResult.value);
+        }
         createDescriptorPool();
         VulkanAllocator::init(logicalDevice, physicalDevice);
     }
@@ -83,7 +93,8 @@ namespace Axiom {
     std::unique_ptr<SwapChain> VulkanDevice::createSwapchain(uint32_t width, uint32_t height) {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
         QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-        VulkanSwapChain::CreateInfo createInfo{logicalDevice, surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height)};
+        VulkanSwapChain::CreateInfo createInfo{logicalDevice,    surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height),
+                                               maxFramesInFlight};
         return std::make_unique<VulkanSwapChain>(createInfo);
     }
 
@@ -93,14 +104,6 @@ namespace Axiom {
 
     std::unique_ptr<CommandBuffer> VulkanDevice::createCommandBuffer() {
         return std::make_unique<VulkanCommandBuffer>(logicalDevice, commandPool);
-    }
-
-    std::unique_ptr<Semaphore> VulkanDevice::createSemaphore() {
-        return std::make_unique<VulkanSemaphore>(logicalDevice);
-    }
-
-    std::unique_ptr<Fence> VulkanDevice::createFence(bool isSignaled) {
-        return std::make_unique<VulkanFence>(logicalDevice, isSignaled);
     }
 
     std::unique_ptr<Buffer> VulkanDevice::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
@@ -117,6 +120,21 @@ namespace Axiom {
 
     std::unique_ptr<ResourceLayout> VulkanDevice::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
         return std::make_unique<VulkanResourceLayout>(logicalDevice, bindings);
+    }
+
+    bool VulkanDevice::beginFrame(SwapChain* swapChain) {
+        logicalDevice.waitForFences(1, &inFlightFences[currentFrameIndex], Vk::True, std::numeric_limits<uint64_t>::max());
+
+        if (!swapChain->acquireNextImage()) {
+            return false;
+        }
+
+        logicalDevice.resetFences(1, &inFlightFences[currentFrameIndex]);
+        return true;
+    }
+
+    CommandBuffer* VulkanDevice::getCurrentCommandBuffer() {
+        return commandBuffers[currentFrameIndex].get();
     }
 
     std::unique_ptr<CommandBuffer> VulkanDevice::beginSingleTimeCommands() {
@@ -139,24 +157,15 @@ namespace Axiom {
                        Vk::to_string(graphicsQueue.waitIdle()));
     }
 
-    void VulkanDevice::submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores,
-                                            const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) {
+    void VulkanDevice::submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, SwapChain* swapChain) {
         std::vector<Vk::CommandBuffer> vkCommandBuffers(commandBuffers.size());
         for (size_t i = 0; i < commandBuffers.size(); i++) {
             vkCommandBuffers[i] = static_cast<VulkanCommandBuffer*>(commandBuffers[i])->getHandle();
         }
 
-        std::vector<Vk::Semaphore> vkWaitSemaphores(waitSemaphores.size());
-        for (size_t i = 0; i < waitSemaphores.size(); i++) {
-            vkWaitSemaphores[i] = static_cast<VulkanSemaphore*>(waitSemaphores[i])->getHandle();
-        }
-
-        std::vector<Vk::Semaphore> vkSignalSemaphores(signalSemaphores.size());
-        for (size_t i = 0; i < signalSemaphores.size(); i++) {
-            vkSignalSemaphores[i] = static_cast<VulkanSemaphore*>(signalSemaphores[i])->getHandle();
-        }
-
-        Vk::Fence vkSignalFence = signalFence ? static_cast<VulkanFence*>(signalFence)->getHandle() : Vk::Fence();
+        std::array<Vk::Semaphore, 1> vkWaitSemaphores = {static_cast<VulkanSwapChain*>(swapChain)->getImageAvailableSemaphore(currentFrameIndex)};
+        std::array<Vk::Semaphore, 1> vkSignalSemaphores = {static_cast<VulkanSwapChain*>(swapChain)->getRenderFinishedSemaphore()};
+        Vk::Fence vkSignalFence = inFlightFences[currentFrameIndex];
 
         std::array<Vk::PipelineStageFlags, 1> waitStages = {Vk::PipelineStageFlagBits::eColorAttachmentOutput};
 
@@ -164,6 +173,8 @@ namespace Axiom {
 
         AX_CORE_ASSERT(graphicsQueue.submit(submitInfo, vkSignalFence) == Vk::Result::eSuccess, "Failed to submit command buffers to Vulkan graphics queue: {}",
                        Vk::to_string(graphicsQueue.submit(submitInfo, vkSignalFence)));
+
+        currentFrameIndex = (currentFrameIndex + 1) % maxFramesInFlight;
     }
 
     void VulkanDevice::waitIdle() {

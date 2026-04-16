@@ -16,6 +16,8 @@ namespace Axiom {
             WindowResizeEvent e(LOWORD(lParam), HIWORD(lParam));
             wData->width = LOWORD(lParam);
             wData->height = HIWORD(lParam);
+            wData->framebufferWidth = LOWORD(lParam);
+            wData->framebufferHeight = HIWORD(lParam);
             if (wData->eventCallback)
                 wData->eventCallback(e);
             break;
@@ -32,7 +34,7 @@ namespace Axiom {
             break;
         }
         case WM_KEYUP: {
-            KeyReleassedEvent e(static_cast<KeyCode>(wParam));
+            KeyReleasedEvent e(static_cast<KeyCode>(wParam));
             wData->eventCallback(e);
             break;
         }
@@ -82,6 +84,8 @@ namespace Axiom {
         data.title = props.title;
         data.width = props.width;
         data.height = props.height;
+        data.framebufferWidth = props.width;
+        data.framebufferHeight = props.height;
 
         AX_CORE_LOG_INFO("Creating a Win32 window {0} ({1}, {2})", data.title, data.width, data.height);
 

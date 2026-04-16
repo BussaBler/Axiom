@@ -81,7 +81,7 @@ namespace Axiom {
     }
 
     void VulkanCommandBuffer::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth) {
-        Vk::Viewport viewport(x, y, width, height, minDepth, maxDepth);
+        Vk::Viewport viewport(x, y + height, width, -height, minDepth, maxDepth);
         commandBuffer.setViewport(0, viewport);
     }
 

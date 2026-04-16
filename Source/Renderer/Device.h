@@ -2,11 +2,9 @@
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Core/Window.h"
-#include "Fence.h"
 #include "Pipeline.h"
 #include "ResourceSet.h"
 #include "Sampler.h"
-#include "Semaphore.h"
 #include "SwapChain.h"
 #include "Texture.h"
 #include "axpch.h"
@@ -30,27 +28,27 @@ namespace Axiom {
             uint32_t engineVersionPatch = 0;
 
             Window* windowObjPtr = nullptr;
+
+            uint32_t maxFramesInFlight = 2;
         };
 
         Device() = default;
         virtual ~Device() = default;
 
-        // new impl
-        std::unique_ptr<Device> static create(const CreateInfo& createInfo);
+        static std::unique_ptr<Device> create(const CreateInfo& createInfo);
 
         virtual std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) = 0;
         virtual std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) = 0;
         virtual std::unique_ptr<CommandBuffer> createCommandBuffer() = 0;
-        virtual std::unique_ptr<Semaphore> createSemaphore() = 0;
-        virtual std::unique_ptr<Fence> createFence(bool isSignaled) = 0;
         virtual std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) = 0;
         virtual std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) = 0;
         virtual std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo) = 0;
         virtual std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) = 0;
+        virtual bool beginFrame(SwapChain* swapChain) = 0;
+        virtual CommandBuffer* getCurrentCommandBuffer() = 0;
         virtual std::unique_ptr<CommandBuffer> beginSingleTimeCommands() = 0;
         virtual void endSingleTimeCommands(CommandBuffer* commandBuffer) = 0;
-        virtual void submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, const std::vector<Semaphore*> waitSemaphores,
-                                          const std::vector<Semaphore*> signalSemaphores, Fence* signalFence) = 0;
+        virtual void submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, SwapChain* swapChain) = 0;
         virtual void waitIdle() = 0;
     };
 } // namespace Axiom
