@@ -51,6 +51,10 @@ namespace Axiom {
         }
     }
 
+    std::shared_ptr<Shader> Renderer::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
+        return device->createShader(vertexSource, fragmentSource);
+    }
+
     std::unique_ptr<Pipeline> Renderer::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         return device->createPipeline(pipelineCreateInfo);
     }

@@ -1,16 +1,15 @@
 #include "VulkanPipeline.h"
 #include "Utils/FileSystem.h"
 #include "VulkanResourceSet.h"
-#include <shaderc/shaderc.hpp>
+#include "VulkanShader.h"
 
 namespace Axiom {
     VulkanPipeline::VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice, Vk::DescriptorPool descriptorPool)
         : device(logicDevice), descriptorPool(descriptorPool) {
-        Vk::ShaderModule vertShaderModule = createShaderModule(createInfo.vertexShaderPath);
-        Vk::ShaderModule fragShaderModule = createShaderModule(createInfo.fragmentShaderPath);
 
-        Vk::PipelineShaderStageCreateInfo vertShaderStageInfo({}, Vk::ShaderStageFlagBits::eVertex, vertShaderModule, "main");
-        Vk::PipelineShaderStageCreateInfo fragShaderStageInfo({}, Vk::ShaderStageFlagBits::eFragment, fragShaderModule, "main");
+        VulkanShader* vkShader = static_cast<VulkanShader*>(createInfo.shader);
+        Vk::PipelineShaderStageCreateInfo vertShaderStageInfo({}, Vk::ShaderStageFlagBits::eVertex, vkShader->getVertexShaderModule(), "main");
+        Vk::PipelineShaderStageCreateInfo fragShaderStageInfo({}, Vk::ShaderStageFlagBits::eFragment, vkShader->getFragmentShaderModule(), "main");
         std::array<Vk::PipelineShaderStageCreateInfo, 2> shaderStages = {vertShaderStageInfo, fragShaderStageInfo};
 
         std::vector<Vk::VertexInputBindingDescription> bindingDescriptions(createInfo.vertexBindings.size());
@@ -90,9 +89,6 @@ namespace Axiom {
 
         AX_CORE_ASSERT(pipelineResult.result == Vk::Result::eSuccess, "Failed to create graphics pipeline!");
         pipeline = pipelineResult.value;
-
-        device.destroyShaderModule(vertShaderModule);
-        device.destroyShaderModule(fragShaderModule);
     }
 
     VulkanPipeline::~VulkanPipeline() {
@@ -106,28 +102,6 @@ namespace Axiom {
 
     std::unique_ptr<ResourceSet> VulkanPipeline::createResourceSet(ResourceLayout* resourceLayout) {
         return std::make_unique<VulkanResourceSet>(device, descriptorPool, static_cast<VulkanResourceLayout*>(resourceLayout)->getHandle());
-    }
-
-    Vk::ShaderModule VulkanPipeline::createShaderModule(std::filesystem::path shaderPath) {
-        std::vector<uint8_t> shaderSource = FileSystem::readFile(shaderPath);
-
-        shaderc::Compiler compiler = {};
-        shaderc::CompileOptions options = {};
-        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
-        shaderc::SpvCompilationResult compilationResult =
-            compiler.CompileGlslToSpv(reinterpret_cast<const char*>(shaderSource.data()), shaderSource.size(),
-                                      shaderc_shader_kind::shaderc_glsl_infer_from_source, shaderPath.string().c_str(), "main", options);
-
-        AX_CORE_ASSERT(compilationResult.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader: {0}",
-                       compilationResult.GetErrorMessage());
-
-        size_t codeSize = std::distance(compilationResult.cbegin(), compilationResult.cend()) * sizeof(uint32_t);
-        const uint32_t* shaderCode = compilationResult.cbegin();
-
-        Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, codeSize, shaderCode);
-        Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = device.createShaderModule(shaderModuleCreateInfo);
-        AX_CORE_ASSERT(shaderModuleResult.result == Vk::Result::eSuccess, "Failed to create shader module!");
-        return shaderModuleResult.value;
     }
 
     Vk::PolygonMode VulkanPipeline::axPolygonToVkPolygon(PolygonMode mode) {

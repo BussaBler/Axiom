@@ -5,6 +5,7 @@ namespace Axiom {
         Vk::ImageCreateInfo imageCreateInfo({}, Vk::ImageType::e2D, axToVkFormat(createInfo.format), {createInfo.width, createInfo.height, 1},
                                             createInfo.mipLevels, createInfo.arrayLayers, Vk::SampleCountFlagBits::e1, Vk::ImageTiling::eOptimal,
                                             axToVkImageUsage(createInfo.usage));
+        size = Math::iVec2(createInfo.width, createInfo.height);
         imageCreateInfo.setInitialLayout(axToVkImageLayout(createInfo.initialState));
         Vk::ResultValue<Vk::Image> imageResult = device.createImage(imageCreateInfo);
 
@@ -19,7 +20,8 @@ namespace Axiom {
         createImageView(imageCreateInfo.format, axToVkImageAspectFlags(createInfo.aspect));
     }
 
-    VulkanTexture::VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage) : device(logicalDevice), image(existingImage), ownsImage(false) {
+    VulkanTexture::VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage, Vk::Format format, Math::iVec2 size)
+        : device(logicalDevice), image(existingImage), ownsImage(false), imageFormat(format), size(size) {
     }
 
     VulkanTexture::~VulkanTexture() {
@@ -36,6 +38,10 @@ namespace Axiom {
 
     Format VulkanTexture::getFormat() const {
         return vkToAxFormat(imageFormat);
+    }
+
+    Math::iVec2 VulkanTexture::getSize() const {
+        return size;
     }
 
     void VulkanTexture::createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags) {

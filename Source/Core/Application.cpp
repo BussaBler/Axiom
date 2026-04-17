@@ -114,7 +114,7 @@ namespace Axiom {
                 layer->onRender(commandBuffer);
             }
             UI::endFrame();
-            UI::render(commandBuffer);
+            UI::render(commandBuffer, renderer->getCurrentRenderTarget());
             renderer->endFrame();
 
             window->onUpdate();

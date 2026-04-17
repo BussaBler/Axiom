@@ -3,6 +3,7 @@
 namespace Axiom {
     MetalTexture::MetalTexture(const CreateInfo& createInfo, MTL::Device* device) {
         format = createInfo.format;
+        size = Math::iVec2(createInfo.width, createInfo.height);
         MTL::TextureDescriptor* descriptor =
             MTL::TextureDescriptor::texture2DDescriptor(axToMetalPixelFormat(createInfo.format), createInfo.width, createInfo.height, createInfo.mipLevels > 1);
         descriptor->setUsage(axToMetalTextureUsage(createInfo.usage));
@@ -16,6 +17,7 @@ namespace Axiom {
         if (metalTexture) {
             metalTexture->retain();
             format = metalToAxPixelFormat(metalTexture->pixelFormat());
+            size = Math::iVec2(metalTexture->width(), metalTexture->height());
         }
     }
 
@@ -28,5 +30,9 @@ namespace Axiom {
 
     Format MetalTexture::getFormat() const {
         return format;
+    }
+
+    Math::iVec2 MetalTexture::getSize() const {
+        return size;
     }
 } // namespace Axiom

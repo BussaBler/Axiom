@@ -1,6 +1,7 @@
 #pragma once
 #include "ResourceLayout.h"
 #include "ResourceSet.h"
+#include "Shader.h"
 #include "Vertex.h"
 #include "axpch.h"
 
@@ -29,9 +30,7 @@ namespace Axiom {
     class Pipeline {
       public:
         struct CreateInfo {
-            std::filesystem::path vertexShaderPath;
-            std::filesystem::path fragmentShaderPath;
-            std::filesystem::path uniqueShaderPath; // used if all the functions are in a single shader file
+            Shader* shader = nullptr;
 
             std::vector<VertexBindingDescription> vertexBindings;
             std::vector<VertexAttributeDescription> vertexAttributes;

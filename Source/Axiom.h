@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Asset/AssetManager.h"
 #include "Core/Application.h"
 #include "Core/ConsoleLayer.h"
 #include "Core/Input.h"

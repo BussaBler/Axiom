@@ -98,6 +98,10 @@ namespace Axiom {
         return std::make_unique<VulkanSwapChain>(createInfo);
     }
 
+    std::shared_ptr<Shader> VulkanDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
+        return std::make_shared<VulkanShader>(logicalDevice, vertexSource, fragmentSource);
+    }
+
     std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         return std::make_unique<VulkanPipeline>(pipelineCreateInfo, logicalDevice, descriptorPool);
     }

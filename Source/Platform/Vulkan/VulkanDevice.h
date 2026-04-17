@@ -9,6 +9,7 @@
 #include "VulkanResourceLayout.h"
 #include "VulkanResourceSet.h"
 #include "VulkanSampler.h"
+#include "VulkanShader.h"
 #include "VulkanSwapChain.h"
 #include "VulkanTexture.h"
 #include "VulkanUtils.h"
@@ -27,6 +28,7 @@ namespace Axiom {
         ~VulkanDevice() override;
 
         std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) override;
+        std::shared_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource) override;
         std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) override;
         std::unique_ptr<CommandBuffer> createCommandBuffer() override;
         std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) override;

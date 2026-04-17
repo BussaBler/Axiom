@@ -49,6 +49,10 @@ namespace Axiom {
         return std::make_unique<MetalSwapChain>(metalDevice, metalLayer, width, height);
     }
 
+    std::shared_ptr<Shader> MetalDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
+        return std::make_shared<MetalShader>(vertexSource, fragmentSource, metalDevice);
+    }
+
     std::unique_ptr<Pipeline> MetalDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         return std::make_unique<MetalPipeline>(pipelineCreateInfo, metalDevice);
     }

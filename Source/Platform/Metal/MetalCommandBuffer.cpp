@@ -90,8 +90,8 @@ namespace Axiom {
     }
 
     void MetalCommandBuffer::bindPushConstants(const void* data, uint32_t size, uint32_t offset) {
-        // push constanst should be in the buffer 0 position
-        uint32_t pushConstantIndex = 0;
+        // push constanst should be in the buffer 4 position
+        uint32_t pushConstantIndex = 4;
         const uint8_t* pushConstantData = static_cast<const uint8_t*>(data) + offset;
 
         renderEncoder->setVertexBytes(pushConstantData, size, pushConstantIndex);
@@ -99,7 +99,7 @@ namespace Axiom {
     }
 
     void MetalCommandBuffer::bindVertexBuffers(const std::vector<Buffer*>& vertexBuffers) {
-        uint32_t vertexBufferOffset = 1; // Start from 1 since 0 is reserved for push constants
+        uint32_t vertexBufferOffset = 0; // index 0 to 3 are for vertex buffers
         for (size_t i = 0; i < vertexBuffers.size(); i++) {
             Buffer* vertexBuffer = vertexBuffers[i];
             renderEncoder->setVertexBuffer(static_cast<MetalBuffer*>(vertexBuffer)->getHandle(), 0, i + vertexBufferOffset);

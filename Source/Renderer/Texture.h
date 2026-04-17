@@ -1,5 +1,6 @@
 #pragma once
 #include "Buffer.h"
+#include "Math/AxMath.h"
 #include "Utils/BitMaskEnum.h"
 #include "axpch.h"
 
@@ -46,6 +47,7 @@ namespace Axiom {
         virtual ~Texture() = default;
 
         virtual Format getFormat() const = 0;
+        virtual Math::iVec2 getSize() const = 0;
 
       public:
         struct CreateInfo {

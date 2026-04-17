@@ -2,23 +2,13 @@
 #include "Core/Assert.h"
 #include "MetalResourceLayout.h"
 #include "MetalResourceSet.h"
+#include "MetalShader.h"
 #include "Utils/FileSystem.h"
 
 namespace Axiom {
     MetalPipeline::MetalPipeline(const CreateInfo& createInfo, MTL::Device* device) : device(device) {
-        std::string shaderCode = FileSystem::readFileStr(createInfo.uniqueShaderPath);
-        NS::String* shaderSource = NS::String::string(shaderCode.c_str(), NS::UTF8StringEncoding);
-
-        MTL::CompileOptions* compileOptions = MTL::CompileOptions::alloc()->init();
-        NS::Error* error = nullptr;
-
-        MTL::Library* library = device->newLibrary(shaderSource, compileOptions, &error);
-        AX_CORE_ASSERT(error == nullptr, "Failed to compile shader library: {}", error->localizedDescription()->utf8String());
-        AX_CORE_ASSERT(library, "Failed to create shader library");
-
-        compileOptions->release();
-        shaderSource->release();
-
+        MetalShader* metalShader = static_cast<MetalShader*>(createInfo.shader);
+        MTL::Library* library = metalShader->getLibrary();
         MTL::Function* vertexFunction = library->newFunction(NS::String::string("vertexMain", NS::UTF8StringEncoding));
 
         AX_CORE_ASSERT(vertexFunction, "Failed to create vertex function");
@@ -31,7 +21,7 @@ namespace Axiom {
         pipelineDescriptor->setFragmentFunction(fragmentFunction);
 
         MTL::VertexDescriptor* vertexDescriptor = MTL::VertexDescriptor::alloc()->init();
-        uint32_t vertexBufferOffset = 1; // Start from 1 since 0 is reserved for push constants
+        uint32_t vertexBufferOffset = 0; // index 0 to 3 are for vertex buffers
 
         for (size_t i = 0; i < createInfo.vertexBindings.size(); i++) {
             MTL::VertexBufferLayoutDescriptor* layout = MTL::VertexBufferLayoutDescriptor::alloc()->init();
@@ -81,6 +71,7 @@ namespace Axiom {
         MTL::PipelineOption options = MTL::PipelineOptionArgumentInfo | MTL::PipelineOptionBufferTypeInfo;
         MTL::RenderPipelineReflection* reflection = nullptr;
 
+        NS::Error* error = nullptr;
         pipelineState = device->newRenderPipelineState(pipelineDescriptor, options, &reflection, &error);
         AX_CORE_ASSERT(error == nullptr, "Failed to create render pipeline state: {}", error->localizedDescription()->utf8String());
         AX_CORE_ASSERT(pipelineState, "Failed to create render pipeline state");
@@ -98,7 +89,7 @@ namespace Axiom {
             return false;
         };
 
-        uint32_t resourceIndex = 8; // Index 0 is reserved for push constants, 1 - 7 are reserved for vertex buffer
+        uint32_t resourceIndex = 8; // index 0 to 3 is for vertex buffer, 4 is push constants, 5 to 7 are for padding, so start at 8 for global resources
         for (size_t i = 0; i < createInfo.resourceLayouts.size(); i++) {
             ResourceLayout* layout = createInfo.resourceLayouts[i];
             MTL::ArgumentEncoder* encoder = nullptr;
@@ -121,7 +112,6 @@ namespace Axiom {
         pipelineDescriptor->release();
         vertexFunction->release();
         fragmentFunction->release();
-        library->release();
     }
 
     MetalPipeline::~MetalPipeline() {

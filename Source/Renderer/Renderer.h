@@ -12,6 +12,7 @@ namespace Axiom {
         CommandBuffer* beginFrame();
         void endFrame();
 
+        std::shared_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource);
         std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo);
         std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo);
         std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);

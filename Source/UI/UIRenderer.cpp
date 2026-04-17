@@ -25,6 +25,7 @@ namespace Axiom {
 
         createBasicRenderObjects();
         createFontRenderObjects();
+        createImageRenderObjects();
     }
 
     void UIRenderer::clearRenderData() {
@@ -67,7 +68,7 @@ namespace Axiom {
         fontVertices.push_back(UIVertex(pos + Math::Vec2(0.0f, size.y()), Math::Vec2(uv0.x(), uv1.y()), color, Math::Vec4::zero()));
     }
 
-    void UIRenderer::addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, const Texture* texture) {
+    void UIRenderer::addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture) {
         if (imageDrawCommands.size() + 1 > MAX_IMAGE_QUADS) {
             AX_CORE_LOG_WARN("Maximum image quad count reached! Cannot add more quads this frame.");
             return;
@@ -75,25 +76,25 @@ namespace Axiom {
         imageDrawCommands.push_back({texture, pos, size});
     }
 
-    void UIRenderer::drawUIElements(CommandBuffer* commandBuffer) {
+    void UIRenderer::drawUIElements(CommandBuffer* commandBuffer, Texture* renderTarget) {
         Math::Vec2 windowSize = Math::Vec2(Application::getWindow()->getWidth(), Application::getWindow()->getHeight());
-        Math::Vec2 framebufferSize = Math::Vec2(Application::getWindow()->getFramebufferWidth(), Application::getWindow()->getFramebufferHeight());
+        Math::iVec2 renderTargetSize = renderTarget->getSize();
         Math::Mat4 projection = Math::Mat4::orthographic(0.0f, windowSize.x(), 0.0f, windowSize.y(), -1.0f, 1.0f);
 
         if (!basicVertices.empty()) {
             basicVertexBuffer->setData<UIVertex>(basicVertices);
 
-            basicRenderPass.colorAttachments[0].texture = Application::getRenderer()->getCurrentRenderTarget();
-            basicRenderPass.width = static_cast<uint32_t>(framebufferSize.x());
-            basicRenderPass.height = static_cast<uint32_t>(framebufferSize.y());
+            basicRenderPass.colorAttachments[0].texture = renderTarget;
+            basicRenderPass.width = renderTargetSize.x();
+            basicRenderPass.height = renderTargetSize.y();
 
             commandBuffer->beginRendering(basicRenderPass);
             commandBuffer->bindPipeline(basicPipeline.get());
             commandBuffer->bindPushConstants(&projection, sizeof(projection));
             commandBuffer->bindVertexBuffers({basicVertexBuffer.get()});
             commandBuffer->bindIndexBuffer(basicIndexBuffer.get());
-            commandBuffer->setViewport(0.0f, 0.0f, framebufferSize.x(), framebufferSize.y());
-            commandBuffer->setScissor(0, 0, framebufferSize.x(), framebufferSize.y());
+            commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+            commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
             commandBuffer->drawIndexed(static_cast<uint32_t>(basicVertices.size() / 4) * 6, 1, 0, 0, 0);
             commandBuffer->endRendering();
         }
@@ -101,9 +102,9 @@ namespace Axiom {
         if (!fontVertices.empty()) {
             fontVertexBuffer->setData<UIVertex>(fontVertices);
 
-            fontRenderPass.colorAttachments[0].texture = Application::getRenderer()->getCurrentRenderTarget();
-            fontRenderPass.width = static_cast<uint32_t>(framebufferSize.x());
-            fontRenderPass.height = static_cast<uint32_t>(framebufferSize.y());
+            fontRenderPass.colorAttachments[0].texture = renderTarget;
+            fontRenderPass.width = renderTargetSize.x();
+            fontRenderPass.height = renderTargetSize.y();
 
             commandBuffer->beginRendering(fontRenderPass);
             commandBuffer->bindPipeline(fontPipeline.get());
@@ -111,18 +112,22 @@ namespace Axiom {
             commandBuffer->bindResources({fontResourceSet.get()});
             commandBuffer->bindVertexBuffers({fontVertexBuffer.get()});
             commandBuffer->bindIndexBuffer(fontIndexBuffer.get());
-            commandBuffer->setViewport(0.0f, 0.0f, framebufferSize.x(), framebufferSize.y());
-            commandBuffer->setScissor(0, 0, framebufferSize.x(), framebufferSize.y());
+            commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+            commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
             commandBuffer->drawIndexed(static_cast<uint32_t>(fontVertices.size() / 4) * 6, 1, 0, 0, 0);
             commandBuffer->endRendering();
         }
 
         if (!imageDrawCommands.empty()) {
+            imageRenderPass.colorAttachments[0].texture = renderTarget;
+            imageRenderPass.width = renderTargetSize.x();
+            imageRenderPass.height = renderTargetSize.y();
+
             commandBuffer->beginRendering(imageRenderPass);
             commandBuffer->bindPipeline(imagePipeline.get());
             commandBuffer->bindPushConstants(&projection, sizeof(projection));
-            commandBuffer->setViewport(0.0f, 0.0f, framebufferSize.x(), framebufferSize.y());
-            commandBuffer->setScissor(0, 0, framebufferSize.x(), framebufferSize.y());
+            commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+            commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
 
             for (const auto& drawCommand : imageDrawCommands) {
                 ResourceSet* resourceSet = getResourceSetForTexture(drawCommand.texture);
@@ -145,6 +150,9 @@ namespace Axiom {
     }
 
     void UIRenderer::createBasicRenderObjects() {
+        UUID basicShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.axs");
+        basicShader = AssetManager::getAsset<ShaderAsset>(basicShaderHandle);
+
         Buffer::CreateInfo vertexBufferCreateInfo = {
             .size = sizeof(UIVertex) * 4 * MAX_BASIC_QUADS, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
         basicVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
@@ -189,9 +197,7 @@ namespace Axiom {
             {.location = 4, .binding = 0, .format = Format::R32G32B32A32Sfloat, .offset = offsetof(UIVertex, radii)},
         };
 
-        Pipeline::CreateInfo pipelineCreateInfo = {//.vertexShaderPath = "Assets/Shaders/BuiltIn.UI.vert",
-                                                   //.fragmentShaderPath = "Assets/Shaders/BuiltIn.UI.frag",
-                                                   .uniqueShaderPath = "Assets/Shaders/BuiltIn.UI.metal",
+        Pipeline::CreateInfo pipelineCreateInfo = {.shader = basicShader->getShader(),
                                                    .vertexBindings = vertexBindings,
                                                    .vertexAttributes = vertexAttributes,
                                                    .topology = PrimitiveTopology::TriangleList,
@@ -208,6 +214,9 @@ namespace Axiom {
     }
 
     void UIRenderer::createFontRenderObjects() {
+        UUID fontShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.Font.axs");
+        fontShader = AssetManager::getAsset<ShaderAsset>(fontShaderHandle);
+
         Buffer::CreateInfo vertexBufferCreateInfo = {
             .size = sizeof(UIVertex) * 4 * MAX_FONT_QUADS, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
         fontVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
@@ -271,9 +280,7 @@ namespace Axiom {
 
         fontResourceLayout = Application::getRenderer()->createResourceLayout(resourceLayoutBindings);
 
-        Pipeline::CreateInfo pipelineCreateInfo = {//.vertexShaderPath = "Assets/Shaders/BuiltIn.UI.Font.vert",
-                                                   //.fragmentShaderPath = "Assets/Shaders/BuiltIn.UI.Font.frag",
-                                                   .uniqueShaderPath = "Assets/Shaders/BuiltIn.UI.Font.metal",
+        Pipeline::CreateInfo pipelineCreateInfo = {.shader = fontShader->getShader(),
                                                    .vertexBindings = vertexBindings,
                                                    .vertexAttributes = vertexAttributes,
                                                    .topology = PrimitiveTopology::TriangleList,
@@ -292,6 +299,9 @@ namespace Axiom {
     }
 
     void UIRenderer::createImageRenderObjects() {
+        UUID imageShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.Image.axs");
+        imageShader = AssetManager::getAsset<ShaderAsset>(imageShaderHandle);
+
         Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(UIVertex) * 4, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
         imageVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
 
@@ -338,13 +348,11 @@ namespace Axiom {
         resourceSetBindings[0].texture = nullptr; // will be set dynamically during rendering
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].sampler = Application::getRenderer()->getLinearSampler();
+        resourceSetBindings[1].sampler = Application::getRenderer()->getNearestSampler();
 
         imageResourceLayout = Application::getRenderer()->createResourceLayout(resourceLayoutBindings);
 
-        Pipeline::CreateInfo pipelineCreateInfo = {//.vertexShaderPath = "Assets/Shaders/BuiltIn.UI.Image.vert",
-                                                   //.fragmentShaderPath = "Assets/Shaders/BuiltIn.UI.Image.frag",
-                                                   .uniqueShaderPath = "Assets/Shaders/BuiltIn.UI.Image.metal",
+        Pipeline::CreateInfo pipelineCreateInfo = {.shader = imageShader->getShader(),
                                                    .vertexBindings = vertexBindings,
                                                    .vertexAttributes = vertexAttributes,
                                                    .topology = PrimitiveTopology::TriangleList,
@@ -360,18 +368,23 @@ namespace Axiom {
         imagePipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
     }
 
-    ResourceSet* UIRenderer::getResourceSetForTexture(const Texture* texture) {
-        // In a real implementation, you would want to cache resource sets for each texture to avoid creating a new one every frame.
+    ResourceSet* UIRenderer::getResourceSetForTexture(Texture* texture) {
+        auto it = imageResourceSets.find(texture);
+        if (it != imageResourceSets.end()) {
+            return it->second.get();
+        }
+
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture;
         resourceSetBindings[0].texture = texture;
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].sampler = Application::getRenderer()->getLinearSampler();
-
+        resourceSetBindings[1].sampler = Application::getRenderer()->getNearestSampler();
         std::unique_ptr<ResourceSet> resourceSet = imagePipeline->createResourceSet(imageResourceLayout.get());
         resourceSet->update(resourceSetBindings);
-        return resourceSet.release();
+        ResourceSet* resourceSetPtr = resourceSet.get();
+        imageResourceSets[texture] = std::move(resourceSet);
+        return resourceSetPtr;
     };
 } // namespace Axiom

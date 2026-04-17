@@ -10,11 +10,13 @@ namespace Axiom {
         ~MetalTexture() override;
 
         Format getFormat() const override;
+        Math::iVec2 getSize() const override;
 
         MTL::Texture* getHandle() const { return metalTexture; }
 
       private:
         MTL::Texture* metalTexture = nullptr;
         Format format = Format::Undefined;
+        Math::iVec2 size = Math::iVec2(0, 0);
     };
 } // namespace Axiom

@@ -40,7 +40,8 @@ namespace Axiom {
 
         swapChainTextures.reserve(swapChainImagesResult.value.size());
         for (size_t i = 0; i < swapChainImagesResult.value.size(); i++) {
-            swapChainTextures.push_back(std::make_unique<VulkanTexture>(device, swapChainImagesResult.value[i]));
+            swapChainTextures.push_back(
+                std::make_unique<VulkanTexture>(device, swapChainImagesResult.value[i], swapChainImageFormat, Math::iVec2(extent.width, extent.height)));
             swapChainTextures[i]->createImageView(swapChainImageFormat, Vk::ImageAspectFlagBits::eColor);
         }
 

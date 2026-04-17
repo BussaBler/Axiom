@@ -58,7 +58,7 @@ namespace Axiom {
 
         static void beginFrame();
         static void endFrame();
-        static void render(CommandBuffer* commandBuffer);
+        static void render(CommandBuffer* commandBuffer, Texture* targetTexture);
 
         static void beginPanel(const std::string& title, Math::Vec2 pos, Math::Vec2 size);
         static void endPanel();
@@ -71,7 +71,7 @@ namespace Axiom {
         static void dragFloat(const std::string& label, float& value, float speed = 0.1f);
         static bool treeNode(const std::string& label);
         static void treePop();
-        static void image(const Texture* texture, const Math::Vec2& size);
+        static void image(Texture* texture, const Math::Vec2& size);
         // returns the width avaible for the current panel
         static float getAvaibleWidth();
         static const UIStyle& getCurrentStyle() { return style; }

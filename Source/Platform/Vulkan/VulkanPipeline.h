@@ -12,15 +12,10 @@ namespace Axiom {
 
         std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) override;
 
-        inline Vk::Pipeline getHandle() const {
-            return pipeline;
-        }
-        inline Vk::PipelineLayout getPipelineLayout() const {
-            return pipelineLayout;
-        }
+        inline Vk::Pipeline getHandle() const { return pipeline; }
+        inline Vk::PipelineLayout getPipelineLayout() const { return pipelineLayout; }
 
       private:
-        Vk::ShaderModule createShaderModule(std::filesystem::path shaderPath);
         Vk::PolygonMode axPolygonToVkPolygon(PolygonMode mode);
         Vk::CullModeFlags axCullModeToVkCullMode(CullMode mode);
 

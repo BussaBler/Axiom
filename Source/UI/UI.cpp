@@ -63,8 +63,8 @@ namespace Axiom {
         inputState.shouldConsumeMouse = (context->hotItem != 0 || context->activeItem != 0);
     }
 
-    void UI::render(CommandBuffer* commandBuffer) {
-        renderer->drawUIElements(commandBuffer);
+    void UI::render(CommandBuffer* commandBuffer, Texture* renderTarget) {
+        renderer->drawUIElements(commandBuffer, renderTarget);
     }
 
     void UI::setMousePosition(Math::Vec2 pos) {
@@ -415,7 +415,7 @@ namespace Axiom {
         context->cursorPos.x() = context->panelPos.x() + style.padding + context->indentLevel;
     }
 
-    void UI::image(const Texture* texture, const Math::Vec2& size) {
+    void UI::image(Texture* texture, const Math::Vec2& size) {
         Math::Vec2 pos = context->cursorPos;
 
         renderer->addImageQuad(pos, size, texture);
