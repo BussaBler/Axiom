@@ -273,10 +273,10 @@ namespace Axiom {
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture;
-        resourceSetBindings[0].texture = fontAtlasTexture.get();
+        resourceSetBindings[0].textures = {fontAtlasTexture.get()};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].sampler = Application::getRenderer()->getNearestSampler();
+        resourceSetBindings[1].samplers = {Application::getRenderer()->getNearestSampler()};
 
         fontResourceLayout = Application::getRenderer()->createResourceLayout(resourceLayoutBindings);
 
@@ -345,10 +345,10 @@ namespace Axiom {
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture;
-        resourceSetBindings[0].texture = nullptr; // will be set dynamically during rendering
+        resourceSetBindings[0].textures = {nullptr}; // will be set dynamically during rendering
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].sampler = Application::getRenderer()->getNearestSampler();
+        resourceSetBindings[1].samplers = {Application::getRenderer()->getNearestSampler()};
 
         imageResourceLayout = Application::getRenderer()->createResourceLayout(resourceLayoutBindings);
 
@@ -377,10 +377,10 @@ namespace Axiom {
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture;
-        resourceSetBindings[0].texture = texture;
+        resourceSetBindings[0].textures = {texture};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].sampler = Application::getRenderer()->getNearestSampler();
+        resourceSetBindings[1].samplers = {Application::getRenderer()->getNearestSampler()};
         std::unique_ptr<ResourceSet> resourceSet = imagePipeline->createResourceSet(imageResourceLayout.get());
         resourceSet->update(resourceSetBindings);
         ResourceSet* resourceSetPtr = resourceSet.get();

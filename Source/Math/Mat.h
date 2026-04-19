@@ -235,6 +235,12 @@ namespace Math {
         static Mat<float, 4> rotateX(float radians) { return rotate(Vec3(1.0f, 0.0f, 0.0f), radians); }
         static Mat<float, 4> rotateY(float radians) { return rotate(Vec3(0.0f, 1.0f, 0.0f), radians); }
         static Mat<float, 4> rotateZ(float radians) { return rotate(Vec3(0.0f, 0.0f, 1.0f), radians); }
+        static Mat<float, 4> model(const Vec3& translation, const Vec3& rotation, const Vec3& scaleVec) {
+            Mat<float, 4> t = translate(translation);
+            Mat<float, 4> r = rotateX(rotation.x()) * rotateY(rotation.y()) * rotateZ(rotation.z());
+            Mat<float, 4> s = scale(scaleVec);
+            return t * r * s;
+        }
         Vec3 getForward() const
             requires(N >= 4)
         {

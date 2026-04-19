@@ -10,9 +10,11 @@ namespace Axiom {
         struct Binding {
             uint32_t binding = 0;
             ResourceType type = ResourceType::UniformBuffer;
-            Buffer* buffer = nullptr;
-            Texture* texture = nullptr;
-            Sampler* sampler = nullptr;
+            std::vector<Buffer*> buffers;
+            std::vector<Texture*> textures;
+            std::vector<Sampler*> samplers;
+            // TODO: think of a better way to do this, maybe use reflection
+            size_t maxNumberOfResources = 1;
         };
 
       public:

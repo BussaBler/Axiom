@@ -23,24 +23,42 @@ namespace Axiom {
     }
 
     void MetalResourceSet::update(const std::vector<Binding>& bindings) {
+        uint32_t bindingOffset = 0;
         for (const auto& binding : bindings) {
             switch (binding.type) {
             case ResourceType::UniformBuffer:
             case ResourceType::StorageBuffer: {
-                MetalBuffer* buffer = static_cast<MetalBuffer*>(binding.buffer);
-                argumentEncoder->setBuffer(buffer->getHandle(), 0, binding.binding);
-                residentBuffers.push_back(buffer->getHandle());
+                std::vector<MTL::Buffer*> buffersToSet;
+                std::vector<NS::UInteger> bufferOffsets;
+                for (Buffer* buffer : binding.buffers) {
+                    MetalBuffer* metalBuffer = static_cast<MetalBuffer*>(buffer);
+                    buffersToSet.push_back(metalBuffer->getHandle());
+                    residentBuffers.push_back(metalBuffer->getHandle());
+                    bufferOffsets.push_back(0); // TODO: support buffer offsets
+                }
+                argumentEncoder->setBuffers(buffersToSet.data(), bufferOffsets.data(), NS::Range::Make(binding.binding + bindingOffset, buffersToSet.size()));
+                bindingOffset += binding.maxNumberOfResources - 1;
                 break;
             }
             case ResourceType::Texture: {
-                MetalTexture* texture = static_cast<MetalTexture*>(binding.texture);
-                argumentEncoder->setTexture(texture->getHandle(), binding.binding);
-                residentTextures.push_back(texture->getHandle());
+                std::vector<MTL::Texture*> texturesToSet;
+                for (Texture* texture : binding.textures) {
+                    MetalTexture* metalTexture = static_cast<MetalTexture*>(texture);
+                    texturesToSet.push_back(metalTexture->getHandle());
+                    residentTextures.push_back(metalTexture->getHandle());
+                }
+                argumentEncoder->setTextures(texturesToSet.data(), NS::Range::Make(binding.binding + bindingOffset, texturesToSet.size()));
+                bindingOffset += binding.maxNumberOfResources - 1;
                 break;
             }
             case ResourceType::Sampler: {
-                MetalSampler* sampler = static_cast<MetalSampler*>(binding.sampler);
-                argumentEncoder->setSamplerState(sampler->getHandle(), binding.binding);
+                std::vector<MTL::SamplerState*> samplersToSet;
+                for (Sampler* sampler : binding.samplers) {
+                    MetalSampler* metalSampler = static_cast<MetalSampler*>(sampler);
+                    samplersToSet.push_back(metalSampler->getHandle());
+                }
+                argumentEncoder->setSamplerStates(samplersToSet.data(), NS::Range::Make(binding.binding + bindingOffset, samplersToSet.size()));
+                bindingOffset += binding.maxNumberOfResources - 1;
                 break;
             }
             default:

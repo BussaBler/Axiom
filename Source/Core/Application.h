@@ -1,5 +1,6 @@
 #pragma once
 #include "Assert.h"
+#include "ECS/Scene.h"
 #include "Event/ApplicationEvent.h"
 #include "Input.h"
 #include "LayerStack.h"

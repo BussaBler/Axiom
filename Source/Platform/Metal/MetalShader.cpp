@@ -72,10 +72,18 @@ namespace Axiom {
 
         spirv_cross::ShaderResources resources = mslCompiler.get_shader_resources();
         uint32_t metalBufferOffset = 8;
+        uint32_t currentMetalId = 0;
         auto mapDescriptorSets = [&](const spirv_cross::SmallVector<spirv_cross::Resource>& resources) {
             for (const auto& resource : resources) {
+                spirv_cross::SPIRType type = mslCompiler.get_type(resource.type_id);
+                uint32_t arraySize = 1;
+                if (type.array.size() > 0) {
+                    arraySize = type.array.size();
+                }
                 uint32_t set = mslCompiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
                 mslCompiler.set_decoration(resource.id, spv::DecorationDescriptorSet, metalBufferOffset + set);
+                mslCompiler.set_decoration(resource.id, spv::DecorationBinding, currentMetalId);
+                currentMetalId += arraySize;
             }
         };
 
