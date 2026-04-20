@@ -12,4 +12,5 @@
 #include "Event/KeyCodes.h"
 #include "Math/AxMath.h"
 #include "Math/Color.h"
+#include "Renderer/Camera.h"
 #include "UI/UI.h"

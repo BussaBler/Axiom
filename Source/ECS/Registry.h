@@ -3,6 +3,45 @@
 #include "EntityManager.h"
 
 namespace Axiom {
+    class View {
+      public:
+        View(EntityManager* entityManager, std::bitset<32> signature) : entityManager(entityManager), signature(signature) {}
+        ~View() = default;
+
+        struct Iterator {
+            uint32_t entityId;
+            EntityManager* entityManager;
+            std::bitset<32> signature;
+
+            Iterator(uint32_t entityId, EntityManager* entityManager, std::bitset<32> signature)
+                : entityId(entityId), entityManager(entityManager), signature(signature) {
+                advanceToValid();
+            }
+
+            void advanceToValid() {
+                while (entityId < MAX_ENTITIES && (entityManager->getComponentSignature(entityId) & signature) != signature) {
+                    entityId++;
+                }
+            }
+
+            Iterator& operator++() {
+                entityId++;
+                advanceToValid();
+                return *this;
+            }
+
+            bool operator!=(const Iterator& other) const { return entityId != other.entityId; }
+            uint32_t operator*() const { return entityId; }
+        };
+
+        Iterator begin() const { return Iterator(0, entityManager, signature); }
+        Iterator end() const { return Iterator(MAX_ENTITIES, entityManager, signature); }
+
+      private:
+        EntityManager* entityManager;
+        std::bitset<32> signature;
+    };
+
     class Registry {
       public:
         Registry() {
@@ -27,6 +66,12 @@ namespace Axiom {
 
         template <typename T> void registerComponent() { componentManager->registerComponent<T>(); }
         template <typename T> uint8_t getComponentType() { return componentManager->getComponentType<T>(); }
+
+        template <typename... Components> View view() {
+            std::bitset<32> signature;
+            ((signature.set(componentManager->getComponentType<Components>())), ...);
+            return View(entityManager.get(), signature);
+        }
 
       private:
         std::unique_ptr<EntityManager> entityManager;

@@ -9,10 +9,11 @@ namespace Axiom {
     void RenderSystem::onUpdate(Registry* registry, float deltaTime) {
     }
 
-    void RenderSystem::onRender(Registry* registry, CommandBuffer* commandBuffer, Texture* renderTarget) {
+    void RenderSystem::onRender(Registry* registry, CommandBuffer* commandBuffer, Texture* renderTarget, const Math::Mat4& projection, const Math::Mat4& view) {
         std::vector<SpriteInstance> instances;
         instances.reserve(MAX_SPRITE_QUADS);
         std::vector<Texture*> textureSlots = {Application::getRenderer()->getDefaultTexture()};
+        auto entities = registry->view<TransformComponent, Sprite2DComponent>();
 
         for (uint32_t entityId : entities) {
             auto& transform = registry->getComponent<TransformComponent>(entityId);
@@ -52,7 +53,7 @@ namespace Axiom {
 
         spriteInstanceBuffer->setData<SpriteInstance>(instances);
         Math::iVec2 renderTargetSize = renderTarget->getSize();
-        Math::Mat4 projection = Math::Mat4::orthographic(0.0f, renderTargetSize.x(), 0.0f, renderTargetSize.y(), -1.0f, 1.0f);
+        Math::Mat4 viewProjection = projection * view;
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture;
@@ -69,7 +70,7 @@ namespace Axiom {
 
         commandBuffer->beginRendering(spriteRenderPass);
         commandBuffer->bindPipeline(spritePipeline.get());
-        commandBuffer->bindPushConstants(&projection, sizeof(projection));
+        commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
         commandBuffer->bindVertexBuffers({spriteVertexBuffer.get()});
         commandBuffer->bindIndexBuffer(spriteIndexBuffer.get());
         commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());

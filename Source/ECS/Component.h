@@ -2,6 +2,7 @@
 #include "Asset/UUID.h"
 #include "Math/AxMath.h"
 #include "Math/Color.h"
+#include "Renderer/Camera.h"
 #include "axpch.h"
 
 namespace Axiom {
@@ -17,8 +18,9 @@ namespace Axiom {
     };
 
     struct CameraComponent {
-        Math::Mat4 projection = Math::Mat4::identity();
+        Camera camera;
         bool isMainCamera = false;
+        bool isFixedAspectRatio = false;
     };
 
     struct Sprite2DComponent {

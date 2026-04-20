@@ -15,6 +15,7 @@ namespace Axiom {
 
         void onUpdate(float deltaTime);
         void onRender(CommandBuffer* commandBuffer, Texture* renderTarget);
+        void onRender(CommandBuffer* commandBuffer, Texture* renderTarget, const Math::Mat4& projection, const Math::Mat4& view);
 
         // TODO: maybe make register component and system public so the scene doesn't
         // have to keep track of them? Or maybe make a scene builder that handles all of this?

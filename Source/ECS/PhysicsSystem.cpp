@@ -2,8 +2,6 @@
 
 namespace Axiom {
     void PhysicsSystem::onUpdate(Registry* registry, float deltaTime) {
-        for (const auto& entity : entities) {
-            auto& physicComponent = registry->getComponent<TransformComponent>(entity);
-        }
+        auto entities = registry->view<TransformComponent, PhysicsComponent>();
     }
 } // namespace Axiom
