@@ -111,7 +111,6 @@ namespace Math {
             result[3] = Vec4(-(right + left) / (right - left), (top + bottom) / (top - bottom), zNear / (zNear - zFar), 1.0f);
             return result;
         }
-
         static Mat<float, 4> perspective(float fov, float aspectRatio, float zNear, float zFar) {
             Mat<float, 4> result;
             float tanHalfFov = std::tan(fov * 0.5f);
@@ -123,16 +122,21 @@ namespace Math {
             return result;
         }
         static Mat<float, 4> lookAt(const Vec3& position, const Vec3& target, const Vec3& up) {
-            Vec3 zAxis = normalize(position - target); // Forward
+            Vec3 zAxis = normalize(position - target); // Forward (technically "Backward" in right-handed standard)
             Vec3 xAxis = normalize(cross(up, zAxis));  // Right
             Vec3 yAxis = cross(zAxis, xAxis);          // Up
+
             Mat<float, 4> result;
-            result[0] = Vec4(xAxis.x(), xAxis.y(), xAxis.z(), 0.0f);                                     // column 0
-            result[1] = Vec4(yAxis.x(), yAxis.y(), yAxis.z(), 0.0f);                                     // column 1
-            result[2] = Vec4(zAxis.x(), zAxis.y(), zAxis.z(), 0.0f);                                     // column 2
+
+            result[0] = Vec4(xAxis.x(), yAxis.x(), zAxis.x(), 0.0f); // column 0
+            result[1] = Vec4(xAxis.y(), yAxis.y(), zAxis.y(), 0.0f); // column 1
+            result[2] = Vec4(xAxis.z(), yAxis.z(), zAxis.z(), 0.0f); // column 2
+
             result[3] = Vec4(-dot(xAxis, position), -dot(yAxis, position), -dot(zAxis, position), 1.0f); // column 3
+
             return result;
         }
+
         Mat<float, 4> inverse() const
             requires(N >= 4)
         {
@@ -226,9 +230,9 @@ namespace Math {
             const float t = 1.0f - c;
 
             Mat<float, 4> result{};
-            result[0] = Vec4(t * x * x + c, t * x * y - s * z, t * x * z + s * y, 0.0f);
-            result[1] = Vec4(t * x * y + s * z, t * y * y + c, t * y * z - s * x, 0.0f);
-            result[2] = Vec4(t * x * z - s * y, t * y * z + s * x, t * z * z + c, 0.0f);
+            result[0] = Vec4(t * x * x + c, t * x * y + s * z, t * x * z - s * y, 0.0f);
+            result[1] = Vec4(t * x * y - s * z, t * y * y + c, t * y * z + s * x, 0.0f);
+            result[2] = Vec4(t * x * z + s * y, t * y * z - s * x, t * z * z + c, 0.0f);
             result[3] = Vec4(0.0f, 0.0f, 0.0f, 1.0f);
             return result;
         }
@@ -237,7 +241,7 @@ namespace Math {
         static Mat<float, 4> rotateZ(float radians) { return rotate(Vec3(0.0f, 0.0f, 1.0f), radians); }
         static Mat<float, 4> model(const Vec3& translation, const Vec3& rotation, const Vec3& scaleVec) {
             Mat<float, 4> t = translate(translation);
-            Mat<float, 4> r = rotateX(rotation.x()) * rotateY(rotation.y()) * rotateZ(rotation.z());
+            Mat<float, 4> r = rotateY(rotation.y()) * rotateX(rotation.x()) * rotateZ(rotation.z());
             Mat<float, 4> s = scale(scaleVec);
             return t * r * s;
         }

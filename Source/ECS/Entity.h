@@ -8,13 +8,16 @@ namespace Axiom {
       public:
         Entity() : id(0), registry(nullptr) {}
         Entity(uint32_t id, Registry* registry) : id(id), registry(registry) {}
-        ~Entity() { registry->destroyEntityId(id); }
+        ~Entity() = default;
 
+        template <typename T> bool hasComponent() { return registry->getComponentSignature(id).test(registry->getComponentType<T>()); }
         template <typename T> void addComponent(T component) { registry->addComponent<T>(id, component); }
         template <typename T> T& getComponent() { return registry->getComponent<T>(id); }
         template <typename T> void removeComponent() { registry->removeComponent<T>(id); }
 
         inline uint32_t getId() const { return id; }
+
+        operator bool() const { return registry != nullptr; }
 
       private:
         uint32_t id;

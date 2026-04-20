@@ -6,6 +6,10 @@
 #include "axpch.h"
 
 namespace Axiom {
+    struct TagComponent {
+        std::string tag;
+    };
+
     struct TransformComponent {
         Math::Vec3 position = Math::Vec3::zero();
         Math::Vec3 rotation = Math::Vec3::zero();

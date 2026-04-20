@@ -2,6 +2,8 @@
 #include "Assert.h"
 #include "ECS/Scene.h"
 #include "Event/ApplicationEvent.h"
+#include "Event/KeyEvent.h"
+#include "Event/MouseEvent.h"
 #include "Input.h"
 #include "LayerStack.h"
 #include "Log.h"
@@ -56,6 +58,11 @@ namespace Axiom {
       private:
         bool onWindowClose(WindowCloseEvent& e);
         bool onWindowResize(WindowResizeEvent& e);
+        bool onKeyPressed(KeyPressedEvent& e);
+        bool onKeyReleased(KeyReleasedEvent& e);
+        bool onMouseButtonPressed(MouseButtonPressedEvent& e);
+        bool onMouseButtonReleased(MouseButtonReleasedEvent& e);
+        bool onMouseMoved(MouseMovedEvent& e);
 
         void processLayerActions();
 

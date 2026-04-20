@@ -26,7 +26,7 @@ namespace Axiom {
         std::string inputBuffer;
         bool checkboxValue = false;
 
-        float consoleHeightRatio = 0.5f;
+        float consoleHeightRatio = 0.3f;
         uint16_t fontSize = 8;
     };
 } // namespace Axiom

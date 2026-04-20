@@ -23,6 +23,7 @@ namespace Axiom {
         static Color cyan() { return Color(0.0f, 1.0f, 1.0f); }
         static Color yellow() { return Color(1.0f, 1.0f, 0.0f); }
         static Color transparent() { return Color(0.0f, 0.0f, 0.0f, 0.0f); }
+        static Color gray() { return Color(0.5f, 0.5f, 0.5f); }
 
         operator Math::Vec4() const { return rgba; }
 

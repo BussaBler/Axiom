@@ -159,6 +159,6 @@ namespace Axiom {
         // Media control keys
         VolumeMute = 0xAD,
         VolumeDown = 0xAE,
-        VolumeUp = 0xAF,
+        VolumeUp = 0xAF
     };
 } // namespace Axiom

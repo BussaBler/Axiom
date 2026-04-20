@@ -29,6 +29,12 @@ namespace Axiom {
         EventDispatcher dispatcher(event);
         dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
         dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
+        dispatcher.dispatch<KeyPressedEvent>(std::bind(&Application::onKeyPressed, this, std::placeholders::_1));
+        dispatcher.dispatch<KeyReleasedEvent>(std::bind(&Application::onKeyReleased, this, std::placeholders::_1));
+        dispatcher.dispatch<MouseButtonPressedEvent>(std::bind(&Application::onMouseButtonPressed, this, std::placeholders::_1));
+        dispatcher.dispatch<MouseButtonReleasedEvent>(std::bind(&Application::onMouseButtonReleased, this, std::placeholders::_1));
+        dispatcher.dispatch<MouseMovedEvent>(std::bind(&Application::onMouseMoved, this, std::placeholders::_1));
+
         UI::onEvent(event);
         for (auto it = layerStack.rbegin(); it != layerStack.rend(); it++) {
             if (event.isHandled()) {
@@ -53,6 +59,31 @@ namespace Axiom {
         }
         renderer->recreateSwapChain();
         return true;
+    }
+
+    bool Application::onKeyPressed(KeyPressedEvent& e) {
+        Input::setKeyPressed(e.getKeyCode(), true);
+        return false;
+    }
+
+    bool Application::onKeyReleased(KeyReleasedEvent& e) {
+        Input::setKeyPressed(e.getKeyCode(), false);
+        return false;
+    }
+
+    bool Application::onMouseButtonPressed(MouseButtonPressedEvent& e) {
+        Input::setMouseButtonPressed(e.getMouseButton(), true);
+        return false;
+    }
+
+    bool Application::onMouseButtonReleased(MouseButtonReleasedEvent& e) {
+        Input::setMouseButtonPressed(e.getMouseButton(), false);
+        return false;
+    }
+
+    bool Application::onMouseMoved(MouseMovedEvent& e) {
+        Input::setMousePosition(e.getMouseX(), e.getMouseY());
+        return false;
     }
 
     void Application::processLayerActions() {
