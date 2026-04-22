@@ -11,6 +11,7 @@ namespace Axiom {
 
         renderTargetBarrier = {.oldState = TextureState::Undefined, .newState = TextureState::RenderTarget, .aspect = TextureAspect::Color};
         presentBarrier = {.oldState = TextureState::RenderTarget, .newState = TextureState::Present, .aspect = TextureAspect::Color};
+        depthBarrier = {.oldState = TextureState::Undefined, .newState = TextureState::DepthStencilTarget, .aspect = TextureAspect::Depth};
 
         createDefaultTexture();
         createDefaultSamplers();
@@ -35,6 +36,8 @@ namespace Axiom {
 
         renderTargetBarrier.texture = swapChain->getCurrentTexture();
         commandBuffer->pipelineBarrier({renderTargetBarrier});
+        depthBarrier.texture = swapChain->getCurrentDepthTexture();
+        commandBuffer->pipelineBarrier({depthBarrier});
         return commandBuffer;
     }
 

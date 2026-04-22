@@ -9,7 +9,8 @@ namespace Axiom {
     void RenderSystem::onUpdate(Registry* registry, float deltaTime) {
     }
 
-    void RenderSystem::onRender(Registry* registry, CommandBuffer* commandBuffer, Texture* renderTarget, const Math::Mat4& projection, const Math::Mat4& view) {
+    void RenderSystem::onRender(Registry* registry, CommandBuffer* commandBuffer, Texture* renderTarget, Texture* depthTarget, const Math::Mat4& projection,
+                                const Math::Mat4& view) {
         std::vector<SpriteInstance> instances;
         instances.reserve(MAX_SPRITE_QUADS);
         std::vector<Texture*> textureSlots = {Application::getRenderer()->getDefaultTexture()};
@@ -67,6 +68,7 @@ namespace Axiom {
         spriteRenderPass.colorAttachments[0].texture = renderTarget;
         spriteRenderPass.width = renderTargetSize.x();
         spriteRenderPass.height = renderTargetSize.y();
+        spriteRenderPass.depthAttachment.texture = depthTarget;
 
         commandBuffer->beginRendering(spriteRenderPass);
         commandBuffer->bindPipeline(spritePipeline.get());
@@ -118,6 +120,12 @@ namespace Axiom {
         colorAttachment.clearColor = Color::white();
         spriteRenderPass.colorAttachments[0] = colorAttachment;
         spriteRenderPass.colorAttachmentCount = 1;
+        RenderAttachment depthAttachment{};
+        depthAttachment.loadOp = LoadOp::Clear;
+        depthAttachment.storeOp = StoreOp::Store;
+        depthAttachment.clearDepth = 1.0f;
+        spriteRenderPass.depthAttachment = depthAttachment;
+        spriteRenderPass.hasDepthAttachment = true;
 
         std::vector<VertexBindingDescription> vertexBindings = {{.binding = 0, .stride = sizeof(SpriteVertex), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> vertexAttributes = {
@@ -154,11 +162,11 @@ namespace Axiom {
                                                    .polygonMode = PolygonMode::Fill,
                                                    .cullMode = CullMode::None,
                                                    .frontFaceClockwise = true,
-                                                   .enableBlending = true,
-                                                   .enableDepthTest = false,
-                                                   .enableDepthWrite = false,
+                                                   .enableBlending = false,
+                                                   .enableDepthTest = true,
+                                                   .enableDepthWrite = true,
                                                    .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
-                                                   .depthAttachmentFormat = Format::Undefined,
+                                                   .depthAttachmentFormat = Application::getRenderer()->getDepthTextureFormat(),
                                                    .resourceLayouts = {spriteResourceLayouts[0].get(), spriteResourceLayouts[1].get()}};
         spritePipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
         spriteResourceSets.push_back(spritePipeline->createResourceSet(spriteResourceLayouts[0].get()));

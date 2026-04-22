@@ -13,6 +13,7 @@ namespace Axiom {
             SwapChainSupportDetails swapChainDetails;
             QueueFamilyIndices queueFamilyIndices;
             Vk::Extent2D windowSize;
+            Vk::Format depthFormat;
             uint32_t maxFramesInFlight;
         };
 
@@ -21,9 +22,13 @@ namespace Axiom {
         bool acquireNextImage() override;
         Texture* getCurrentTexture() override;
         Format getTextureFormat() const override;
+        Texture* getCurrentDepthTexture() override;
+        Format getDepthTextureFormat() const override;
         bool present() override;
         uint32_t getWidth() const override;
         uint32_t getHeight() const override;
+        uint32_t getFrameCount() const override;
+        uint32_t getCurrentFrameIndex() const override;
 
         Vk::Semaphore getImageAvailableSemaphore(uint32_t index) const { return imageAvailableSemaphores[index]; }
         Vk::Semaphore getRenderFinishedSemaphore() const { return renderFinishedSemaphores[currentImageIndex]; }
@@ -45,5 +50,7 @@ namespace Axiom {
         std::vector<Vk::Semaphore> renderFinishedSemaphores;
         Vk::Extent2D swapChainExtent = {0, 0};
         Vk::Format swapChainImageFormat = Vk::Format::eUndefined;
+        std::vector<std::unique_ptr<VulkanTexture>> depthTextures;
+        Vk::Format depthFormat = Vk::Format::eUndefined;
     };
 } // namespace Axiom

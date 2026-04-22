@@ -31,6 +31,7 @@ namespace Axiom {
     void UIRenderer::clearRenderData() {
         basicVertices.clear();
         fontVertices.clear();
+        imageDrawCommands.clear();
     }
 
     void UIRenderer::addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii) {

@@ -7,6 +7,24 @@ namespace Axiom {
         metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
         metalLayer->setFramebufferOnly(true);
         textureFormat = Format::B8G8R8A8Unorm;
+        depthTextureFormat = Format::D32sFloat;
+
+        depthTextures.resize(metalLayer->maximumDrawableCount());
+        Texture::CreateInfo depthTextureCreateInfo = {
+            .width = width,
+            .height = height,
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .format = depthTextureFormat,
+            .usage = TextureUsage::DepthStencilAttachment,
+            .aspect = TextureAspect::Depth,
+            .initialState = TextureState::Undefined,
+            .memoryUsage = MemoryUsage::GPUOnly,
+        };
+
+        for (size_t i = 0; i < depthTextures.size(); i++) {
+            depthTextures[i] = std::make_unique<MetalTexture>(depthTextureCreateInfo, device);
+        }
     }
 
     MetalSwapChain::~MetalSwapChain() {
@@ -22,11 +40,22 @@ namespace Axiom {
         currentDrawable = drawable->retain();
         currentDrawableTexture = std::make_unique<MetalTexture>(currentDrawable->texture());
         textureFormat = currentDrawableTexture->getFormat();
+
+        currentFrameIndex = (currentFrameIndex + 1) % depthTextures.size();
+
         return true;
     }
 
     Texture* MetalSwapChain::getCurrentTexture() {
         return currentDrawableTexture.get();
+    }
+
+    Texture* MetalSwapChain::getCurrentDepthTexture() {
+        return depthTextures[currentFrameIndex].get();
+    }
+
+    Format MetalSwapChain::getDepthTextureFormat() const {
+        return depthTextureFormat;
     }
 
     Format MetalSwapChain::getTextureFormat() const {
@@ -50,5 +79,13 @@ namespace Axiom {
 
     uint32_t MetalSwapChain::getHeight() const {
         return metalLayer->drawableSize().height;
+    }
+
+    uint32_t MetalSwapChain::getFrameCount() const {
+        return depthTextures.size();
+    }
+
+    uint32_t MetalSwapChain::getCurrentFrameIndex() const {
+        return currentFrameIndex;
     }
 } // namespace Axiom

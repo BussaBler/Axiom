@@ -41,7 +41,7 @@ namespace Axiom {
         physicsSystem->onUpdate(registry.get(), deltaTime);
     }
 
-    void Scene::onRender(CommandBuffer* commandBuffer, Texture* renderTarget) {
+    void Scene::onRender(CommandBuffer* commandBuffer, Texture* renderTarget, Texture* depthTarget) {
         auto entities = registry->view<TransformComponent, CameraComponent>();
 
         for (auto entity : entities) {
@@ -52,7 +52,7 @@ namespace Axiom {
                 Math::Mat4 projection = camera.camera.getProjection();
                 Math::Mat4 view = Math::Mat4::model(transform.position, transform.rotation, transform.scale).inverse();
 
-                renderSystem->onRender(registry.get(), commandBuffer, renderTarget, projection, view);
+                renderSystem->onRender(registry.get(), commandBuffer, renderTarget, depthTarget, projection, view);
                 return;
             }
         }
@@ -60,7 +60,7 @@ namespace Axiom {
         AX_CORE_LOG_WARN("Scene::onRender - No main camera found, skipping render.");
     }
 
-    void Scene::onRender(CommandBuffer* commandBuffer, Texture* renderTarget, const Math::Mat4& projection, const Math::Mat4& view) {
-        renderSystem->onRender(registry.get(), commandBuffer, renderTarget, projection, view);
+    void Scene::onRender(CommandBuffer* commandBuffer, Texture* renderTarget, Texture* depthTarget, const Math::Mat4& projection, const Math::Mat4& view) {
+        renderSystem->onRender(registry.get(), commandBuffer, renderTarget, depthTarget, projection, view);
     }
 } // namespace Axiom

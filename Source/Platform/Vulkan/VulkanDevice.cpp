@@ -93,8 +93,8 @@ namespace Axiom {
     std::unique_ptr<SwapChain> VulkanDevice::createSwapchain(uint32_t width, uint32_t height) {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
         QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-        VulkanSwapChain::CreateInfo createInfo{logicalDevice,    surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height),
-                                               maxFramesInFlight};
+        VulkanSwapChain::CreateInfo createInfo{
+            logicalDevice, surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height), findDepthFormat(), maxFramesInFlight};
         return std::make_unique<VulkanSwapChain>(createInfo);
     }
 
@@ -385,6 +385,19 @@ namespace Axiom {
         details.presentModes = presentModesResult.value;
 
         return details;
+    }
+
+    Vk::Format VulkanDevice::findDepthFormat() const {
+        std::array<Vk::Format, 3> depthFormats = {Vk::Format::eD32Sfloat, Vk::Format::eD32SfloatS8Uint, Vk::Format::eD24UnormS8Uint};
+        for (Vk::Format format : depthFormats) {
+            Vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
+            if ((formatProperties.optimalTilingFeatures & Vk::FormatFeatureFlagBits::eDepthStencilAttachment) != Vk::FormatFeatureFlags()) {
+                return format;
+            }
+        }
+
+        AX_CORE_ASSERT(false, "Failed to find supported depth format");
+        return Vk::Format::eD32Sfloat;
     }
 
     void VulkanDevice::createLogicalDevice() {

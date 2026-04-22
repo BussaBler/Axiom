@@ -24,6 +24,8 @@ namespace Axiom {
 
     void MetalResourceSet::update(const std::vector<Binding>& bindings) {
         uint32_t bindingOffset = 0;
+        residentBuffers.clear();
+        residentTextures.clear();
         for (const auto& binding : bindings) {
             switch (binding.type) {
             case ResourceType::UniformBuffer:

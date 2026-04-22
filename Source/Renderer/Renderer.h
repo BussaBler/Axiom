@@ -24,10 +24,14 @@ namespace Axiom {
 
         inline Texture* getCurrentRenderTarget() { return swapChain->getCurrentTexture(); }
         inline Format getRenderTargetFormat() { return swapChain->getTextureFormat(); }
+        inline Texture* getCurrentDepthTexture() { return swapChain->getCurrentDepthTexture(); }
+        inline Format getDepthTextureFormat() { return swapChain->getDepthTextureFormat(); }
         inline Math::uVec2 getCurrentRenderTargetSize() { return {swapChain->getWidth(), swapChain->getHeight()}; }
         inline Texture* getDefaultTexture() { return defaultTexture.get(); }
         inline Sampler* getLinearSampler() { return linearSampler.get(); }
         inline Sampler* getNearestSampler() { return nearestSampler.get(); }
+        inline uint32_t getFrameCount() const { return swapChain->getFrameCount(); }
+        inline uint32_t getCurrentFrameIndex() const { return swapChain->getCurrentFrameIndex(); }
 
         void recreateSwapChain();
 
@@ -42,6 +46,7 @@ namespace Axiom {
         std::unique_ptr<SwapChain> swapChain = nullptr;
         Texture::Barrier renderTargetBarrier;
         Texture::Barrier presentBarrier;
+        Texture::Barrier depthBarrier;
         std::shared_ptr<Texture> defaultTexture = nullptr;
         std::unique_ptr<Sampler> linearSampler = nullptr;
         std::unique_ptr<Sampler> nearestSampler = nullptr;

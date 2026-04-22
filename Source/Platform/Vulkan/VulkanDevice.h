@@ -52,6 +52,7 @@ namespace Axiom {
         static bool checkPhysicalDeviceExtensions(const Vk::PhysicalDevice& device);
         QueueFamilyIndices findQueueFamilies(const Vk::PhysicalDevice& device) const;
         SwapChainSupportDetails querySwapChainSupport(const Vk::PhysicalDevice& device) const;
+        Vk::Format findDepthFormat() const;
         void createLogicalDevice();
         void createCommandPool();
         void createDescriptorPool();

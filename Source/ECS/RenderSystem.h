@@ -22,7 +22,8 @@ namespace Axiom {
         ~RenderSystem() override = default;
 
         void onUpdate(Registry* registry, float deltaTime) override;
-        void onRender(Registry* registry, CommandBuffer* commandBuffer, Texture* renderTarget, const Math::Mat4& projection, const Math::Mat4& view);
+        void onRender(Registry* registry, CommandBuffer* commandBuffer, Texture* renderTarget, Texture* depthTarget, const Math::Mat4& projection,
+                      const Math::Mat4& view);
 
       private:
         void createSpriteRenderObjects();

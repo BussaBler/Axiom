@@ -68,6 +68,12 @@ namespace Axiom {
             pipelineDescriptor->setDepthAttachmentPixelFormat(axToMetalPixelFormat(createInfo.depthAttachmentFormat));
         }
 
+        MTL::DepthStencilDescriptor* depthStencilDescriptor = MTL::DepthStencilDescriptor::alloc()->init();
+        depthStencilDescriptor->setDepthCompareFunction(createInfo.enableDepthTest ? MTL::CompareFunctionLess : MTL::CompareFunctionAlways);
+        depthStencilDescriptor->setDepthWriteEnabled(createInfo.enableDepthWrite);
+        depthStencilState = device->newDepthStencilState(depthStencilDescriptor);
+        depthStencilDescriptor->release();
+
         MTL::PipelineOption options = MTL::PipelineOptionArgumentInfo | MTL::PipelineOptionBufferTypeInfo;
         MTL::RenderPipelineReflection* reflection = nullptr;
 
@@ -120,6 +126,7 @@ namespace Axiom {
         }
         argumentEncoders.clear();
         if (pipelineState) {
+            depthStencilState->release();
             pipelineState->release();
             pipelineState = nullptr;
         }

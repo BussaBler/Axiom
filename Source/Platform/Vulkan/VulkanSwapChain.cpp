@@ -2,7 +2,8 @@
 #include "Math/AxMath.h"
 
 namespace Axiom {
-    VulkanSwapChain::VulkanSwapChain(const CreateInfo& createInfo) : device(createInfo.logicDevice), presentQueue(createInfo.presentQueue) {
+    VulkanSwapChain::VulkanSwapChain(const CreateInfo& createInfo)
+        : device(createInfo.logicDevice), presentQueue(createInfo.presentQueue), depthFormat(createInfo.depthFormat) {
         Vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(createInfo.swapChainDetails.formats);
         Vk::PresentModeKHR presentMode = chooseSwapPresentMode(createInfo.swapChainDetails.presentModes);
         Vk::Extent2D extent = chooseSwapExtent(createInfo.swapChainDetails.capabilities, createInfo.windowSize);
@@ -60,6 +61,20 @@ namespace Axiom {
             AX_CORE_ASSERT(renderFinishedSemaphoreResult.result == Vk::Result::eSuccess, "Failed to create render finished semaphore!");
             renderFinishedSemaphores[i] = renderFinishedSemaphoreResult.value;
         }
+
+        depthTextures.resize(swapChainTextures.size());
+        Texture::CreateInfo depthCreateInfo = {.width = extent.width,
+                                               .height = extent.height,
+                                               .format = vkToAxFormat(createInfo.depthFormat),
+                                               .usage = TextureUsage::DepthStencilAttachment,
+                                               .aspect = TextureAspect::Depth,
+                                               .initialState = TextureState::Undefined,
+                                               .memoryUsage = MemoryUsage::GPUOnly};
+
+        for (size_t i = 0; i < depthTextures.size(); i++) {
+            depthTextures[i] = std::make_unique<VulkanTexture>(device, depthCreateInfo);
+            depthTextures[i]->createImageView(createInfo.depthFormat, Vk::ImageAspectFlagBits::eDepth);
+        }
     }
 
     VulkanSwapChain::~VulkanSwapChain() {
@@ -89,6 +104,14 @@ namespace Axiom {
         return vkToAxFormat(swapChainImageFormat);
     }
 
+    Texture* VulkanSwapChain::getCurrentDepthTexture() {
+        return depthTextures[currentImageIndex].get();
+    }
+
+    Format VulkanSwapChain::getDepthTextureFormat() const {
+        return vkToAxFormat(depthFormat);
+    }
+
     bool VulkanSwapChain::present() {
         Vk::Semaphore vkWait = renderFinishedSemaphores[currentImageIndex];
         Vk::PresentInfoKHR presentInfo(vkWait, swapChain, currentImageIndex);
@@ -111,6 +134,14 @@ namespace Axiom {
 
     uint32_t VulkanSwapChain::getHeight() const {
         return swapChainExtent.height;
+    }
+
+    uint32_t VulkanSwapChain::getFrameCount() const {
+        return static_cast<uint32_t>(swapChainTextures.size());
+    }
+
+    uint32_t VulkanSwapChain::getCurrentFrameIndex() const {
+        return currentFrameIndex;
     }
 
     Vk::SurfaceFormatKHR VulkanSwapChain::chooseSwapSurfaceFormat(const std::vector<Vk::SurfaceFormatKHR>& availableFormats) {

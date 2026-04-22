@@ -55,6 +55,7 @@ namespace Axiom {
         renderEncoder->setRenderPipelineState(metalPipeline->getHandle());
         renderEncoder->setFrontFacingWinding(metalPipeline->getFaceWinding());
         renderEncoder->setCullMode(metalPipeline->getCullMode());
+        renderEncoder->setDepthStencilState(metalPipeline->getDepthStencilState());
         renderEncoder->setTriangleFillMode(metalPipeline->getFillMode());
     }
 
