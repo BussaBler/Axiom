@@ -47,12 +47,33 @@ namespace Axiom {
             setMouseButtonState(e.getMouseButton(), false);
             return shouldConsumeMouseEvents();
         });
+        dispatcher.dispatch<KeyPressedEvent>([](const KeyPressedEvent& e) {
+            if (e.getKeyCode() == KeyCode::Backspace) {
+                inputState.backspacesThisFrame++;
+            }
+            if (e.getKeyCode() == KeyCode::Return) {
+                inputState.isEnterPressed = true;
+            }
+            return shouldConsumeKeyboardEvents();
+        });
+        dispatcher.dispatch<KeyReleasedEvent>([](const KeyReleasedEvent& e) {
+            if (e.getKeyCode() == KeyCode::Return) {
+                inputState.isEnterPressed = false;
+            }
+            return shouldConsumeKeyboardEvents();
+        });
+        dispatcher.dispatch<KeyTypedEvent>([](const KeyTypedEvent& e) {
+            inputState.currentTextInput += e.getKeyChar();
+            return shouldConsumeKeyboardEvents();
+        });
     }
 
     void UI::beginFrame() {
         context->hotItem = 0;
         inputState.mouseDelta = inputState.mousePosition - inputState.lastMousePosition;
         inputState.lastMousePosition = inputState.mousePosition;
+        inputState.shouldConsumeMouse = false;
+        inputState.shouldConsumeKeyboard = false;
         renderer->clearRenderData();
     }
 
@@ -85,6 +106,10 @@ namespace Axiom {
 
     bool UI::shouldConsumeMouseEvents() {
         return inputState.shouldConsumeMouse;
+    }
+
+    bool UI::shouldConsumeKeyboardEvents() {
+        return inputState.shouldConsumeKeyboard;
     }
 
     void UI::beginPanel(const std::string& title, Math::Vec2 pos, Math::Vec2 size) {
@@ -254,6 +279,61 @@ namespace Axiom {
         }
     }
 
+    void UI::inputText(const std::string& label, std::string& value, uint16_t textSize) {
+        uint32_t id = std::hash<std::string>{}(label + "_inputText");
+        Math::Vec2 pos = context->cursorPos;
+        Math::Vec2 size(getAvaibleWidth(), style.defaultWidgetHeight);
+
+        bool isHovering = inputState.mousePosition.x() >= pos.x() && inputState.mousePosition.x() <= pos.x() + size.x() &&
+                          inputState.mousePosition.y() >= pos.y() && inputState.mousePosition.y() <= pos.y() + size.y();
+
+        if (isHovering) {
+            context->hotItem = id;
+        }
+
+        if (inputState.isMouseButtonOneDown) {
+            if (isHovering) {
+                context->activeItem = id;
+                context->focusedItem = id;
+            } else if (context->focusedItem == id) {
+                context->focusedItem = 0;
+            }
+        }
+
+        Color bgColor = (context->focusedItem == id) ? Color(0.35f, 0.35f, 0.35f)
+                        : (context->hotItem == id)   ? Color(0.3f, 0.3f, 0.3f)
+                                                     : Color(0.2f, 0.2f, 0.2f);
+
+        renderer->addBasicQuad(pos, size, bgColor, style.borderRadius);
+
+        if (context->focusedItem == id) {
+            inputState.shouldConsumeKeyboard = true;
+            value += inputState.currentTextInput;
+            for (uint16_t i = 0; i < inputState.backspacesThisFrame; i++) {
+                if (!value.empty()) {
+                    value.pop_back();
+                }
+            }
+
+            if (inputState.isEnterPressed) {
+                context->focusedItem = 0;
+                inputState.isEnterPressed = false;
+            }
+            inputState.currentTextInput = "";
+            inputState.backspacesThisFrame = 0;
+        }
+
+        std::string displayText = value.empty() ? label : value;
+
+        float verticalCenterOffset = (size.y() / 2.0f) - (8.0f * 1.5f);
+        rawText(displayText, Math::Vec2(pos.x() + style.padding, pos.y() + verticalCenterOffset), Color::white(), textSize);
+
+        context->cursorPos.y() += size.y() + style.itemSpacing;
+        context->cursorPos.x() = context->panelPos.x() + style.padding + context->indentLevel;
+        context->lastItemPos = pos;
+        context->lastItemSize = size;
+    }
+
     float UI::calcTextWidth(const std::string& text, uint16_t size) {
         auto& atlas = renderer->getFont().getAsciiAtlas();
 
@@ -324,7 +404,8 @@ namespace Axiom {
 
     void UI::dragFloat(const std::string& label, float& value, float speed) {
         uint32_t id = std::hash<std::string>{}(label + "_dragFloat");
-        bool isChanged = false;
+
+        static std::unordered_map<uint32_t, std::string> textBuffers;
 
         Math::Vec2 pos = context->cursorPos;
         Math::Vec2 size(context->panelSize.x() - (style.padding * 2.0f), style.defaultWidgetHeight);
@@ -332,27 +413,70 @@ namespace Axiom {
         bool isHovering = inputState.mousePosition.x() >= pos.x() && inputState.mousePosition.x() <= pos.x() + size.x() &&
                           inputState.mousePosition.y() >= pos.y() && inputState.mousePosition.y() <= pos.y() + size.y();
 
-        if (isHovering) {
+        if (isHovering && context->activeItem == 0) {
             context->hotItem = id;
-            if (context->activeItem == 0 && inputState.isMouseButtonOneDown) {
+        }
+
+        if (inputState.isMouseButtonOneDown) {
+            if (isHovering && context->activeItem == 0) {
                 context->activeItem = id;
+                context->focusedItem = id;
+
+                textBuffers[id] = std::format("{:.2f}", value);
+            } else if (!isHovering && context->focusedItem == id) {
+                context->focusedItem = 0;
+                try {
+                    value = std::stof(textBuffers[id]);
+                } catch (...) {
+                }
             }
         }
 
-        if (context->activeItem == id && context->hotItem == id) {
-            if (inputState.isMouseButtonOneDown) {
+        if (context->activeItem == id) {
+            if (std::abs(inputState.mouseDelta.x()) > 0.0f) {
+                context->focusedItem = 0;
                 value += inputState.mouseDelta.x() * speed;
-                isChanged = true;
             }
         }
 
-        Color bgColor = (context->hotItem == id) ? Color(0.3f, 0.3f, 0.3f) : Color(0.2f, 0.2f, 0.2f);
+        if (context->focusedItem == id && context->activeItem != id) {
+            inputState.shouldConsumeKeyboard = true;
+
+            textBuffers[id] += inputState.currentTextInput;
+            for (uint16_t i = 0; i < inputState.backspacesThisFrame; i++) {
+                if (!textBuffers[id].empty()) {
+                    textBuffers[id].pop_back();
+                }
+            }
+            inputState.currentTextInput = "";
+            inputState.backspacesThisFrame = 0;
+
+            if (inputState.isEnterPressed) {
+                try {
+                    value = std::stof(textBuffers[id]);
+                } catch (...) {
+                }
+                context->focusedItem = 0;
+                inputState.isEnterPressed = false;
+            }
+        }
+
+        Color bgColor = (context->focusedItem == id)  ? Color(0.35f, 0.35f, 0.35f)
+                        : (context->activeItem == id) ? Color(0.2f, 0.2f, 0.2f)
+                        : (context->hotItem == id)    ? Color(0.3f, 0.3f, 0.3f)
+                                                      : Color(0.25f, 0.25f, 0.25f);
+
         renderer->addBasicQuad(pos, size, bgColor, style.borderRadius);
 
-        std::string labelText = std::format("{}: {:.2f}", label, value);
+        std::string displayText;
+        if (context->focusedItem == id) {
+            displayText = textBuffers[id] + "|";
+        } else {
+            displayText = std::format("{}: {:.2f}", label, value);
+        }
 
         float verticalCenterOffset = (size.y() / 2.0f) - (8.0f * 1.5f);
-        rawText(labelText, Math::Vec2(pos.x() + style.padding, pos.y() + verticalCenterOffset), Color::white(), 8);
+        rawText(displayText, Math::Vec2(pos.x() + style.padding, pos.y() + verticalCenterOffset), Color::white(), 8);
 
         context->cursorPos.y() += size.y() + style.itemSpacing;
         context->cursorPos.x() = context->panelPos.x() + style.padding + context->indentLevel;

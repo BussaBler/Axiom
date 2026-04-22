@@ -1,4 +1,5 @@
 #pragma once
+#include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 #include "Font.h"
 #include "Math/AxMath.h"
@@ -21,6 +22,7 @@ namespace Axiom {
 
         uint32_t hotItem = 0;
         uint32_t activeItem = 0;
+        uint32_t focusedItem = 0;
 
         std::unordered_map<uint32_t, bool> nodeStates;
     };
@@ -32,6 +34,10 @@ namespace Axiom {
         bool isMouseButtonOneDown = false;
         bool isMouseButtonTwoDown = false;
         bool shouldConsumeMouse = false;
+        std::string currentTextInput = "";
+        uint16_t backspacesThisFrame = 0;
+        bool isEnterPressed = false;
+        bool shouldConsumeKeyboard = false;
     };
 
     struct UIStyle {
@@ -66,6 +72,7 @@ namespace Axiom {
         static bool button(const std::string& label, const Math::Vec2& size, Math::Vec4 radii = Math::Vec4(-1.0f));
         static void text(const std::string& text, const Color& color, uint16_t size = 11);
         static void rawText(const std::string& text, Math::Vec2 pos, Math::Vec4 color = Math::Vec4(1.0f), uint16_t size = 11);
+        static void inputText(const std::string& label, std::string& value, uint16_t size = 11);
         static float calcTextWidth(const std::string& text, uint16_t size = 11);
         static void checkbox(const std::string& label, bool& value);
         static void dragFloat(const std::string& label, float& value, float speed = 0.1f);
@@ -84,9 +91,7 @@ namespace Axiom {
         static void setMouseButtonState(KeyCode button, bool pressed);
 
         static bool shouldConsumeMouseEvents();
-
-        void createBaseRenderObjects();
-        void createFontRenderObjects();
+        static bool shouldConsumeKeyboardEvents();
 
       private:
         static std::unique_ptr<UIRenderer> renderer;
