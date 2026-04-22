@@ -31,6 +31,10 @@ namespace Axiom {
         ResourceSet* getResourceSetForTexture(Texture* texture);
 
       private:
+        // used for rendering lines in the editor (e.g. gizmos)
+        Math::Mat4 gizmosProjection;
+        Math::Mat4 gizmosView;
+
         static const uint32_t MAX_BASIC_QUADS = 1000;
         std::shared_ptr<ShaderAsset> basicShader = nullptr;
         std::unique_ptr<Pipeline> basicPipeline = nullptr;

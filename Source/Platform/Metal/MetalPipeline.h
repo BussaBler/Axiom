@@ -15,6 +15,7 @@ namespace Axiom {
         inline MTL::CullMode getCullMode() const { return cullMode; }
         inline MTL::TriangleFillMode getFillMode() const { return fillMode; }
         inline MTL::DepthStencilState* getDepthStencilState() const { return depthStencilState; }
+        inline MTL::PrimitiveType getPrimitiveType() const { return primitiveType; }
 
       private:
         MTL::Device* device;
@@ -22,6 +23,7 @@ namespace Axiom {
         MTL::Winding faceWinding;
         MTL::CullMode cullMode;
         MTL::TriangleFillMode fillMode;
+        MTL::PrimitiveType primitiveType;
         MTL::DepthStencilState* depthStencilState;
         std::unordered_map<ResourceLayout*, MTL::ArgumentEncoder*> argumentEncoders;
     };

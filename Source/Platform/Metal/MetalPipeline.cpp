@@ -49,6 +49,9 @@ namespace Axiom {
                 ? MTL::PrimitiveTopologyClassTriangle
                 : (createInfo.topology == PrimitiveTopology::LineList ? MTL::PrimitiveTopologyClassLine : MTL::PrimitiveTopologyClassPoint));
         pipelineDescriptor->setRasterizationEnabled(createInfo.polygonMode == PolygonMode::Fill);
+        primitiveType = createInfo.topology == PrimitiveTopology::TriangleList
+                            ? MTL::PrimitiveTypeTriangle
+                            : (createInfo.topology == PrimitiveTopology::LineList ? MTL::PrimitiveTypeLine : MTL::PrimitiveTypePoint);
 
         for (size_t i = 0; i < createInfo.colorAttachmentFormats.size(); i++) {
             pipelineDescriptor->colorAttachments()->object(i)->setPixelFormat(axToMetalPixelFormat(createInfo.colorAttachmentFormats[i]));

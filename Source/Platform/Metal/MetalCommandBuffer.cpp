@@ -57,6 +57,7 @@ namespace Axiom {
         renderEncoder->setCullMode(metalPipeline->getCullMode());
         renderEncoder->setDepthStencilState(metalPipeline->getDepthStencilState());
         renderEncoder->setTriangleFillMode(metalPipeline->getFillMode());
+        currentPipelinePrimitiveType = metalPipeline->getPrimitiveType();
     }
 
     void MetalCommandBuffer::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth) {
@@ -112,11 +113,11 @@ namespace Axiom {
     }
 
     void MetalCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
-        renderEncoder->drawPrimitives(MTL::PrimitiveTypeTriangle, firstVertex, vertexCount, instanceCount, firstInstance);
+        renderEncoder->drawPrimitives(currentPipelinePrimitiveType, firstVertex, vertexCount, instanceCount, firstInstance);
     }
 
     void MetalCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
-        renderEncoder->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, indexCount, MTL::IndexTypeUInt32,
+        renderEncoder->drawIndexedPrimitives(currentPipelinePrimitiveType, indexCount, MTL::IndexTypeUInt32,
                                              static_cast<MetalBuffer*>(currentIndexBuffer)->getHandle(), firstIndex * sizeof(uint32_t), instanceCount,
                                              vertexOffset, firstInstance);
     }

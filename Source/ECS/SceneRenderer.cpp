@@ -1,24 +1,21 @@
-#include "RenderSystem.h"
+#include "SceneRenderer.h"
 #include "Core/Application.h"
 
 namespace Axiom {
-    RenderSystem::RenderSystem() {
-        createSpriteRenderObjects();
+    SceneRenderer::SceneRenderer() {
+        createGeometryPassResources();
+        createGizmoPassResources();
     }
 
-    void RenderSystem::onUpdate(Registry* registry, float deltaTime) {
-    }
-
-    void RenderSystem::onRender(Registry* registry, CommandBuffer* commandBuffer, Texture* renderTarget, Texture* depthTarget, const Math::Mat4& projection,
-                                const Math::Mat4& view) {
+    void SceneRenderer::geometryPass(const SceneRenderPassData& data) {
         std::vector<SpriteInstance> instances;
         instances.reserve(MAX_SPRITE_QUADS);
         std::vector<Texture*> textureSlots = {Application::getRenderer()->getDefaultTexture()};
-        auto entities = registry->view<TransformComponent, Sprite2DComponent>();
+        auto entities = data.scene->view<TransformComponent, Sprite2DComponent>();
 
         for (uint32_t entityId : entities) {
-            auto& transform = registry->getComponent<TransformComponent>(entityId);
-            auto& sprite = registry->getComponent<Sprite2DComponent>(entityId);
+            auto& transform = data.scene->getEntity(entityId).getComponent<TransformComponent>();
+            auto& sprite = data.scene->getEntity(entityId).getComponent<Sprite2DComponent>();
             auto textureAsset = AssetManager::getAsset<TextureAsset>(sprite.textureId);
 
             int32_t textureSlotIndex = 0;
@@ -53,8 +50,8 @@ namespace Axiom {
         }
 
         spriteInstanceBuffer->setData<SpriteInstance>(instances);
-        Math::iVec2 renderTargetSize = renderTarget->getSize();
-        Math::Mat4 viewProjection = projection * view;
+        Math::iVec2 renderTargetSize = data.renderTarget->getSize();
+        Math::Mat4 viewProjection = data.projection * data.view;
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture;
@@ -65,24 +62,44 @@ namespace Axiom {
         resourceSetBindings[1].samplers = {Application::getRenderer()->getLinearSampler()};
         spriteResourceSets[1]->update(resourceSetBindings);
 
-        spriteRenderPass.colorAttachments[0].texture = renderTarget;
+        spriteRenderPass.colorAttachments[0].texture = data.renderTarget;
         spriteRenderPass.width = renderTargetSize.x();
         spriteRenderPass.height = renderTargetSize.y();
-        spriteRenderPass.depthAttachment.texture = depthTarget;
+        spriteRenderPass.depthAttachment.texture = data.depthTarget;
 
-        commandBuffer->beginRendering(spriteRenderPass);
-        commandBuffer->bindPipeline(spritePipeline.get());
-        commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
-        commandBuffer->bindVertexBuffers({spriteVertexBuffer.get()});
-        commandBuffer->bindIndexBuffer(spriteIndexBuffer.get());
-        commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
-        commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
-        commandBuffer->bindResources({spriteResourceSets[0].get(), spriteResourceSets[1].get()});
-        commandBuffer->drawIndexed(6, instances.size(), 0, 0, 0);
-        commandBuffer->endRendering();
+        data.commandBuffer->beginRendering(spriteRenderPass);
+        data.commandBuffer->bindPipeline(spritePipeline.get());
+        data.commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
+        data.commandBuffer->bindVertexBuffers({spriteVertexBuffer.get()});
+        data.commandBuffer->bindIndexBuffer(spriteIndexBuffer.get());
+        data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->bindResources({spriteResourceSets[0].get(), spriteResourceSets[1].get()});
+        data.commandBuffer->drawIndexed(6, instances.size(), 0, 0, 0);
+        data.commandBuffer->endRendering();
     }
 
-    void RenderSystem::createSpriteRenderObjects() {
+    void SceneRenderer::gizmoPass(const SceneRenderPassData& data, const Math::Vec3& gizmoPosition) {
+        Math::Mat4 model = Math::Mat4::model(gizmoPosition, Math::Vec3::zero(), Math::Vec3(1.0f));
+        Math::Mat4 viewProjection = data.projection * data.view * model;
+
+        Math::iVec2 renderTargetSize = data.renderTarget->getSize();
+        gizmoRenderPass.colorAttachments[0].texture = data.renderTarget;
+        gizmoRenderPass.width = renderTargetSize.x();
+        gizmoRenderPass.height = renderTargetSize.y();
+        gizmoRenderPass.depthAttachment.texture = data.depthTarget;
+
+        data.commandBuffer->beginRendering(gizmoRenderPass);
+        data.commandBuffer->bindPipeline(gizmoPipeline.get());
+        data.commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
+        data.commandBuffer->bindVertexBuffers({gizmoVertexBuffer.get()});
+        data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->draw(6, 1, 0);
+        data.commandBuffer->endRendering();
+    }
+
+    void SceneRenderer::createGeometryPassResources() {
         UUID spriteShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.Sprite2D.axs");
         spriteShader = AssetManager::getAsset<ShaderAsset>(spriteShaderHandle);
 
@@ -129,7 +146,7 @@ namespace Axiom {
 
         std::vector<VertexBindingDescription> vertexBindings = {{.binding = 0, .stride = sizeof(SpriteVertex), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> vertexAttributes = {
-            {.location = 0, .binding = 0, .format = Format::R32G32Sfloat, .offset = offsetof(SpriteVertex, pos)},
+            {.location = 0, .binding = 0, .format = Format::R32G32Sfloat, .offset = offsetof(SpriteVertex, position)},
             {.location = 1, .binding = 0, .format = Format::R32G32Sfloat, .offset = offsetof(SpriteVertex, uv)},
         };
 
@@ -172,5 +189,52 @@ namespace Axiom {
         spriteResourceSets.push_back(spritePipeline->createResourceSet(spriteResourceLayouts[0].get()));
         spriteResourceSets.push_back(spritePipeline->createResourceSet(spriteResourceLayouts[1].get()));
         spriteResourceSets[0]->update(resourceSetBindings);
+    }
+
+    void SceneRenderer::createGizmoPassResources() {
+        UUID gizmoShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.Gizmo.axs");
+        gizmoShader = AssetManager::getAsset<ShaderAsset>(gizmoShaderHandle);
+
+        Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(GizmoVertex) * 2 * 3, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
+        gizmoVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        Buffer::CreateInfo stagingBufferCreateInfo = {
+            .size = sizeof(GizmoVertex) * 2 * 3, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+        std::unique_ptr<Buffer> stagingBuffer = Application::getRenderer()->createBuffer(stagingBufferCreateInfo);
+        std::vector<GizmoVertex> vertices = {
+            {{0.0f, 0.0f, 0.0f, 1.0f}, Color::red()},     {{100.0f, 0.0f, 0.0f, 1.0f}, Color::red()}, {{0.0f, 0.0f, 0.0f, 1.0f}, Color::green()},
+            {{0.0f, 100.0f, 0.0f, 1.0f}, Color::green()}, {{0.0f, 0.0f, 0.0f, 1.0f}, Color::blue()},  {{0.0f, 0.0f, 100.0f, 1.0f}, Color::blue()},
+        };
+        stagingBuffer->setData<GizmoVertex>(vertices);
+        auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        commandBuffer->copyBuffer(stagingBuffer.get(), gizmoVertexBuffer.get(), vertexBufferCreateInfo.size);
+        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+
+        RenderAttachment colorAttachment{};
+        colorAttachment.loadOp = LoadOp::Load;
+        colorAttachment.storeOp = StoreOp::Store;
+        colorAttachment.clearColor = Color::transparent();
+        gizmoRenderPass.colorAttachments[0] = colorAttachment;
+        gizmoRenderPass.colorAttachmentCount = 1;
+
+        std::vector<VertexBindingDescription> vertexBindings = {{.binding = 0, .stride = sizeof(GizmoVertex), .inputRate = VertexInputRate::Vertex}};
+        std::vector<VertexAttributeDescription> vertexAttributes = {
+            {.location = 0, .binding = 0, .format = Format::R32G32B32Sfloat, .offset = offsetof(GizmoVertex, position)},
+            {.location = 1, .binding = 0, .format = Format::R32G32B32A32Sfloat, .offset = offsetof(GizmoVertex, color)},
+        };
+
+        Pipeline::CreateInfo pipelineCreateInfo = {.shader = gizmoShader->getShader(),
+                                                   .vertexBindings = vertexBindings,
+                                                   .vertexAttributes = vertexAttributes,
+                                                   .topology = PrimitiveTopology::LineList,
+                                                   .polygonMode = PolygonMode::Fill,
+                                                   .cullMode = CullMode::None,
+                                                   .frontFaceClockwise = true,
+                                                   .enableBlending = true,
+                                                   .enableDepthTest = false,
+                                                   .enableDepthWrite = false,
+                                                   .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
+                                                   .depthAttachmentFormat = Format::Undefined,
+                                                   .resourceLayouts = {}};
+        gizmoPipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
     }
 } // namespace Axiom

@@ -9,6 +9,7 @@
 #include "ECS/Component.h"
 #include "ECS/Entity.h"
 #include "ECS/Scene.h"
+#include "ECS/SceneRenderer.h"
 #include "Event/KeyCodes.h"
 #include "Math/AxMath.h"
 #include "Math/Color.h"

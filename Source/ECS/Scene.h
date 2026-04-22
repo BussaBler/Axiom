@@ -2,7 +2,6 @@
 #include "Entity.h"
 #include "PhysicsSystem.h"
 #include "Registry.h"
-#include "RenderSystem.h"
 #include "SystemManager.h"
 
 namespace Axiom {
@@ -18,8 +17,6 @@ namespace Axiom {
         template <typename... Components> View view() { return registry->view<Components...>(); }
 
         void onUpdate(float deltaTime);
-        void onRender(CommandBuffer* commandBuffer, Texture* renderTarget, Texture* depthTarget);
-        void onRender(CommandBuffer* commandBuffer, Texture* renderTarget, Texture* depthTarget, const Math::Mat4& projection, const Math::Mat4& view);
 
         // TODO: maybe make register component and system public so the scene doesn't
         // have to keep track of them? Or maybe make a scene builder that handles all of this?
@@ -37,6 +34,5 @@ namespace Axiom {
         std::unique_ptr<Registry> registry;
         std::unique_ptr<SystemManager> systemManager;
         std::shared_ptr<PhysicsSystem> physicsSystem;
-        std::shared_ptr<RenderSystem> renderSystem;
     };
 } // namespace Axiom
