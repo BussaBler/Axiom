@@ -30,12 +30,12 @@ namespace Axiom {
 
       private:
         // geometry pass data
+        RenderPass geometryRenderPass;
         // 2d objects
-        static const uint32_t MAX_SPRITE_QUADS = 1000;
+        static const uint32_t MAX_SPRITE_INSTANCES = 1000;
         static const uint8_t MAX_TEXTURE_SLOTS = 16;
         std::shared_ptr<ShaderAsset> spriteShader = nullptr;
         std::unique_ptr<Pipeline> spritePipeline = nullptr;
-        RenderPass spriteRenderPass;
         std::unique_ptr<Buffer> spriteVertexBuffer = nullptr;
         std::unique_ptr<Buffer> spriteIndexBuffer = nullptr;
         std::unique_ptr<Buffer> spriteInstanceBuffer = nullptr;
@@ -49,6 +49,16 @@ namespace Axiom {
         struct SpriteVertex {
             Math::Vec2 position;
             Math::Vec2 uv;
+        };
+        // 3d objects
+        static const uint32_t MAX_MESH_INSTANCES = 1000;
+        std::shared_ptr<ShaderAsset> meshShader = nullptr;
+        std::unique_ptr<Pipeline> meshPipeline = nullptr;
+        std::unique_ptr<Buffer> meshInstanceBuffer = nullptr;
+        std::vector<std::unique_ptr<ResourceLayout>> meshResourceLayouts;
+        std::vector<std::unique_ptr<ResourceSet>> meshResourceSets;
+        struct MeshInstance {
+            Math::Mat4 model;
         };
 
         // gizmo pass data

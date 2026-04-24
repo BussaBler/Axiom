@@ -32,4 +32,8 @@ namespace Axiom {
         Color color = Color::white();
     };
 
+    struct MeshComponent {
+        UUID meshId;
+    };
+
 } // namespace Axiom

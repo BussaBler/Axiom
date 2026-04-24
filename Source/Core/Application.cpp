@@ -20,9 +20,11 @@ namespace Axiom {
         renderer = std::make_unique<Renderer>(window.get());
         uiContext = std::make_unique<UIContext>();
         UI::init(*uiContext);
+        AssetManager::init();
     }
 
     Application::~Application() {
+        AssetManager::shutdown();
     }
 
     void Application::onEvent(Event& event) {

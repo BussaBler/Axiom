@@ -6,6 +6,10 @@
 namespace Axiom {
     std::unordered_map<UUID, std::shared_ptr<Asset>> AssetManager::assets;
     std::unordered_map<std::string, UUID> AssetManager::assetHandles;
+    std::unique_ptr<Buffer> AssetManager::globalVertexBuffer;
+    std::unique_ptr<Buffer> AssetManager::globalIndexBuffer;
+    uint32_t AssetManager::currentVertexCount = 0;
+    uint32_t AssetManager::currentIndexCount = 0;
 
     UUID AssetManager::loadTexture(const std::filesystem::path& path) {
         std::string cacheString = path.generic_string();
@@ -92,36 +96,54 @@ namespace Axiom {
                 vertices.push_back(vertex);
             }
 
-            Buffer::CreateInfo vertexBufferCreateInfo = {
-                .size = vertices.size() * sizeof(MeshVertex), .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUOnly};
-            std::unique_ptr<Buffer> vertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+            uint32_t vertexCount = vertices.size();
+            uint32_t indexCount = modelResult->indices.size();
+            uint32_t vertexBytes = vertexCount * sizeof(MeshVertex);
+            uint32_t indexBytes = indexCount * sizeof(uint32_t);
 
-            Buffer::CreateInfo indexBufferCreateInfo = {
-                .size = modelResult->indices.size() * sizeof(uint32_t), .usage = BufferUsage::Index, .memoryUsage = MemoryUsage::GPUOnly};
-            std::unique_ptr<Buffer> indexBuffer = Application::getRenderer()->createBuffer(indexBufferCreateInfo);
+            Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+            std::unique_ptr<Buffer> vertexStaging = Application::getRenderer()->createBuffer(vertexStagingInfo);
+            vertexStaging->setData(vertices.data(), vertexBytes);
 
-            Buffer::CreateInfo stagingVertexBufferCreateInfo = {
-                .size = vertices.size() * sizeof(MeshVertex), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> stagingVertexBuffer = Application::getRenderer()->createBuffer(stagingVertexBufferCreateInfo);
-            stagingVertexBuffer->setData(vertices.data(), vertices.size() * sizeof(MeshVertex));
+            Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+            std::unique_ptr<Buffer> indexStaging = Application::getRenderer()->createBuffer(indexStagingInfo);
+            indexStaging->setData(modelResult->indices.data(), indexBytes);
 
-            Buffer::CreateInfo stagingIndexBufferCreateInfo = {
-                .size = modelResult->indices.size() * sizeof(uint32_t), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> stagingIndexBuffer = Application::getRenderer()->createBuffer(stagingIndexBufferCreateInfo);
-            stagingIndexBuffer->setData(modelResult->indices.data(), modelResult->indices.size() * sizeof(uint32_t));
-
-            std::unique_ptr<CommandBuffer> commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
-            commandBuffer->copyBuffer(stagingVertexBuffer.get(), vertexBuffer.get(), vertices.size() * sizeof(MeshVertex));
-            commandBuffer->copyBuffer(stagingIndexBuffer.get(), indexBuffer.get(), modelResult->indices.size() * sizeof(uint32_t));
+            auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+            uint32_t vertexByteDstOffset = currentVertexCount * sizeof(MeshVertex);
+            uint32_t indexByteDstOffset = currentIndexCount * sizeof(uint32_t);
+            commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, vertexByteDstOffset);
+            commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, indexByteDstOffset);
             Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
-            assets[handle] =
-                std::make_shared<MeshAsset>(handle, path.filename().string(), std::move(vertexBuffer), std::move(indexBuffer), modelResult->indices.size());
+            assets[handle] = std::make_shared<MeshAsset>(handle, path.filename().string(), currentVertexCount, currentIndexCount, modelResult->indices.size());
             assetHandles[cacheString] = handle;
+
+            currentVertexCount += vertexCount;
+            currentIndexCount += indexCount;
             return handle;
         }
 
         AX_CORE_LOG_ERROR("Failed to load mesh: {}", modelResult.error());
         return 0;
+    }
+
+    void AssetManager::init() {
+        uint64_t globalBufferSize = Math::megabytes(512);
+
+        Buffer::CreateInfo vertexBufferCreateInfo = {
+            .size = globalBufferSize, .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        globalVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        Buffer::CreateInfo indexBufferCreateInfo = {
+            .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        globalIndexBuffer = Application::getRenderer()->createBuffer(indexBufferCreateInfo);
+    }
+
+    void AssetManager::shutdown() {
+        assets.clear();
+        assetHandles.clear();
+
+        globalVertexBuffer.reset();
+        globalIndexBuffer.reset();
     }
 } // namespace Axiom

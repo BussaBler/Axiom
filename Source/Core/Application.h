@@ -1,5 +1,6 @@
 #pragma once
 #include "Assert.h"
+#include "Asset/AssetManager.h"
 #include "ECS/Scene.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"

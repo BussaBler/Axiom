@@ -106,4 +106,12 @@ namespace Math {
         auto eng = axRandomEngine(seed);
         return distribution(eng);
     }
+
+    uint32_t megabytes(uint32_t mb) {
+        return mb * 1024 * 1024;
+    }
+
+    uint32_t gigabytes(uint32_t gb) {
+        return gb * 1024 * 1024 * 1024;
+    }
 } // namespace Math

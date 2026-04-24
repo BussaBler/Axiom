@@ -40,6 +40,10 @@ namespace Math {
     // Returns a random integer in the range [min, max]
     int randomInt(int min, int max);
     int randomInt(int min, int max, float seed);
+
+    // ------- Axiom Math Utilities -------
+    uint32_t megabytes(uint32_t mb);
+    uint32_t gigabytes(uint32_t gb);
 } // namespace Math
 
 // TODO: implement SIMD versions of these types and improve the overall implementation

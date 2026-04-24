@@ -9,6 +9,7 @@ namespace Axiom {
         registry->registerComponent<TransformComponent>();
         registry->registerComponent<PhysicsComponent>();
         registry->registerComponent<Sprite2DComponent>();
+        registry->registerComponent<MeshComponent>();
         registry->registerComponent<CameraComponent>();
 
         physicsSystem = registerSystem<PhysicsSystem, TransformComponent, PhysicsComponent>();

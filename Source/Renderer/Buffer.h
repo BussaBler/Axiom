@@ -36,8 +36,6 @@ namespace Axiom {
 
         virtual uint32_t getSize() const = 0;
         virtual void setData(const void* data, uint64_t size, uint64_t offset = 0) = 0;
-        template <typename T> void setData(std::span<T> data, uint64_t offset = 0) {
-            setData(data.data(), data.size() * sizeof(T), offset);
-        }
+        template <typename T> void setData(std::span<const T> data, uint64_t offset = 0) { setData(data.data(), data.size() * sizeof(T), offset); }
     };
 } // namespace Axiom
