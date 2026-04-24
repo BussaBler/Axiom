@@ -5,12 +5,13 @@
 namespace Axiom {
     class TextureAsset : public Asset {
       public:
-        TextureAsset(UUID handle, const std::string& name, std::shared_ptr<Texture> texture) : Asset(handle, AssetType::Texture, name), texture(texture) {}
+        TextureAsset(UUID handle, const std::string& name, std::unique_ptr<Texture> texture)
+            : Asset(handle, AssetType::Texture, name), texture(std::move(texture)) {}
         ~TextureAsset() = default;
 
-        inline std::shared_ptr<Texture> getTexture() const { return texture; }
+        inline Texture* getTexture() const { return texture.get(); }
 
       private:
-        std::shared_ptr<Texture> texture;
+        std::unique_ptr<Texture> texture;
     };
 } // namespace Axiom

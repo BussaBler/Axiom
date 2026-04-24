@@ -49,8 +49,8 @@ namespace Axiom {
         return std::make_unique<MetalSwapChain>(metalDevice, metalLayer, width, height);
     }
 
-    std::shared_ptr<Shader> MetalDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
-        return std::make_shared<MetalShader>(vertexSource, fragmentSource, metalDevice);
+    std::unique_ptr<Shader> MetalDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
+        return std::make_unique<MetalShader>(vertexSource, fragmentSource, metalDevice);
     }
 
     std::unique_ptr<Pipeline> MetalDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
@@ -65,8 +65,8 @@ namespace Axiom {
         return std::make_unique<MetalBuffer>(bufferCreateInfo, metalDevice);
     }
 
-    std::shared_ptr<Texture> MetalDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
-        return std::make_shared<MetalTexture>(textureCreateInfo, metalDevice);
+    std::unique_ptr<Texture> MetalDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
+        return std::make_unique<MetalTexture>(textureCreateInfo, metalDevice);
     }
 
     std::unique_ptr<Sampler> MetalDevice::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {

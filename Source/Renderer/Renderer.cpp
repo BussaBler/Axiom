@@ -54,7 +54,7 @@ namespace Axiom {
         }
     }
 
-    std::shared_ptr<Shader> Renderer::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
+    std::unique_ptr<Shader> Renderer::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
         return device->createShader(vertexSource, fragmentSource);
     }
 
@@ -66,7 +66,7 @@ namespace Axiom {
         return device->createBuffer(bufferCreateInfo);
     }
 
-    std::shared_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo& textureCreateInfo) {
+    std::unique_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo& textureCreateInfo) {
         return device->createTexture(textureCreateInfo);
     }
 

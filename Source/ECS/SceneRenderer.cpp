@@ -21,7 +21,7 @@ namespace Axiom {
             int32_t textureSlotIndex = 0;
 
             if (textureAsset) {
-                Texture* rawTexture = textureAsset->getTexture().get();
+                Texture* rawTexture = textureAsset->getTexture();
                 bool found = false;
                 for (uint32_t i = 0; i < textureSlots.size(); i++) {
                     if (textureSlots[i] == rawTexture) {

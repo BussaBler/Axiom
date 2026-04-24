@@ -5,13 +5,12 @@
 namespace Axiom {
     class ShaderAsset : public Asset {
       public:
-        ShaderAsset(UUID handle, const std::string& name, std::shared_ptr<Shader> shader) : Asset(handle, AssetType::Shader, name), shader(shader) {};
+        ShaderAsset(UUID handle, const std::string& name, std::unique_ptr<Shader> shader) : Asset(handle, AssetType::Shader, name), shader(std::move(shader)) {}
         ~ShaderAsset() = default;
 
-        inline std::shared_ptr<Shader> getShader() const { return shader; }
-        inline Shader* getShader() { return shader.get(); }
+        inline Shader* getShader() const { return shader.get(); }
 
       private:
-        std::shared_ptr<Shader> shader;
+        std::unique_ptr<Shader> shader;
     };
 }

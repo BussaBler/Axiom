@@ -1,4 +1,4 @@
-Import('baseEnv', 'debugEnv', 'releaseEnv', 'buildInfo', 'axImageLoaderLib', 'spirvCrossLib')
+Import('baseEnv', 'debugEnv', 'releaseEnv', 'buildInfo', 'axImageLoaderLib', 'spirvCrossLib', 'axModelLoaderLib')
 
 from SCons.Script import Dir, Return
 
@@ -54,14 +54,16 @@ localEnv.Append(
     CPPPATH=[
         Dir('#/Axiom/Source'),
         Dir('#/Vendor/AxImageLoader/Include'),
+        Dir('#/Vendor/AxModelLoader/Include'),
         Dir('#/Vendor/SpirvCross'),
     ],
     LIBPATH=[
         Dir(f'#/Bin/{configName}/AxImageLoader'),
+        Dir(f'#/Bin/{configName}/AxModelLoader'),
         Dir(f'#/Bin/{configName}/SpirvCross'),
     ]
 )
-localEnv.Prepend(LIBS=[axImageLoaderLib, spirvCrossLib])
+localEnv.Prepend(LIBS=[axImageLoaderLib, spirvCrossLib, axModelLoaderLib])
 
 axiomLib = localEnv.StaticLibrary(f'#/Bin/{configName}/Axiom/Axiom', sources)
 

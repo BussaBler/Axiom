@@ -1,5 +1,6 @@
 #pragma once
 #include "Asset.h"
+#include "MeshAsset.h"
 #include "ShaderAsset.h"
 #include "TextureAsset.h"
 #include "axpch.h"
@@ -16,6 +17,7 @@ namespace Axiom {
 
         static UUID loadTexture(const std::filesystem::path& path);
         static UUID loadShader(const std::filesystem::path& path);
+        static UUID loadMesh(const std::filesystem::path& path);
 
       private:
         static std::unordered_map<UUID, std::shared_ptr<Asset>> assets;

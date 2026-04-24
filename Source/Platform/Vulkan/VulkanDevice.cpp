@@ -98,8 +98,8 @@ namespace Axiom {
         return std::make_unique<VulkanSwapChain>(createInfo);
     }
 
-    std::shared_ptr<Shader> VulkanDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
-        return std::make_shared<VulkanShader>(logicalDevice, vertexSource, fragmentSource);
+    std::unique_ptr<Shader> VulkanDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
+        return std::make_unique<VulkanShader>(logicalDevice, vertexSource, fragmentSource);
     }
 
     std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
@@ -114,8 +114,8 @@ namespace Axiom {
         return std::make_unique<VulkanBuffer>(logicalDevice, bufferCreateInfo);
     }
 
-    std::shared_ptr<Texture> VulkanDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
-        return std::make_shared<VulkanTexture>(logicalDevice, textureCreateInfo);
+    std::unique_ptr<Texture> VulkanDevice::createTexture(const Texture::CreateInfo& textureCreateInfo) {
+        return std::make_unique<VulkanTexture>(logicalDevice, textureCreateInfo);
     }
 
     std::unique_ptr<Sampler> VulkanDevice::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {

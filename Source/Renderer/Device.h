@@ -38,11 +38,11 @@ namespace Axiom {
         static std::unique_ptr<Device> create(const CreateInfo& createInfo);
 
         virtual std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) = 0;
-        virtual std::shared_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource) = 0;
+        virtual std::unique_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource) = 0;
         virtual std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) = 0;
         virtual std::unique_ptr<CommandBuffer> createCommandBuffer() = 0;
         virtual std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) = 0;
-        virtual std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) = 0;
+        virtual std::unique_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) = 0;
         virtual std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo) = 0;
         virtual std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) = 0;
         virtual bool beginFrame(SwapChain* swapChain) = 0;

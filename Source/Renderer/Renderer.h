@@ -12,10 +12,10 @@ namespace Axiom {
         CommandBuffer* beginFrame();
         void endFrame();
 
-        std::shared_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource);
+        std::unique_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource);
         std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo);
         std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo);
-        std::shared_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);
+        std::unique_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);
         std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo);
         std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings);
 
@@ -47,7 +47,7 @@ namespace Axiom {
         Texture::Barrier renderTargetBarrier;
         Texture::Barrier presentBarrier;
         Texture::Barrier depthBarrier;
-        std::shared_ptr<Texture> defaultTexture = nullptr;
+        std::unique_ptr<Texture> defaultTexture = nullptr;
         std::unique_ptr<Sampler> linearSampler = nullptr;
         std::unique_ptr<Sampler> nearestSampler = nullptr;
     };
