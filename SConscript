@@ -36,12 +36,12 @@ coreSources += Glob('Source/*/*.cpp')
 coreSources += Glob('Source/UI/MSDFGen/core/*.cpp')
 
 if renderer.lower() == 'vulkan':
-    rendererSources = Glob('Source/Platform/Vulkan/*.cpp')
+    rendererSources = Glob('Source/Renderer/Backend/Vulkan/*.cpp')
 elif renderer.lower() == 'metal':
-    rendererSources = Glob('Source/Platform/Metal/*.cpp')
-    rendererSources += Glob('Source/Platform/Metal/*.mm')
+    rendererSources = Glob('Source/Renderer/Backend/Metal/*.cpp')
+    rendererSources += Glob('Source/Renderer/Backend/Metal/*.mm')
 elif renderer.lower() == 'dx12': 
-    rendererSources = Glob('Source/Platform/DX12/*.cpp')
+    rendererSources = Glob('Source/Renderer/Backend/DX12/*.cpp')
 
 sources = coreSources + rendererSources
 platformSpecificSources = configurePlatform(localEnv, platform)

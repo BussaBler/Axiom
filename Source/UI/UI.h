@@ -1,4 +1,5 @@
 #pragma once
+#include "ECS/Component.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 #include "Font.h"
@@ -79,6 +80,28 @@ namespace Axiom {
         static bool treeNode(const std::string& label);
         static void treePop();
         static void image(Texture* texture, const Math::Vec2& size);
+        template <typename T> static void component(void* componentData) {
+            auto& fields = TypeRegistry::getFields(typeid(T));
+            for (const FieldInfo& field : fields) {
+                void* fieldAdress = static_cast<char*>(componentData) + field.offset;
+                switch (field.type) {
+                case FieldType::Float: {
+                    float* fieldValue = static_cast<float*>(fieldAdress);
+                    dragFloat(field.name, *fieldValue);
+                    break;
+                }
+                case FieldType::Vec3: {
+                    Math::Vec3* fieldValue = static_cast<Math::Vec3*>(fieldAdress);
+                    dragFloat(field.name + " X", fieldValue->x());
+                    dragFloat(field.name + " Y", fieldValue->y());
+                    dragFloat(field.name + " Z", fieldValue->z());
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+        }
         // returns the width avaible for the current panel
         static float getAvaibleWidth();
         static const UIStyle& getCurrentStyle() { return style; }

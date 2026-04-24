@@ -3,6 +3,20 @@
 
 namespace Axiom {
     SceneRenderer::SceneRenderer() {
+        std::vector<ResourceLayout::BindingCreateInfo> globalDataLayoutBindings(1);
+        globalDataLayoutBindings[0].binding = 0;
+        globalDataLayoutBindings[0].type = ResourceType::UniformBuffer;
+        globalDataLayoutBindings[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
+        globalDataLayoutBindings[0].count = 1;
+        globalDataResourceLayout = Application::getRenderer()->createResourceLayout(globalDataLayoutBindings);
+
+        Buffer::CreateInfo globalDataBufferCreateInfo = {
+            .size = sizeof(GlobalData),
+            .usage = BufferUsage::Uniform,
+            .memoryUsage = MemoryUsage::GPUandCPU,
+        };
+        globalDataBuffer = Application::getRenderer()->createBuffer(globalDataBufferCreateInfo);
+
         createGeometryPassResources();
         createGizmoPassResources();
     }
@@ -55,6 +69,20 @@ namespace Axiom {
             meshBatches[mesh.meshId].push_back({model});
         }
 
+        GlobalData globalData = {.ambientColor = Color::gray()};
+        auto directionalLightEntities = data.scene->view<TransformComponent, DirectionalLightComponent>();
+
+        for (uint32_t entityId : directionalLightEntities) {
+            auto& transform = data.scene->getEntity(entityId).getComponent<TransformComponent>();
+            auto& directionalLight = data.scene->getEntity(entityId).getComponent<DirectionalLightComponent>();
+            Math::Mat4 rotation = Math::Mat4::model(Math::Vec3::zero(), transform.rotation, Math::Vec3::one());
+            Math::Vec3 lightDir = rotation.getForward();
+
+            globalData.directionalLightColor = directionalLight.color;
+            globalData.directionalLightDirection = Math::Vec4(lightDir.x(), lightDir.y(), lightDir.z(), 0.0f);
+            break; // Only support one directional light for now
+        }
+
         Math::iVec2 renderTargetSize = data.renderTarget->getSize();
         Math::Mat4 viewProjection = data.projection * data.view;
         geometryRenderPass.colorAttachments[0].texture = data.renderTarget;
@@ -86,6 +114,8 @@ namespace Axiom {
         }
 
         if (!meshBatches.empty()) {
+            globalDataBuffer->setData(&globalData, sizeof(GlobalData));
+
             data.commandBuffer->bindPipeline(meshPipeline.get());
             data.commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
             data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
@@ -102,7 +132,7 @@ namespace Axiom {
 
                 meshInstanceBuffer->setData<MeshInstance>(meshInstances);
 
-                data.commandBuffer->bindResources({meshResourceSets[0].get()});
+                data.commandBuffer->bindResources({globalDataResourceSet.get(), meshResourceSets[0].get()});
                 data.commandBuffer->drawIndexed(meshAsset->getIndexCount(), meshInstances.size(), meshAsset->getIndexOffset(), meshAsset->getVertexOffset(), 0);
             }
         }
@@ -262,10 +292,17 @@ namespace Axiom {
                                                        .enableDepthWrite = true,
                                                        .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
                                                        .depthAttachmentFormat = Application::getRenderer()->getDepthTextureFormat(),
-                                                       .resourceLayouts = {meshResourceLayouts.back().get()}};
+                                                       .resourceLayouts = {globalDataResourceLayout.get(), meshResourceLayouts.back().get()}};
         meshPipeline = Application::getRenderer()->createPipeline(meshPipelineCreateInfo);
         meshResourceSets.push_back(meshPipeline->createResourceSet(meshResourceLayouts.back().get()));
         meshResourceSets.back()->update(meshResourceSetBindings);
+        globalDataResourceSet = meshPipeline->createResourceSet(globalDataResourceLayout.get());
+        std::vector<ResourceSet::Binding> globalDataSetBindings(1);
+        globalDataSetBindings[0].binding = 0;
+        globalDataSetBindings[0].type = ResourceType::UniformBuffer;
+        globalDataSetBindings[0].buffers = {globalDataBuffer.get()};
+        globalDataSetBindings[0].maxNumberOfResources = 1;
+        globalDataResourceSet->update(globalDataSetBindings);
     }
 
     void SceneRenderer::createGizmoPassResources() {

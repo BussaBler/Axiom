@@ -29,6 +29,15 @@ namespace Axiom {
         void createGizmoPassResources();
 
       private:
+        std::unique_ptr<ResourceLayout> globalDataResourceLayout;
+        std::unique_ptr<ResourceSet> globalDataResourceSet;
+        std::unique_ptr<Buffer> globalDataBuffer;
+        struct GlobalData {
+            Math::Vec4 ambientColor;
+            Math::Vec4 directionalLightDirection;
+            Math::Vec4 directionalLightColor;
+        };
+
         // geometry pass data
         RenderPass geometryRenderPass;
         // 2d objects
