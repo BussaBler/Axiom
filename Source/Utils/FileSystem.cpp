@@ -34,7 +34,7 @@ namespace Axiom {
     }
 
     void FileSystem::writeFile(const std::filesystem::path& filePath, std::vector<uint8_t>& data) {
-        std::ofstream out{filePath, std::ios::binary};
+        std::ofstream out{filePath, std::ios::binary | std::ios::trunc};
         if (!out)
             AX_CORE_LOG_ERROR("Could not write the file: {0}", filePath.string());
         out.write(reinterpret_cast<const char*>(data.data()), data.size());

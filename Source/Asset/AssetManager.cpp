@@ -2,23 +2,41 @@
 #include "AxImageLoader.h"
 #include "AxModelLoader.h"
 #include "Core/Application.h"
+#include "Utils/JSONSerializer.h"
 
 namespace Axiom {
-    std::unordered_map<UUID, std::shared_ptr<Asset>> AssetManager::assets;
+    std::unordered_map<UUID, AssetMetadata> AssetManager::registry;
+    std::unordered_map<UUID, std::shared_ptr<Asset>> AssetManager::loadedAssets;
     std::unordered_map<std::string, UUID> AssetManager::assetHandles;
+
     std::unique_ptr<Buffer> AssetManager::globalVertexBuffer;
     std::unique_ptr<Buffer> AssetManager::globalIndexBuffer;
     uint32_t AssetManager::currentVertexCount = 0;
     uint32_t AssetManager::currentIndexCount = 0;
 
-    UUID AssetManager::loadTexture(const std::filesystem::path& path) {
+    UUID AssetManager::importAsset(const std::filesystem::path& path, AssetType type) {
         std::string cacheString = path.generic_string();
         if (assetHandles.find(cacheString) != assetHandles.end()) {
             return assetHandles[cacheString];
         }
 
-        UUID handle = UUID();
+        if (!FileSystem::exists(path)) {
+            AX_CORE_LOG_ERROR("Tried to import an asset that does not exist: {}", path.generic_string());
+            return 0;
+        }
 
+        UUID newID = UUID();
+        AssetMetadata meta;
+        meta.filePath = path;
+        meta.type = type;
+
+        registry[newID] = meta;
+        assetHandles[cacheString] = newID;
+
+        return newID;
+    }
+
+    std::shared_ptr<Asset> AssetManager::loadTexture(const std::filesystem::path& path, UUID uuid) {
         auto imageResult = AxImageLoader::loadImage(path, 4);
 
         if (imageResult.has_value()) {
@@ -43,24 +61,14 @@ namespace Axiom {
             commandBuffer->copyBufferToTexture(stagingBuffer.get(), texture.get(), imageResult->width, imageResult->height);
             Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
-            assets[handle] = std::make_shared<TextureAsset>(handle, path.filename().string(), std::move(texture));
-            assetHandles[cacheString] = handle;
-            return handle;
+            return std::make_shared<TextureAsset>(uuid, path.filename().string(), std::move(texture));
         }
 
-        AX_CORE_LOG_ERROR("Failed to load texture: {}", imageResult.error());
-
-        return 0;
+        AX_CORE_LOG_ERROR("Failed to load texture({}): {}", uint64_t(uuid), imageResult.error());
+        return nullptr;
     }
 
-    UUID AssetManager::loadShader(const std::filesystem::path& path) {
-        std::string cacheString = path.generic_string();
-        if (assetHandles.find(cacheString) != assetHandles.end()) {
-            return assetHandles[cacheString];
-        }
-
-        UUID handle = UUID();
-
+    std::shared_ptr<Asset> AssetManager::loadShader(const std::filesystem::path& path, UUID uuid) {
         auto source = FileSystem::readFileStr(path);
 
         size_t vertexPos = source.find("#type vertex");
@@ -70,19 +78,10 @@ namespace Axiom {
         std::string fragmentSource = source.substr(fragmentPos + 15, std::string::npos);
 
         std::unique_ptr<Shader> shader = Application::getRenderer()->createShader(vertexSource, fragmentSource);
-        assets[handle] = std::make_shared<ShaderAsset>(handle, path.filename().string(), std::move(shader));
-        assetHandles[cacheString] = handle;
-        return handle;
+        return std::make_shared<ShaderAsset>(uuid, path.filename().string(), std::move(shader));
     }
 
-    UUID AssetManager::loadMesh(const std::filesystem::path& path) {
-        std::string cacheString = path.generic_string();
-        if (assetHandles.find(cacheString) != assetHandles.end()) {
-            return assetHandles[cacheString];
-        }
-
-        UUID handle = UUID();
-
+    std::shared_ptr<Asset> AssetManager::loadMesh(const std::filesystem::path& path, UUID uuid) {
         auto modelResult = AxModelLoader::loadModel(path);
 
         if (modelResult.has_value()) {
@@ -116,16 +115,15 @@ namespace Axiom {
             commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, indexByteDstOffset);
             Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
-            assets[handle] = std::make_shared<MeshAsset>(handle, path.filename().string(), currentVertexCount, currentIndexCount, modelResult->indices.size());
-            assetHandles[cacheString] = handle;
-
             currentVertexCount += vertexCount;
             currentIndexCount += indexCount;
-            return handle;
+
+            return std::make_shared<MeshAsset>(uuid, path.filename().string(), currentVertexCount - vertexCount, currentIndexCount - indexCount,
+                                               modelResult->indices.size());
         }
 
         AX_CORE_LOG_ERROR("Failed to load mesh: {}", modelResult.error());
-        return 0;
+        return nullptr;
     }
 
     void AssetManager::init() {
@@ -137,13 +135,64 @@ namespace Axiom {
         Buffer::CreateInfo indexBufferCreateInfo = {
             .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
         globalIndexBuffer = Application::getRenderer()->createBuffer(indexBufferCreateInfo);
+
+        std::string manifestStr = FileSystem::readFileStr("Assets/AssetManifest.json");
+        if (manifestStr.empty()) {
+            AX_CORE_LOG_WARN("Asset manifest not found, starting with an empty registry");
+            return;
+        }
+
+        loadedAssets[0] = nullptr; // reserve the null handle
+
+        JSONValue serializerValue = JSONSerializer::deserialize(manifestStr);
+
+        if (serializerValue.getType() == JSONValueType::Object && serializerValue.hasChild("Assets")) {
+            const JSONValue& assetNode = serializerValue.getChild("Assets");
+            const auto& children = assetNode.getChildren();
+
+            for (const auto& [uuidStr, dataNode] : children) {
+                uint64_t uuidValue = std::stoull(uuidStr);
+
+                const auto& assetData = dataNode.getChildren();
+                std::string path = assetData.at("FilePath").getString();
+                AssetType type = static_cast<AssetType>(assetData.at("Type").getInt());
+
+                AssetMetadata meta;
+                meta.filePath = path;
+                meta.type = type;
+
+                registry[UUID(uuidValue)] = meta;
+                assetHandles[path] = UUID(uuidValue);
+            }
+        }
     }
 
     void AssetManager::shutdown() {
-        assets.clear();
+        loadedAssets.clear();
         assetHandles.clear();
 
         globalVertexBuffer.reset();
         globalIndexBuffer.reset();
+
+        JSONValue root;
+        JSONValue assetsNode;
+        for (const auto& [uuid, meta] : registry) {
+            JSONValue assetNode;
+
+            JSONValue filePathValue;
+            filePathValue.setString(meta.filePath.generic_string());
+            assetNode.setChild("FilePath", filePathValue);
+
+            JSONValue typeValue;
+            typeValue.setInt(static_cast<int>(meta.type));
+            assetNode.setChild("Type", typeValue);
+
+            assetsNode.setChild(std::to_string(uuid), assetNode);
+        }
+
+        root.setChild("Assets", assetsNode);
+        FileSystem::writeFile("Assets/AssetManifest.json", JSONSerializer::serialize(root));
+
+        registry.clear();
     }
 } // namespace Axiom

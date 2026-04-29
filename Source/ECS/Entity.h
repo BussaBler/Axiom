@@ -1,6 +1,5 @@
 #pragma once
 #include "Registry.h"
-#include "SystemManager.h"
 #include "axpch.h"
 
 namespace Axiom {
@@ -13,6 +12,7 @@ namespace Axiom {
         template <typename T> bool hasComponent() { return registry->getComponentSignature(id).test(registry->getComponentType<T>()); }
         template <typename T> void addComponent(T component) { registry->addComponent<T>(id, component); }
         template <typename T> T& getComponent() { return registry->getComponent<T>(id); }
+        std::vector<std::pair<std::type_index, void*>> getComponents() { return registry->getComponents(id); }
         template <typename T> void removeComponent() { registry->removeComponent<T>(id); }
 
         inline uint32_t getId() const { return id; }

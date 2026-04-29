@@ -1,5 +1,6 @@
 #pragma once
-#include "Component.h"
+#include "Components/PhysicsComponent.h"
+#include "Components/TransformComponent.h"
 #include "SystemManager.h"
 
 namespace Axiom {

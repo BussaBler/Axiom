@@ -1,7 +1,6 @@
 #pragma once
 #include "Assert.h"
 #include "Asset/AssetManager.h"
-#include "ECS/Scene.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
@@ -10,6 +9,7 @@
 #include "Log.h"
 #include "Math/AxMath.h"
 #include "Renderer/Renderer.h"
+#include "Scene/Components/ComponentReflection.h"
 #include "UI/UI.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"

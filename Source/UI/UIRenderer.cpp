@@ -151,7 +151,7 @@ namespace Axiom {
     }
 
     void UIRenderer::createBasicRenderObjects() {
-        UUID basicShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.axs");
+        UUID basicShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.UI.axs", AssetType::Shader);
         basicShader = AssetManager::getAsset<ShaderAsset>(basicShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
@@ -215,7 +215,7 @@ namespace Axiom {
     }
 
     void UIRenderer::createFontRenderObjects() {
-        UUID fontShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.Font.axs");
+        UUID fontShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.UI.Font.axs", AssetType::Shader);
         fontShader = AssetManager::getAsset<ShaderAsset>(fontShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
@@ -300,7 +300,7 @@ namespace Axiom {
     }
 
     void UIRenderer::createImageRenderObjects() {
-        UUID imageShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.Image.axs");
+        UUID imageShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.UI.Image.axs", AssetType::Shader);
         imageShader = AssetManager::getAsset<ShaderAsset>(imageShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(UIVertex) * 4, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};

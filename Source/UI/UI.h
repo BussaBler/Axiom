@@ -1,10 +1,10 @@
 #pragma once
-#include "ECS/Component.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 #include "Font.h"
 #include "Math/AxMath.h"
 #include "Math/Color.h"
+#include "Scene/Components/ComponentReflection.h"
 #include "UIRenderer.h"
 #include "UIVertex.h"
 #include "axpch.h"
@@ -76,32 +76,16 @@ namespace Axiom {
         static void inputText(const std::string& label, std::string& value, uint16_t size = 11);
         static float calcTextWidth(const std::string& text, uint16_t size = 11);
         static void checkbox(const std::string& label, bool& value);
-        static void dragFloat(const std::string& label, float& value, float speed = 0.1f);
+        static void dragFloat(const std::string& label, float& value, float speed = 0.1f, float width = -1.0f, const std::string& idOverride = "");
+        static void dragVec2(const std::string& label, Math::Vec2& value, float speed = 0.1f);
+        static void dragVec3(const std::string& label, Math::Vec3& value, float speed = 0.1f);
+        static void dragVec4(const std::string& label, Math::Vec4& value, float speed = 0.1f);
+        static void colorEdit(const std::string& label, Color& color);
+        static void dragInt(const std::string& label, int& value, float speed = 1.0f);
         static bool treeNode(const std::string& label);
         static void treePop();
         static void image(Texture* texture, const Math::Vec2& size);
-        template <typename T> static void component(void* componentData) {
-            auto& fields = TypeRegistry::getFields(typeid(T));
-            for (const FieldInfo& field : fields) {
-                void* fieldAdress = static_cast<char*>(componentData) + field.offset;
-                switch (field.type) {
-                case FieldType::Float: {
-                    float* fieldValue = static_cast<float*>(fieldAdress);
-                    dragFloat(field.name, *fieldValue);
-                    break;
-                }
-                case FieldType::Vec3: {
-                    Math::Vec3* fieldValue = static_cast<Math::Vec3*>(fieldAdress);
-                    dragFloat(field.name + " X", fieldValue->x());
-                    dragFloat(field.name + " Y", fieldValue->y());
-                    dragFloat(field.name + " Z", fieldValue->z());
-                    break;
-                }
-                default:
-                    break;
-                }
-            }
-        }
+        static void component(std::type_index componentId, void* componentData);
         // returns the width avaible for the current panel
         static float getAvaibleWidth();
         static const UIStyle& getCurrentStyle() { return style; }

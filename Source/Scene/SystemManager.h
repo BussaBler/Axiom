@@ -1,5 +1,5 @@
 #pragma once
-#include "Registry.h"
+#include "ECS/Registry.h"
 #include "axpch.h"
 
 namespace Axiom {

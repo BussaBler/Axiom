@@ -62,6 +62,7 @@ namespace Axiom {
             entityManager->getComponentSignature(entityId).set(componentManager->getComponentType<T>(), false);
         }
         template <typename T> T& getComponent(uint32_t entityId) { return componentManager->getComponent<T>(entityId); }
+        std::vector<std::pair<std::type_index, void*>> getComponents(uint32_t entityId) { return componentManager->getComponents(entityId); }
         std::bitset<32>& getComponentSignature(uint32_t entityId) { return entityManager->getComponentSignature(entityId); }
 
         template <typename T> void registerComponent() { componentManager->registerComponent<T>(); }
@@ -70,6 +71,11 @@ namespace Axiom {
         template <typename... Components> View view() {
             std::bitset<32> signature;
             ((signature.set(componentManager->getComponentType<Components>())), ...);
+            return View(entityManager.get(), signature);
+        }
+
+        View getAllEntitiesView() {
+            std::bitset<32> signature;
             return View(entityManager.get(), signature);
         }
 

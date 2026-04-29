@@ -30,7 +30,7 @@ namespace Axiom {
         for (uint32_t entityId : spriteEntities) {
             auto& transform = data.scene->getEntity(entityId).getComponent<TransformComponent>();
             auto& sprite = data.scene->getEntity(entityId).getComponent<Sprite2DComponent>();
-            auto textureAsset = AssetManager::getAsset<TextureAsset>(sprite.textureId);
+            std::shared_ptr<TextureAsset> textureAsset = AssetManager::getAsset<TextureAsset>(sprite.textureId);
 
             int32_t textureSlotIndex = 0;
 
@@ -175,7 +175,7 @@ namespace Axiom {
         geometryRenderPass.hasDepthAttachment = true;
 
         // 2d objects
-        UUID spriteShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.Sprite2D.axs");
+        UUID spriteShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Sprite2D.axs", AssetType::Shader);
         spriteShader = AssetManager::getAsset<ShaderAsset>(spriteShaderHandle);
 
         Buffer::CreateInfo spriteVertexBufferCreateInfo = {
@@ -254,7 +254,7 @@ namespace Axiom {
         spriteResourceSets[0]->update(spriteResourceSetBindings);
 
         // 3d objects
-        UUID meshShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.Mesh.axs");
+        UUID meshShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Mesh.axs", AssetType::Shader);
         meshShader = AssetManager::getAsset<ShaderAsset>(meshShaderHandle);
 
         Buffer::CreateInfo meshInstanceBufferCreateInfo = {
@@ -306,7 +306,7 @@ namespace Axiom {
     }
 
     void SceneRenderer::createGizmoPassResources() {
-        UUID gizmoShaderHandle = AssetManager::loadShader("Assets/Shaders/BuiltIn.UI.Gizmo.axs");
+        UUID gizmoShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.UI.Gizmo.axs", AssetType::Shader);
         gizmoShader = AssetManager::getAsset<ShaderAsset>(gizmoShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(GizmoVertex) * 2 * 3, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};

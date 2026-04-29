@@ -402,13 +402,15 @@ namespace Axiom {
         context->cursorPos.x() = context->panelPos.x() + style.padding + context->indentLevel;
     }
 
-    void UI::dragFloat(const std::string& label, float& value, float speed) {
-        uint32_t id = std::hash<std::string>{}(label + "_dragFloat");
+    void UI::dragFloat(const std::string& label, float& value, float speed, float width, const std::string& idOverride) {
+        std::string uniqueId = idOverride.empty() ? label + "_dragFloat" : idOverride + "_dragFloat";
+        uint32_t id = std::hash<std::string>{}(uniqueId);
 
         static std::unordered_map<uint32_t, std::string> textBuffers;
 
         Math::Vec2 pos = context->cursorPos;
-        Math::Vec2 size(context->panelSize.x() - (style.padding * 2.0f), style.defaultWidgetHeight);
+        float effectiveWidth = (width > 0.0f) ? width : getAvaibleWidth();
+        Math::Vec2 size(effectiveWidth, style.defaultWidgetHeight);
 
         bool isHovering = inputState.mousePosition.x() >= pos.x() && inputState.mousePosition.x() <= pos.x() + size.x() &&
                           inputState.mousePosition.y() >= pos.y() && inputState.mousePosition.y() <= pos.y() + size.y();
@@ -484,6 +486,89 @@ namespace Axiom {
         context->lastItemSize = size;
     }
 
+    void UI::dragVec2(const std::string& label, Math::Vec2& value, float speed) {
+        text(label, Color::white(), 8);
+        float w = (getAvaibleWidth() - style.itemSpacing) / 2.0f;
+        dragFloat("X", value.x(), speed, w, label + "_X");
+        sameLine();
+        dragFloat("Y", value.y(), speed, w, label + "_Y");
+    }
+
+    void UI::dragVec3(const std::string& label, Math::Vec3& value, float speed) {
+        text(label, Color::white(), 8);
+        float w = (getAvaibleWidth() - (style.itemSpacing * 2)) / 3.0f;
+        dragFloat("X", value.x(), speed, w, label + "_X");
+        sameLine();
+        dragFloat("Y", value.y(), speed, w, label + "_Y");
+        sameLine();
+        dragFloat("Z", value.z(), speed, w, label + "_Z");
+    }
+
+    void UI::dragVec4(const std::string& label, Math::Vec4& value, float speed) {
+        text(label, Color::white(), 8);
+        float w = (getAvaibleWidth() - (style.itemSpacing * 3)) / 4.0f;
+        dragFloat("X", value.x(), speed, w, label + "_X");
+        sameLine();
+        dragFloat("Y", value.y(), speed, w, label + "_Y");
+        sameLine();
+        dragFloat("Z", value.z(), speed, w, label + "_Z");
+        sameLine();
+        dragFloat("W", value.w(), speed, w, label + "_W");
+    }
+
+    void UI::colorEdit(const std::string& label, Color& value) {
+        text(label, Color::white(), 8);
+        float w = (getAvaibleWidth() - (style.itemSpacing * 3)) / 4.0f;
+        dragFloat("R", value.r(), 0.01f, w, label + "_R");
+        sameLine();
+        dragFloat("G", value.g(), 0.01f, w, label + "_G");
+        sameLine();
+        dragFloat("B", value.b(), 0.01f, w, label + "_B");
+        sameLine();
+        dragFloat("A", value.a(), 0.01f, w, label + "_A");
+
+        // TODO: add a color picker or something
+    }
+
+    void UI::dragInt(const std::string& label, int& value, float speed) {
+        int32_t id = std::hash<std::string>{}(label + "_dragInt");
+        static std::unordered_map<uint32_t, std::string> textBuffers;
+
+        Math::Vec2 pos = context->cursorPos;
+        float finalWidth = (context->panelSize.x() - (style.padding * 2.0f) - context->indentLevel);
+        Math::Vec2 size(finalWidth, style.defaultWidgetHeight);
+
+        if (context->activeItem == id && std::abs(inputState.mouseDelta.x()) > 0.0f) {
+            context->focusedItem = 0;
+            value += static_cast<int>(inputState.mouseDelta.x() * speed);
+        }
+
+        if (context->focusedItem == id && inputState.isEnterPressed) {
+            try {
+                value = std::stoi(textBuffers[id]);
+            } catch (...) {
+            }
+            context->focusedItem = 0;
+            inputState.isEnterPressed = false;
+        }
+
+        Color bgColor = (context->focusedItem == id)  ? Color(0.35f, 0.35f, 0.35f)
+                        : (context->activeItem == id) ? Color(0.2f, 0.2f, 0.2f)
+                        : (context->hotItem == id)    ? Color(0.3f, 0.3f, 0.3f)
+                                                      : Color(0.25f, 0.25f, 0.25f);
+
+        renderer->addBasicQuad(pos, size, bgColor, style.borderRadius);
+
+        std::string displayText = (context->focusedItem == id) ? textBuffers[id] + "|" : std::format("{}: {}", label, value);
+        float verticalCenterOffset = (size.y() / 2.0f) - (8.0f * 1.5f);
+        rawText(displayText, Math::Vec2(pos.x() + style.padding, pos.y() + verticalCenterOffset), Color::white(), 8);
+
+        context->cursorPos.y() += size.y() + style.itemSpacing;
+        context->cursorPos.x() = context->panelPos.x() + style.padding + context->indentLevel;
+        context->lastItemPos = pos;
+        context->lastItemSize = size;
+    }
+
     bool UI::treeNode(const std::string& label) {
         uint32_t id = std::hash<std::string>{}(label + "_treeNode");
         bool isOpen = context->nodeStates[id];
@@ -548,6 +633,68 @@ namespace Axiom {
         context->cursorPos.x() = context->panelPos.x() + style.padding + context->indentLevel;
         context->lastItemPos = pos;
         context->lastItemSize = size;
+    }
+
+    void UI::component(std::type_index componentId, void* componentData) {
+        const ComponentInfo* info = ComponentReflection::getComponentInfo(componentId);
+        for (const FieldInfo& field : info->fields) {
+            void* fieldAdress = static_cast<char*>(componentData) + field.offset;
+            switch (field.type) {
+            case FieldType::Float: {
+                float* fieldValue = static_cast<float*>(fieldAdress);
+                dragFloat(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::Int: {
+                int* fieldValue = static_cast<int*>(fieldAdress);
+                dragInt(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::Bool: {
+                bool* fieldValue = static_cast<bool*>(fieldAdress);
+                checkbox(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::String: {
+                std::string* fieldValue = static_cast<std::string*>(fieldAdress);
+                inputText(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::Vec2: {
+                Math::Vec2* fieldValue = static_cast<Math::Vec2*>(fieldAdress);
+                dragVec2(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::Vec3: {
+                Math::Vec3* fieldValue = static_cast<Math::Vec3*>(fieldAdress);
+                dragVec3(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::Vec4: {
+                Math::Vec4* fieldValue = static_cast<Math::Vec4*>(fieldAdress);
+                dragVec4(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::Color: {
+                Color* fieldValue = static_cast<Color*>(fieldAdress);
+                colorEdit(field.name, *fieldValue);
+                break;
+            }
+            case FieldType::AssetHandle: {
+                UUID* fieldValue = static_cast<UUID*>(fieldAdress);
+                std::string assetName = "None";
+                if (*fieldValue != 0) {
+                    assetName = AssetManager::getAsset<Asset>(*fieldValue)->getName();
+                }
+                text(assetName, Color::white(), 8);
+                if (button("Change", Math::Vec2(60.0f, style.defaultWidgetHeight))) {
+                    *fieldValue = Axiom::AssetManager::importAsset("Assets/Textures/redstone_block.png", Axiom::AssetType::Texture);
+                }
+            }
+            default:
+                break;
+            }
+        }
     }
 
     float UI::getAvaibleWidth() {

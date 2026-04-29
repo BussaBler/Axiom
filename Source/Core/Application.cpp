@@ -19,8 +19,9 @@ namespace Axiom {
 
         renderer = std::make_unique<Renderer>(window.get());
         uiContext = std::make_unique<UIContext>();
-        UI::init(*uiContext);
         AssetManager::init();
+        ComponentReflection::init();
+        UI::init(*uiContext);
     }
 
     Application::~Application() {

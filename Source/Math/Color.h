@@ -9,6 +9,10 @@ namespace Axiom {
         Color(const Math::Vec4& vec) : rgba(vec) {}
         ~Color() = default;
 
+        inline float& r() { return rgba.r(); }
+        inline float& g() { return rgba.g(); }
+        inline float& b() { return rgba.b(); }
+        inline float& a() { return rgba.a(); }
         inline float r() const { return rgba.r(); }
         inline float g() const { return rgba.g(); }
         inline float b() const { return rgba.b(); }

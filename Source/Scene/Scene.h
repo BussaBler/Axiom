@@ -1,11 +1,19 @@
 #pragma once
-#include "Entity.h"
+#include "Components/CameraComponent.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/MeshComponent.h"
+#include "Components/Sprite2DComponent.h"
+#include "Components/TagComponent.h"
+#include "Components/TransformComponent.h"
+#include "ECS/Entity.h"
+#include "ECS/Registry.h"
 #include "PhysicsSystem.h"
-#include "Registry.h"
 #include "SystemManager.h"
 
 namespace Axiom {
     class Scene {
+        friend class SceneSerializer;
+
       public:
         Scene();
         ~Scene() = default;

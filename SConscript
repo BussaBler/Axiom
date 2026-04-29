@@ -34,6 +34,7 @@ def configurePlatform(env, platformName):
 coreSources = Glob('Source/*.cpp')
 coreSources += Glob('Source/*/*.cpp')
 coreSources += Glob('Source/UI/MSDFGen/core/*.cpp')
+coreSources += Glob('Source/Scene/Components/*.cpp')
 
 if renderer.lower() == 'vulkan':
     rendererSources = Glob('Source/Renderer/Backend/Vulkan/*.cpp')

@@ -10,7 +10,6 @@ namespace Axiom {
         descriptor->setStorageMode(axToMetalStorageMode(createInfo.memoryUsage));
 
         metalTexture = device->newTexture(descriptor);
-        descriptor->release();
     }
 
     MetalTexture::MetalTexture(MTL::Texture* texture) : metalTexture(texture) {
