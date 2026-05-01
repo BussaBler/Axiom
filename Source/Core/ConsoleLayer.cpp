@@ -1,6 +1,5 @@
 #include "ConsoleLayer.h"
 #include "Core/Application.h"
-#include "UI/UI.h"
 
 namespace Axiom {
     void ConsoleLayer::onAttach() {
@@ -19,22 +18,7 @@ namespace Axiom {
         dispatcher.dispatch<KeyTypedEvent>(std::bind(&ConsoleLayer::onKeyTyped, this, std::placeholders::_1));
     }
 
-    void ConsoleLayer::onUIRender() {
-        if (isOpen) {
-            float width = Application::getWindow()->getWidth();
-            float height = Application::getWindow()->getHeight();
-            float consoleHeight = height * consoleHeightRatio;
-
-            UI::beginPanel("Console", Math::Vec2(0.0f, height - consoleHeight), Math::Vec2(width, consoleHeight));
-
-            UI::text("> " + inputBuffer + "_", Color::white(), fontSize);
-
-            auto commandHistory = CommandRegistry::getCommandHistory();
-            for (auto it = commandHistory.rbegin(); it != commandHistory.rend(); ++it) {
-                UI::text(*it, Color::white(), fontSize);
-            }
-            UI::endPanel();
-        }
+    void ConsoleLayer::onUIRender(UIRenderer* uiRenderer) {
     }
 
     void ConsoleLayer::onRender(CommandBuffer* commandBuffer) {

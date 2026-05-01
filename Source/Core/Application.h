@@ -10,7 +10,7 @@
 #include "Math/AxMath.h"
 #include "Renderer/Renderer.h"
 #include "Scene/Components/ComponentReflection.h"
-#include "UI/UI.h"
+#include "UI/UIRenderer.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
 #include "axpch.h"
@@ -77,10 +77,10 @@ namespace Axiom {
       private:
         std::unique_ptr<Window> window;
         std::unique_ptr<Renderer> renderer;
+        std::unique_ptr<UIRenderer> uiRenderer;
         bool running = true;
         LayerStack layerStack;
         std::vector<LayerAction> layerActionQueue;
-        std::unique_ptr<UIContext> uiContext;
 
       private:
         static Application* instance;

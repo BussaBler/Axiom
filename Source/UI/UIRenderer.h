@@ -12,14 +12,17 @@ namespace Axiom {
         UIRenderer();
         ~UIRenderer() = default;
 
-        void clearRenderData();
+        void beginFrame();
 
         void addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii = Math::Vec4::zero());
         void addDebugRect(const Math::Vec2& pos, const Math::Vec2& size, const Color& color);
         void addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color);
+        void addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color);
+        float calculateTextWidth(const std::string& text, float fontSize, float dpiScale);
+        float calculateTextHeight(float fontSize, float dpiScale);
         void addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture);
 
-        void drawUIElements(CommandBuffer* commandBuffer, Texture* targetTexture);
+        void onRender(CommandBuffer* commandBuffer, Texture* targetTexture);
 
         inline Font& getFont() { return openSansFont; }
 

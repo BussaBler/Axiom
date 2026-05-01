@@ -28,7 +28,7 @@ namespace Axiom {
         createImageRenderObjects();
     }
 
-    void UIRenderer::clearRenderData() {
+    void UIRenderer::beginFrame() {
         basicVertices.clear();
         fontVertices.clear();
         imageDrawCommands.clear();
@@ -63,10 +63,51 @@ namespace Axiom {
             AX_CORE_LOG_WARN("Maximum font quad count reached! Cannot add more quads this frame.");
             return;
         }
+
+        // Pushing vertices for an indexed quad (0,1,2, 2,3,0)
         fontVertices.push_back(UIVertex(pos, uv0, color, Math::Vec4::zero()));
         fontVertices.push_back(UIVertex(pos + Math::Vec2(size.x(), 0.0f), Math::Vec2(uv1.x(), uv0.y()), color, Math::Vec4::zero()));
         fontVertices.push_back(UIVertex(pos + size, uv1, color, Math::Vec4::zero()));
         fontVertices.push_back(UIVertex(pos + Math::Vec2(0.0f, size.y()), Math::Vec2(uv0.x(), uv1.y()), color, Math::Vec4::zero()));
+    }
+
+    void UIRenderer::addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color) {
+        const auto& asciiAtlas = openSansFont.getAsciiAtlas();
+
+        float pixelSize = fontSize * dpiScale;
+        float fontScale = pixelSize / asciiAtlas.unitsPerEm;
+        float lineSpacing = pixelSize * 1.2f;
+
+        float cursorX = pos.x();
+
+        float ascender = asciiAtlas.ascender != 0 ? asciiAtlas.ascender : asciiAtlas.unitsPerEm * 0.8f;
+        float cursorY = pos.y() + (ascender * fontScale);
+
+        for (char c : text) {
+            if (c == '\n') {
+                cursorX = pos.x();
+                cursorY += lineSpacing;
+                continue;
+            }
+
+            auto glyphIt = asciiAtlas.glyphs.find(static_cast<uint32_t>(c));
+            if (glyphIt == asciiAtlas.glyphs.end()) {
+                continue;
+            }
+
+            const GlyphMetrics& metrics = glyphIt->second;
+
+            if (c != ' ' && c != '\t') {
+                float minX = cursorX + (metrics.quadMin.x() * fontScale);
+                float minY = cursorY - (metrics.quadMax.y() * fontScale);
+                float maxX = cursorX + (metrics.quadMax.x() * fontScale);
+                float maxY = cursorY - (metrics.quadMin.y() * fontScale);
+
+                addFontQuad(Math::Vec2(minX, minY), Math::Vec2(maxX - minX, maxY - minY), metrics.uv0, metrics.uv1, color);
+            }
+
+            cursorX += (metrics.advance * fontScale);
+        }
     }
 
     void UIRenderer::addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture) {
@@ -77,7 +118,46 @@ namespace Axiom {
         imageDrawCommands.push_back({texture, pos, size});
     }
 
-    void UIRenderer::drawUIElements(CommandBuffer* commandBuffer, Texture* renderTarget) {
+    float UIRenderer::calculateTextWidth(const std::string& text, float fontSize, float dpiScale) {
+        float pixelSize = fontSize * dpiScale;
+        float fontScale = pixelSize / openSansFont.getAsciiAtlas().unitsPerEm;
+
+        float maxWidth = 0.0f;
+        float currentLineWidth = 0.0f;
+
+        for (char c : text) {
+            if (c == '\n') {
+                if (currentLineWidth > maxWidth) {
+                    maxWidth = currentLineWidth;
+                }
+                currentLineWidth = 0.0f;
+                continue;
+            }
+            auto glyphIt = openSansFont.getAsciiAtlas().glyphs.find(static_cast<uint32_t>(c));
+            if (glyphIt == openSansFont.getAsciiAtlas().glyphs.end()) {
+                continue;
+            }
+            currentLineWidth += (glyphIt->second.advance * fontScale);
+        }
+
+        if (currentLineWidth > maxWidth) {
+            maxWidth = currentLineWidth;
+        }
+        return maxWidth;
+    }
+
+    float UIRenderer::calculateTextHeight(float fontSize, float dpiScale) {
+        const auto& asciiAtlas = openSansFont.getAsciiAtlas();
+        float pixelSize = fontSize * dpiScale;
+        float fontScale = pixelSize / asciiAtlas.unitsPerEm;
+
+        float ascender = asciiAtlas.ascender != 0 ? asciiAtlas.ascender : asciiAtlas.unitsPerEm * 0.8f;
+        float descender = asciiAtlas.descender != 0 ? asciiAtlas.descender : -asciiAtlas.unitsPerEm * 0.2f;
+
+        return (ascender - descender) * fontScale;
+    }
+
+    void UIRenderer::onRender(CommandBuffer* commandBuffer, Texture* renderTarget) {
         Math::Vec2 windowSize = Math::Vec2(Application::getWindow()->getWidth(), Application::getWindow()->getHeight());
         Math::iVec2 renderTargetSize = renderTarget->getSize();
         Math::Mat4 projection = Math::Mat4::orthographic(0.0f, windowSize.x(), 0.0f, windowSize.y(), -1.0f, 1.0f);

@@ -18,10 +18,9 @@ namespace Axiom {
         window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
         renderer = std::make_unique<Renderer>(window.get());
-        uiContext = std::make_unique<UIContext>();
+        uiRenderer = std::make_unique<UIRenderer>();
         AssetManager::init();
         ComponentReflection::init();
-        UI::init(*uiContext);
     }
 
     Application::~Application() {
@@ -32,8 +31,6 @@ namespace Axiom {
         EventDispatcher dispatcher(event);
         dispatcher.dispatch<WindowCloseEvent>(std::bind(&Application::onWindowClose, this, std::placeholders::_1));
         dispatcher.dispatch<WindowResizeEvent>(std::bind(&Application::onWindowResize, this, std::placeholders::_1));
-
-        UI::onEvent(event);
 
         dispatcher.dispatch<KeyPressedEvent>(std::bind(&Application::onKeyPressed, this, std::placeholders::_1));
         dispatcher.dispatch<KeyReleasedEvent>(std::bind(&Application::onKeyReleased, this, std::placeholders::_1));
@@ -136,20 +133,19 @@ namespace Axiom {
     void Application::run() {
         while (running) {
             window->beginFrame();
-            UI::beginFrame();
+            uiRenderer->beginFrame();
             for (const auto& layer : layerStack) {
                 layer->onUpdate();
             }
             for (const auto& layer : layerStack) {
-                layer->onUIRender();
+                layer->onUIRender(uiRenderer.get());
             }
 
             CommandBuffer* commandBuffer = renderer->beginFrame();
             for (const auto& layer : layerStack) {
                 layer->onRender(commandBuffer);
             }
-            UI::endFrame();
-            UI::render(commandBuffer, renderer->getCurrentRenderTarget());
+            uiRenderer->onRender(commandBuffer, renderer->getCurrentRenderTarget());
             renderer->endFrame();
 
             window->onUpdate();

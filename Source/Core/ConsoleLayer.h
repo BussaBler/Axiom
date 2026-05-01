@@ -14,7 +14,7 @@ namespace Axiom {
         void onDetach() override;
         void onUpdate() override;
         void onEvent(Event& event) override;
-        void onUIRender() override;
+        void onUIRender(UIRenderer* uiRenderer) override;
         void onRender(CommandBuffer* commandBuffer) override;
 
       private:

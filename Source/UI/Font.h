@@ -21,6 +21,9 @@ namespace Axiom {
             uint32_t height = 0;
             uint32_t channels = 4;
             uint16_t unitsPerEm = 2048;
+            float ascender = 0.0f;
+            float descender = 0.0f;
+            float lineGap = 0.0f;
             std::vector<uint8_t> pixels;
             std::unordered_map<uint32_t, GlyphMetrics> glyphs;
         };
@@ -33,9 +36,7 @@ namespace Axiom {
         Font(const std::filesystem::path& filePath);
         ~Font() = default;
 
-        Atlas& getAsciiAtlas() {
-            return asciiAtlas;
-        }
+        Atlas& getAsciiAtlas() { return asciiAtlas; }
 
       private:
         struct Point {

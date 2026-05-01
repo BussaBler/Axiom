@@ -28,6 +28,8 @@ namespace Axiom {
         static Color yellow() { return Color(1.0f, 1.0f, 0.0f); }
         static Color transparent() { return Color(0.0f, 0.0f, 0.0f, 0.0f); }
         static Color gray() { return Color(0.5f, 0.5f, 0.5f); }
+        static Color darkGray() { return Color(0.25f, 0.25f, 0.25f); }
+        static Color lightGray() { return Color(0.75f, 0.75f, 0.75f); }
 
         operator Math::Vec4() const { return rgba; }
 

@@ -103,11 +103,24 @@ namespace Axiom {
             }
         };
 
+        reader.seek(tableOffsets["hhea"] + 4);
+        int16_t ascender = reader.readInt16();
+        int16_t descender = reader.readInt16();
+        int16_t lineGap = reader.readInt16();
+        reader.seek(tableOffsets["hhea"] + 34);
+        uint16_t numOfHMetrics = reader.readUInt16();
+
         uint32_t glyphSize = 64;
         uint16_t collumns = 16;
         uint16_t rows = 6; // 16 * 6 = 96 glyphs, which is enough for basic ASCII
 
-        asciiAtlas = {.width = collumns * glyphSize, .height = rows * glyphSize, .channels = 4, .unitsPerEm = unitsPerEm};
+        asciiAtlas = {.width = collumns * glyphSize,
+                      .height = rows * glyphSize,
+                      .channels = 4,
+                      .unitsPerEm = unitsPerEm,
+                      .ascender = static_cast<float>(ascender),
+                      .descender = static_cast<float>(descender),
+                      .lineGap = static_cast<float>(lineGap)};
         asciiAtlas.pixels.resize(asciiAtlas.width * asciiAtlas.height * asciiAtlas.channels);
 
         double pxRange = 4.0;
