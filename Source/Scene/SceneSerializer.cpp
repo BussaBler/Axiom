@@ -5,7 +5,7 @@ namespace Axiom {
         JSONValue root = JSONValue();
         JSONValue entitiesArray = JSONValue();
 
-        View entities = scene->registry->getAllEntitiesView();
+        View entities = scene->registry->view();
         for (auto entityId : entities) {
             Entity entity = Entity(entityId, scene->registry.get());
             if (!entity.hasComponent<TagComponent>()) {
@@ -171,7 +171,6 @@ namespace Axiom {
                         break;
                     }
                     case FieldType::AssetHandle: {
-                        // Note: Ensure serialize() saves this as a string if using stoull here!
                         *static_cast<uint64_t*>(fieldAddress) = std::stoull(fieldNode.getString());
                         break;
                     }

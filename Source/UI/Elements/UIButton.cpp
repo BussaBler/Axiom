@@ -4,8 +4,8 @@
 
 namespace Axiom {
     Math::Vec2 UIButton::getDesiredSize() {
-        desiredSize.x() = textWidth + resolvedTheme->padding.left + resolvedTheme->padding.right + resolvedTheme->margin.left + resolvedTheme->margin.right;
-        desiredSize.y() = textHeight + resolvedTheme->padding.top + resolvedTheme->padding.bottom + resolvedTheme->margin.top + resolvedTheme->margin.bottom;
+        desiredSize.x() = textWidth + padding.left + padding.right + margin.left + margin.right;
+        desiredSize.y() = textHeight + padding.top + padding.bottom + margin.top + margin.bottom;
 
         return desiredSize;
     }
@@ -31,7 +31,7 @@ namespace Axiom {
         float textX = arrangedPosition.x() + (arrangedSize.x() - textWidth) / 2.0f;
         float textY = arrangedPosition.y() + (arrangedSize.y() - textHeight) / 2.0f;
 
-        renderer->addText(text, Math::Vec2(textX, textY), resolvedTheme->fontSize, dpiScale, resolvedTheme->textColor);
+        renderer->addText(text, Math::Vec2(textX, textY), getTheme()->fontSize, dpiScale, getTheme()->textColor);
 
         UIElement::onRender(renderer);
     }

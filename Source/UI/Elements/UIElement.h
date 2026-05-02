@@ -15,19 +15,17 @@ namespace Axiom {
     };
 
     struct UITheme {
-        Color panelBackgroundColor = Color::cyan();
-        Color headerBackgroundColor = Color::darkGray();
+        Color panelBackgroundColor = Color(0.11f, 0.11f, 0.11f, 1.0f);
+        Color headerBackgroundColor = Color(0.06f, 0.06f, 0.06f, 1.0f);
 
-        Color controlNormalColor = Color::lightGray();
-        Color controlHoverColor = Color::gray();
-        Color controlActiveColor = Color::darkGray();
+        Color controlNormalColor = Color(0.18f, 0.18f, 0.18f, 1.0f);
+        Color controlHoverColor = Color(0.25f, 0.25f, 0.25f, 1.0f);
+        Color controlActiveColor = Color(0.00f, 0.45f, 0.85f, 1.0f);
 
-        Color textColor = Color::white();
+        Color textColor = Color(0.85f, 0.85f, 0.85f, 1.0f);
         float fontSize = 8.0f;
 
-        UIMargin margin{5.0f, 5.0f, 5.0f, 5.0f};
-        UIMargin padding{5.0f, 5.0f, 5.0f, 5.0f};
-        Math::Vec4 borderRadius = Math::Vec4(5.0f);
+        Math::Vec4 borderRadius = Math::Vec4(6.0f);
 
         static std::shared_ptr<UITheme> getDefault() {
             static std::shared_ptr<UITheme> defaultTheme = std::make_shared<UITheme>();
@@ -44,6 +42,16 @@ namespace Axiom {
             child->parent = this;
             children.push_back(child);
             child->resolveTheme();
+        }
+        inline void removeChild(std::shared_ptr<UIElement> child) {
+            child->parent = nullptr;
+            children.erase(std::remove(children.begin(), children.end(), child), children.end());
+        }
+        inline void clearChildren() {
+            for (auto& child : children) {
+                child->parent = nullptr;
+            }
+            children.clear();
         }
         inline UIElement* getParent() const { return parent; }
         inline const std::vector<std::shared_ptr<UIElement>>& getChildren() const { return children; }
@@ -83,12 +91,16 @@ namespace Axiom {
         }
 
         void setID(const std::string& newID) { id = newID; }
+        void setMargin(const UIMargin& newMargin) { margin = newMargin; }
+        void setPadding(const UIMargin& newPadding) { padding = newPadding; }
         void setTheme(std::shared_ptr<UITheme> newTheme) { customTheme = newTheme; }
         void setHorizontalAlignment(UIAlignment alignment) { horizontalAlignment = alignment; }
         void setVerticalAlignment(UIAlignment alignment) { verticalAlignment = alignment; }
         void setFixedSize(const Math::Vec2& size) { fixedSize = size; }
 
         const std::string& getID() const { return id; }
+        const UIMargin& getMargin() const { return margin; }
+        const UIMargin& getPadding() const { return padding; }
         UIAlignment getHorizontalAlignment() const { return horizontalAlignment; }
         UIAlignment getVerticalAlignment() const { return verticalAlignment; }
         const Math::Vec2& getFixedSize() const { return fixedSize; }
@@ -99,6 +111,9 @@ namespace Axiom {
         std::vector<std::shared_ptr<UIElement>> children;
 
         std::string id;
+
+        UIMargin margin;
+        UIMargin padding;
 
         UIAlignment horizontalAlignment = UIAlignment::Fill;
         UIAlignment verticalAlignment = UIAlignment::Fill;

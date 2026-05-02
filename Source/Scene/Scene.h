@@ -23,6 +23,7 @@ namespace Axiom {
         Entity getEntity(const std::string& name);
 
         template <typename... Components> View view() { return registry->view<Components...>(); }
+        View view() { return registry->view(); }
 
         void onUpdate(float deltaTime);
 

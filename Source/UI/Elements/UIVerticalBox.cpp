@@ -10,8 +10,8 @@ namespace Axiom {
             desiredSize.y() += childDesiredSize.y();
         }
 
-        desiredSize.x() += resolvedTheme->padding.left + resolvedTheme->padding.right + resolvedTheme->margin.left + resolvedTheme->margin.right;
-        desiredSize.y() += resolvedTheme->padding.top + resolvedTheme->padding.bottom + resolvedTheme->margin.top + resolvedTheme->margin.bottom;
+        desiredSize.x() += padding.left + padding.right + margin.left + margin.right;
+        desiredSize.y() += padding.top + padding.bottom + margin.top + margin.bottom;
 
         return desiredSize;
     }
@@ -20,26 +20,26 @@ namespace Axiom {
         arrangedPosition = position;
         arrangedSize = size;
 
-        float currentY = arrangedPosition.y() + resolvedTheme->padding.top;
-        float startX = arrangedPosition.x() + resolvedTheme->padding.left;
-        float availableWidth = arrangedSize.x() - resolvedTheme->padding.left - resolvedTheme->padding.right;
+        float currentY = arrangedPosition.y() + padding.top;
+        float startX = arrangedPosition.x() + padding.left;
+        float availableWidth = arrangedSize.x() - padding.left - padding.right;
 
         for (const auto& child : children) {
-            currentY += child->getTheme()->margin.top;
-            float childDesiredWidth = child->getDesiredSize().x() - child->getTheme()->margin.left - child->getTheme()->margin.right;
-            float childHeight = child->getDesiredSize().y() - child->getTheme()->margin.top - child->getTheme()->margin.bottom;
+            currentY += child->getMargin().top;
+            float childDesiredWidth = child->getDesiredSize().x() - child->getMargin().left - child->getMargin().right;
+            float childHeight = child->getDesiredSize().y() - child->getMargin().top - child->getMargin().bottom;
 
             float finalX = startX;
             float finalWidth = availableWidth;
 
             switch (child->getHorizontalAlignment()) {
             case UIAlignment::Fill:
-                finalWidth = availableWidth - child->getTheme()->margin.left - child->getTheme()->margin.right;
-                finalX = startX + child->getTheme()->margin.left;
+                finalWidth = availableWidth - child->getMargin().left - child->getMargin().right;
+                finalX = startX + child->getMargin().left;
                 break;
             case UIAlignment::Start:
                 finalWidth = childDesiredWidth;
-                finalX = startX + child->getTheme()->margin.left;
+                finalX = startX + child->getMargin().left;
                 break;
             case UIAlignment::Center:
                 finalWidth = childDesiredWidth;
@@ -47,7 +47,7 @@ namespace Axiom {
                 break;
             case UIAlignment::End:
                 finalWidth = childDesiredWidth;
-                finalX = startX + availableWidth - childDesiredWidth - child->getTheme()->margin.right;
+                finalX = startX + availableWidth - childDesiredWidth - child->getMargin().right;
                 break;
             }
 
@@ -56,7 +56,7 @@ namespace Axiom {
 
             child->arrange(childPosition, childAllocSize);
 
-            currentY += childHeight + child->getTheme()->margin.bottom;
+            currentY += childHeight + child->getMargin().bottom;
         }
     }
 } // namespace Axiom

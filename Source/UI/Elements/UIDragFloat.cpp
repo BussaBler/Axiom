@@ -3,8 +3,8 @@
 
 namespace Axiom {
     Math::Vec2 UIDragFloat::getDesiredSize() {
-        desiredSize.x() = 60.0f + resolvedTheme->padding.left + resolvedTheme->padding.right + resolvedTheme->margin.left + resolvedTheme->margin.right;
-        desiredSize.y() = 20.0f + resolvedTheme->padding.top + resolvedTheme->padding.bottom + resolvedTheme->margin.top + resolvedTheme->margin.bottom;
+        desiredSize.x() = 60.0f + padding.left + padding.right + margin.left + margin.right;
+        desiredSize.y() = 20.0f + padding.top + padding.bottom + margin.top + margin.bottom;
         return desiredSize;
     }
 

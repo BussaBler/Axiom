@@ -26,6 +26,7 @@
 #include "UI/Elements/UIDragFloat.h"
 #include "UI/Elements/UIElement.h"
 #include "UI/Elements/UIHorizontalBox.h"
+#include "UI/Elements/UIImage.h"
 #include "UI/Elements/UIPanel.h"
 #include "UI/Elements/UIText.h"
 #include "UI/Elements/UIVerticalBox.h"

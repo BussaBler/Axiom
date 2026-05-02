@@ -10,8 +10,8 @@ namespace Axiom {
             desiredSize.y() = std::max(desiredSize.y(), childDesiredSize.y());
         }
 
-        desiredSize.x() += resolvedTheme->padding.left + resolvedTheme->padding.right + resolvedTheme->margin.left + resolvedTheme->margin.right;
-        desiredSize.y() += resolvedTheme->padding.top + resolvedTheme->padding.bottom + resolvedTheme->margin.top + resolvedTheme->margin.bottom;
+        desiredSize.x() += padding.left + padding.right + margin.left + margin.right;
+        desiredSize.y() += padding.top + padding.bottom + margin.top + margin.bottom;
 
         return desiredSize;
     }
@@ -20,43 +20,66 @@ namespace Axiom {
         arrangedPosition = position;
         arrangedSize = size;
 
-        float currentX = arrangedPosition.x() + resolvedTheme->padding.left;
-        float startY = arrangedPosition.y() + resolvedTheme->padding.top;
-        float availableHeight = arrangedSize.y() - resolvedTheme->padding.top - resolvedTheme->padding.bottom;
+        float startX = arrangedPosition.x() + padding.left + margin.left;
+        float startY = arrangedPosition.y() + padding.top + margin.top;
+
+        float availableWidth = arrangedSize.x() - padding.left - padding.right;
+        float availableHeight = arrangedSize.y() - padding.top - padding.bottom;
+
+        float fixedWidthUsed = 0.0f;
+        int fillChildCount = 0;
 
         for (const auto& child : children) {
-            currentX += child->getTheme()->margin.left;
-            float childDesiredWidth = child->getDesiredSize().x() - child->getTheme()->padding.left - child->getTheme()->margin.right;
-            float childHeight = child->getDesiredSize().y() - child->getTheme()->margin.top - child->getTheme()->margin.bottom;
+            if (child->getHorizontalAlignment() == UIAlignment::Fill && child->getFixedSize().x() < 0.0f) {
+                fillChildCount++;
+            } else {
+                fixedWidthUsed += child->getDesiredSize().x() + child->getMargin().left + child->getMargin().right;
+            }
+        }
 
-            float finalY = startY;
+        float remainingWidth = std::max(0.0f, availableWidth - fixedWidthUsed);
+        float widthPerFillChild = fillChildCount > 0 ? (remainingWidth / fillChildCount) : 0.0f;
+
+        float currentX = startX;
+
+        for (auto& child : children) {
+            currentX += child->getMargin().left;
+            float childWidth = 0.0f;
+            if (child->getHorizontalAlignment() == UIAlignment::Fill && child->getFixedSize().x() < 0.0f) {
+                childWidth = widthPerFillChild - child->getMargin().left - child->getMargin().right;
+            } else {
+                childWidth = child->getDesiredSize().x();
+            }
+
+            float childDesiredHeight = child->getDesiredSize().y() - child->getMargin().top - child->getMargin().bottom;
             float finalHeight = availableHeight;
+            float finalY = startY;
 
             switch (child->getVerticalAlignment()) {
             case UIAlignment::Fill:
-                finalHeight = availableHeight - child->getTheme()->margin.top - child->getTheme()->margin.bottom;
-                finalY = startY + child->getTheme()->margin.top;
+                finalHeight = availableHeight - child->getMargin().top - child->getMargin().bottom;
+                finalY = startY + child->getMargin().top;
                 break;
             case UIAlignment::Start:
-                finalHeight = childHeight;
-                finalY = startY + child->getTheme()->margin.top;
+                finalHeight = childDesiredHeight;
+                finalY = startY + child->getMargin().top;
                 break;
             case UIAlignment::Center:
-                finalHeight = childHeight;
-                finalY = startY + (availableHeight / 2.0f) - (childHeight / 2.0f);
+                finalHeight = childDesiredHeight;
+                finalY = startY + (availableHeight / 2.0f) - (childDesiredHeight / 2.0f);
                 break;
             case UIAlignment::End:
-                finalHeight = childHeight;
-                finalY = startY + availableHeight - childHeight - child->getTheme()->margin.bottom;
+                finalHeight = childDesiredHeight;
+                finalY = startY + availableHeight - childDesiredHeight - child->getMargin().bottom;
                 break;
             }
 
+            Math::Vec2 childAllocSize(childWidth, finalHeight);
             Math::Vec2 childPosition(currentX, finalY);
-            Math::Vec2 childAllocSize(childDesiredWidth, finalHeight);
 
             child->arrange(childPosition, childAllocSize);
 
-            currentX += childDesiredWidth + child->getTheme()->margin.right;
+            currentX += childWidth + child->getMargin().right;
         }
     }
 } // namespace Axiom

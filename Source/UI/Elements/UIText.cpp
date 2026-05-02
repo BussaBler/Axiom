@@ -3,8 +3,8 @@
 
 namespace Axiom {
     Math::Vec2 UIText::getDesiredSize() {
-        desiredSize.x() = textWidth + resolvedTheme->padding.left + resolvedTheme->padding.right + resolvedTheme->margin.left + resolvedTheme->margin.right;
-        desiredSize.y() = textHeight + resolvedTheme->padding.top + resolvedTheme->padding.bottom + resolvedTheme->margin.top + resolvedTheme->margin.bottom;
+        desiredSize.x() = textWidth + padding.left + padding.right + margin.left + margin.right;
+        desiredSize.y() = textHeight + padding.top + padding.bottom + margin.top + margin.bottom;
         return desiredSize;
     }
 
@@ -18,7 +18,7 @@ namespace Axiom {
         textWidth = uiRenderer->calculateTextWidth(text, overrideFontSize.value_or(theme->fontSize), dpiScale);
         textHeight = uiRenderer->calculateTextHeight(overrideFontSize.value_or(theme->fontSize), dpiScale);
 
-        Math::Vec2 textPos = arrangedPosition + Math::Vec2(theme->margin.left + theme->padding.left, theme->margin.top + theme->padding.top);
+        Math::Vec2 textPos = arrangedPosition + Math::Vec2(margin.left + padding.left, margin.top + padding.top);
         uiRenderer->addText(text, textPos, overrideFontSize.value_or(theme->fontSize), dpiScale, overrideTextColor.value_or(theme->textColor));
     }
 } // namespace Axiom

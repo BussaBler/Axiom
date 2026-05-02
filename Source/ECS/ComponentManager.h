@@ -20,7 +20,6 @@ namespace Axiom {
                 componentArray[entityToIndexMap[entityId]] = component;
                 return;
             }
-
             size_t newIndex = size;
             entityToIndexMap[entityId] = newIndex;
             indexToEntityMap[newIndex] = entityId;

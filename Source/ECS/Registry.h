@@ -6,22 +6,19 @@ namespace Axiom {
     class View {
       public:
         View(EntityManager* entityManager, std::bitset<32> signature) : entityManager(entityManager), signature(signature) {}
+
         ~View() = default;
 
         struct Iterator {
-            uint32_t entityId;
-            EntityManager* entityManager;
-            std::bitset<32> signature;
+            using iterator_category = std::forward_iterator_tag;
+            using difference_type = std::ptrdiff_t;
+            using value_type = uint32_t;
+            using pointer = const uint32_t*;
+            using reference = const uint32_t&;
 
             Iterator(uint32_t entityId, EntityManager* entityManager, std::bitset<32> signature)
                 : entityId(entityId), entityManager(entityManager), signature(signature) {
                 advanceToValid();
-            }
-
-            void advanceToValid() {
-                while (entityId < MAX_ENTITIES && (entityManager->getComponentSignature(entityId) & signature) != signature) {
-                    entityId++;
-                }
             }
 
             Iterator& operator++() {
@@ -30,8 +27,28 @@ namespace Axiom {
                 return *this;
             }
 
+            Iterator operator++(int) {
+                Iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
             bool operator!=(const Iterator& other) const { return entityId != other.entityId; }
+            bool operator==(const Iterator& other) const { return entityId == other.entityId; }
+
             uint32_t operator*() const { return entityId; }
+
+          private:
+            uint32_t entityId;
+            EntityManager* entityManager;
+            std::bitset<32> signature;
+
+            void advanceToValid() {
+                while (entityId < MAX_ENTITIES &&
+                       (!entityManager->isEntityAlive(entityId) || (entityManager->getComponentSignature(entityId) & signature) != signature)) {
+                    entityId++;
+                }
+            }
         };
 
         Iterator begin() const { return Iterator(0, entityManager, signature); }
@@ -74,7 +91,7 @@ namespace Axiom {
             return View(entityManager.get(), signature);
         }
 
-        View getAllEntitiesView() {
+        View view() {
             std::bitset<32> signature;
             return View(entityManager.get(), signature);
         }
