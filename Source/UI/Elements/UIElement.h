@@ -33,6 +33,11 @@ namespace Axiom {
         }
     };
 
+    struct UIContext {
+        UIRenderer* renderer;
+        float dpiScale;
+    };
+
     class UIElement {
       public:
         UIElement() = default;
@@ -56,12 +61,12 @@ namespace Axiom {
         inline UIElement* getParent() const { return parent; }
         inline const std::vector<std::shared_ptr<UIElement>>& getChildren() const { return children; }
 
-        virtual Math::Vec2 getDesiredSize() { return desiredSize; }
-        virtual void arrange(const Math::Vec2& position, const Math::Vec2& size) {
+        virtual Math::Vec2 getDesiredSize(const UIContext& context) { return desiredSize; }
+        virtual void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
             arrangedPosition = position;
             arrangedSize = size;
             for (const auto& child : children) {
-                child->arrange(position, size);
+                child->arrange(context, position, size);
             }
         }
         void resolveTheme() {
@@ -76,9 +81,9 @@ namespace Axiom {
             }
         }
 
-        virtual void onRender(UIRenderer* renderer) {
+        virtual void onRender(const UIContext& context) {
             for (const auto& child : children) {
-                child->onRender(renderer);
+                child->onRender(context);
             }
         }
         virtual bool onEvent(Event& event) {

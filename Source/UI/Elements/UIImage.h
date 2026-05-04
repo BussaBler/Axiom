@@ -7,9 +7,9 @@ namespace Axiom {
         UIImage() = default;
         ~UIImage() = default;
 
-        Math::Vec2 getDesiredSize() override;
+        Math::Vec2 getDesiredSize(const UIContext& context) override;
 
-        void onRender(UIRenderer* uiRenderer) override;
+        void onRender(const UIContext& context) override;
 
         void setTexture(const std::shared_ptr<Texture>& newTexture) { texture = newTexture; }
 

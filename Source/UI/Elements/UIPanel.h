@@ -7,10 +7,10 @@ namespace Axiom {
         UIPanel() = default;
         ~UIPanel() = default;
 
-        Math::Vec2 getDesiredSize() override;
-        void arrange(const Math::Vec2& position, const Math::Vec2& size) override;
+        Math::Vec2 getDesiredSize(const UIContext& context) override;
+        void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) override;
 
-        void onRender(UIRenderer* uiRenderer) override;
+        void onRender(const UIContext& context) override;
 
         void setBackgroundColor(const Color& color) { overridePanelBackgroundColor = color; }
 

@@ -1,11 +1,11 @@
 #include "UIVerticalBox.h"
 
 namespace Axiom {
-    Math::Vec2 UIVerticalBox::getDesiredSize() {
+    Math::Vec2 UIVerticalBox::getDesiredSize(const UIContext& context) {
         Math::Vec2 desiredSize(0, 0);
 
         for (const auto& child : children) {
-            Math::Vec2 childDesiredSize = child->getDesiredSize();
+            Math::Vec2 childDesiredSize = child->getDesiredSize(context);
             desiredSize.x() = std::max(desiredSize.x(), childDesiredSize.x());
             desiredSize.y() += childDesiredSize.y();
         }
@@ -16,7 +16,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIVerticalBox::arrange(const Math::Vec2& position, const Math::Vec2& size) {
+    void UIVerticalBox::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
         arrangedPosition = position;
         arrangedSize = size;
 
@@ -26,8 +26,8 @@ namespace Axiom {
 
         for (const auto& child : children) {
             currentY += child->getMargin().top;
-            float childDesiredWidth = child->getDesiredSize().x() - child->getMargin().left - child->getMargin().right;
-            float childHeight = child->getDesiredSize().y() - child->getMargin().top - child->getMargin().bottom;
+            float childDesiredWidth = child->getDesiredSize(context).x() - child->getMargin().left - child->getMargin().right;
+            float childHeight = child->getDesiredSize(context).y() - child->getMargin().top - child->getMargin().bottom;
 
             float finalX = startX;
             float finalWidth = availableWidth;
@@ -54,7 +54,7 @@ namespace Axiom {
             Math::Vec2 childPosition(finalX, currentY);
             Math::Vec2 childAllocSize(finalWidth, childHeight);
 
-            child->arrange(childPosition, childAllocSize);
+            child->arrange(context, childPosition, childAllocSize);
 
             currentY += childHeight + child->getMargin().bottom;
         }

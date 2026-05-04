@@ -1,11 +1,11 @@
 #include "UIPanel.h"
 
 namespace Axiom {
-    Math::Vec2 UIPanel::getDesiredSize() {
+    Math::Vec2 UIPanel::getDesiredSize(const UIContext& context) {
         Math::Vec2 autoSize = Math::Vec2::zero();
 
         for (const auto& child : children) {
-            Math::Vec2 childSize = child->getDesiredSize();
+            Math::Vec2 childSize = child->getDesiredSize(context);
             autoSize.x() = std::max(autoSize.x(), childSize.x());
             autoSize.y() = std::max(autoSize.y(), childSize.y());
         }
@@ -24,7 +24,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIPanel::arrange(const Math::Vec2& position, const Math::Vec2& size) {
+    void UIPanel::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
         arrangedPosition = position;
         arrangedSize = size;
 
@@ -46,14 +46,14 @@ namespace Axiom {
             case UIAlignment::Fill:
                 break;
             case UIAlignment::Start:
-                finalWidth = child->getDesiredSize().x();
+                finalWidth = child->getDesiredSize(context).x();
                 break;
             case UIAlignment::Center:
-                finalWidth = child->getDesiredSize().x();
+                finalWidth = child->getDesiredSize(context).x();
                 childX = startX + (availableWidth / 2.0f) - (finalWidth / 2.0f);
                 break;
             case UIAlignment::End:
-                finalWidth = child->getDesiredSize().x();
+                finalWidth = child->getDesiredSize(context).x();
                 childX = startX + availableWidth - finalWidth - child->getMargin().right;
                 break;
             default:
@@ -64,14 +64,14 @@ namespace Axiom {
             case UIAlignment::Fill:
                 break;
             case UIAlignment::Start:
-                finalHeight = child->getDesiredSize().y();
+                finalHeight = child->getDesiredSize(context).y();
                 break;
             case UIAlignment::Center:
-                finalHeight = child->getDesiredSize().y();
+                finalHeight = child->getDesiredSize(context).y();
                 childY = startY + (availableHeight / 2.0f) - (finalHeight / 2.0f);
                 break;
             case UIAlignment::End:
-                finalHeight = child->getDesiredSize().y();
+                finalHeight = child->getDesiredSize(context).y();
                 childY = startY + availableHeight - finalHeight - child->getMargin().bottom;
                 break;
             default:
@@ -81,11 +81,11 @@ namespace Axiom {
             Math::Vec2 childPosition(childX, childY);
             Math::Vec2 childAllocSize(finalWidth, finalHeight);
 
-            child->arrange(childPosition, childAllocSize);
+            child->arrange(context, childPosition, childAllocSize);
         }
     }
 
-    void UIPanel::onRender(UIRenderer* uiRenderer) {
+    void UIPanel::onRender(const UIContext& context) {
         Math::Vec4 radii = Math::Vec4::zero();
         switch (horizontalAlignment) {
         case UIAlignment::Fill:
@@ -105,7 +105,7 @@ namespace Axiom {
             break;
         }
 
-        uiRenderer->addBasicQuad(arrangedPosition, arrangedSize, overridePanelBackgroundColor.value_or(resolvedTheme->panelBackgroundColor), radii);
-        UIElement::onRender(uiRenderer);
+        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, overridePanelBackgroundColor.value_or(resolvedTheme->panelBackgroundColor), radii);
+        UIElement::onRender(context);
     }
 } // namespace Axiom

@@ -15,10 +15,14 @@ namespace Axiom {
         instance = this;
 
         window = Window::create(WindowProps());
+        Locator::provideWindow(window.get());
         window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
         renderer = std::make_unique<Renderer>(window.get());
+        Locator::provideRenderer(renderer.get());
         uiRenderer = std::make_unique<UIRenderer>();
+        Locator::provideUIRenderer(uiRenderer.get());
+
         AssetManager::init();
         ComponentReflection::init();
     }
@@ -133,12 +137,12 @@ namespace Axiom {
     void Application::run() {
         while (running) {
             window->beginFrame();
-            uiRenderer->beginFrame();
             for (const auto& layer : layerStack) {
                 layer->onUpdate();
             }
+            uiRenderer->beginFrame();
             for (const auto& layer : layerStack) {
-                layer->onUIRender(uiRenderer.get());
+                layer->onUIRender();
             }
 
             CommandBuffer* commandBuffer = renderer->beginFrame();

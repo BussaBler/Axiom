@@ -1,7 +1,6 @@
 #pragma once
 #include "Event/Event.h"
 #include "Renderer/CommandBuffer.h"
-#include "UI/UIRenderer.h"
 
 namespace Axiom {
     class Layer {
@@ -12,7 +11,7 @@ namespace Axiom {
         virtual void onDetach() {}
         virtual void onUpdate() {}
         virtual void onEvent(Event& event) {}
-        virtual void onUIRender(UIRenderer* uiRenderer) {}
+        virtual void onUIRender() {}
         virtual void onRender(CommandBuffer* commandBuffer) {}
         virtual void onSuspend() {}
         virtual void onResume() {}

@@ -7,9 +7,9 @@ namespace Axiom {
         UIText(const std::string& text) : text(text) {}
         ~UIText() = default;
 
-        Math::Vec2 getDesiredSize() override;
+        Math::Vec2 getDesiredSize(const UIContext& context) override;
 
-        void onRender(UIRenderer* uiRenderer) override;
+        void onRender(const UIContext& context) override;
 
         void setText(const std::string& newText) { text = newText; }
         void setColor(const Color& newColor) { overrideTextColor = newColor; }

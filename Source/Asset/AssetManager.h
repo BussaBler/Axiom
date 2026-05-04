@@ -1,5 +1,6 @@
 #pragma once
 #include "Asset.h"
+#include "Core/Locator.h"
 #include "MeshAsset.h"
 #include "ShaderAsset.h"
 #include "TextureAsset.h"

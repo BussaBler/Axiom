@@ -6,9 +6,7 @@
 namespace Axiom {
     class KeyEvent : public Event {
       public:
-        KeyCode getKeyCode() const {
-            return keycode;
-        }
+        KeyCode getKeyCode() const { return keycode; }
         EVENT_CLASS_CATEGORY(EventCategory::EventCategoryKeyboard | EventCategory::EventCategoryApplicationInput)
       protected:
         KeyEvent(KeyCode keycode) : keycode(keycode) {};
@@ -19,12 +17,9 @@ namespace Axiom {
 
     class KeyPressedEvent : public KeyEvent {
       public:
-        KeyPressedEvent(KeyCode keycode, int repeatCount) : KeyEvent(keycode), repeatCount(repeatCount) {
-        }
+        KeyPressedEvent(KeyCode keycode, int repeatCount) : KeyEvent(keycode), repeatCount(repeatCount) {}
 
-        int getRepeatCount() const {
-            return repeatCount;
-        }
+        int getRepeatCount() const { return repeatCount; }
         std::string toString() const override {
             std::stringstream ss;
             ss << "KeyPressedEvent: " << static_cast<uint32_t>(keycode) << " (" << repeatCount << " repeats)";
@@ -37,8 +32,7 @@ namespace Axiom {
 
     class KeyReleasedEvent : public KeyEvent {
       public:
-        KeyReleasedEvent(KeyCode keycode) : KeyEvent(keycode) {
-        }
+        KeyReleasedEvent(KeyCode keycode) : KeyEvent(keycode) {}
 
         std::string toString() const override {
             std::stringstream ss;
@@ -51,8 +45,7 @@ namespace Axiom {
 
     class KeyTypedEvent : public KeyEvent {
       public:
-        KeyTypedEvent(char keyChar) : KeyEvent(KeyCode::None), keyChar(keyChar) {
-        }
+        KeyTypedEvent(char keyChar) : KeyEvent(KeyCode::None), keyChar(keyChar) {}
 
         std::string toString() const override {
             std::stringstream ss;
@@ -61,9 +54,7 @@ namespace Axiom {
         }
         EVENT_CLASS_TYPE(KeyTyped)
 
-        char getKeyChar() const {
-            return keyChar;
-        }
+        char getKeyChar() const { return keyChar; }
 
       private:
         char keyChar;

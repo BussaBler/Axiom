@@ -1,5 +1,6 @@
 #pragma once
 #include "Asset/AssetManager.h"
+#include "Core/Locator.h"
 #include "Font.h"
 #include "Math/Color.h"
 #include "Renderer/Renderer.h"

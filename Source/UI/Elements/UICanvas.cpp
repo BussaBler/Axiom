@@ -1,7 +1,7 @@
 #include "UICanvas.h"
 
 namespace Axiom {
-    void UICanvas::arrange(const Math::Vec2& position, const Math::Vec2& size) {
+    void UICanvas::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
         arrangedPosition = position;
         arrangedSize = size;
 
@@ -23,14 +23,14 @@ namespace Axiom {
             case UIAlignment::Fill:
                 break;
             case UIAlignment::Start:
-                finalWidth = child->getDesiredSize().x();
+                finalWidth = child->getDesiredSize(context).x();
                 break;
             case UIAlignment::Center:
-                finalWidth = child->getDesiredSize().x();
+                finalWidth = child->getDesiredSize(context).x();
                 childX = startX + (availableWidth / 2.0f) - (finalWidth / 2.0f);
                 break;
             case UIAlignment::End:
-                finalWidth = child->getDesiredSize().x();
+                finalWidth = child->getDesiredSize(context).x();
                 childX = startX + availableWidth - finalWidth;
                 break;
             default:
@@ -41,14 +41,14 @@ namespace Axiom {
             case UIAlignment::Fill:
                 break;
             case UIAlignment::Start:
-                finalHeight = child->getDesiredSize().y();
+                finalHeight = child->getDesiredSize(context).y();
                 break;
             case UIAlignment::Center:
-                finalHeight = child->getDesiredSize().y();
+                finalHeight = child->getDesiredSize(context).y();
                 childY = startY + (availableHeight / 2.0f) - (finalHeight / 2.0f);
                 break;
             case UIAlignment::End:
-                finalHeight = child->getDesiredSize().y();
+                finalHeight = child->getDesiredSize(context).y();
                 childY = startY + availableHeight - finalHeight;
                 break;
             default:
@@ -58,7 +58,7 @@ namespace Axiom {
             Math::Vec2 childPosition(childX, childY);
             Math::Vec2 childAllocSize(finalWidth, finalHeight);
 
-            child->arrange(childPosition, childAllocSize);
+            child->arrange(context, childPosition, childAllocSize);
         }
     }
 } // namespace Axiom

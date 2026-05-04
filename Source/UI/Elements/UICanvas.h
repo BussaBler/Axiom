@@ -7,6 +7,6 @@ namespace Axiom {
         UICanvas() = default;
         ~UICanvas() = default;
 
-        void arrange(const Math::Vec2& position, const Math::Vec2& size) override;
+        void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) override;
     };
 }

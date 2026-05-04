@@ -1,4 +1,5 @@
 #pragma once
+#include "Asset/AssetManager.h"
 #include "Asset/ShaderAsset.h"
 #include "Components/CameraComponent.h"
 #include "Components/DirectionalLightComponent.h"
@@ -6,6 +7,7 @@
 #include "Components/Sprite2DComponent.h"
 #include "Components/TagComponent.h"
 #include "Components/TransformComponent.h"
+#include "Core/Locator.h"
 #include "Renderer/Renderer.h"
 #include "Scene.h"
 

@@ -18,7 +18,7 @@ namespace Axiom {
         dispatcher.dispatch<KeyTypedEvent>(std::bind(&ConsoleLayer::onKeyTyped, this, std::placeholders::_1));
     }
 
-    void ConsoleLayer::onUIRender(UIRenderer* uiRenderer) {
+    void ConsoleLayer::onUIRender() {
     }
 
     void ConsoleLayer::onRender(CommandBuffer* commandBuffer) {
@@ -51,6 +51,6 @@ namespace Axiom {
             inputBuffer += c;
         }
 
-        return true;
+        return false;
     }
 } // namespace Axiom

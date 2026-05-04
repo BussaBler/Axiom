@@ -1,11 +1,11 @@
 #include "UIHorizontalBox.h"
 
 namespace Axiom {
-    Math::Vec2 UIHorizontalBox::getDesiredSize() {
+    Math::Vec2 UIHorizontalBox::getDesiredSize(const UIContext& context) {
         Math::Vec2 desiredSize(0, 0);
 
         for (const auto& child : children) {
-            Math::Vec2 childDesiredSize = child->getDesiredSize();
+            Math::Vec2 childDesiredSize = child->getDesiredSize(context);
             desiredSize.x() += childDesiredSize.x();
             desiredSize.y() = std::max(desiredSize.y(), childDesiredSize.y());
         }
@@ -16,7 +16,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIHorizontalBox::arrange(const Math::Vec2& position, const Math::Vec2& size) {
+    void UIHorizontalBox::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
         arrangedPosition = position;
         arrangedSize = size;
 
@@ -33,7 +33,7 @@ namespace Axiom {
             if (child->getHorizontalAlignment() == UIAlignment::Fill && child->getFixedSize().x() < 0.0f) {
                 fillChildCount++;
             } else {
-                fixedWidthUsed += child->getDesiredSize().x() + child->getMargin().left + child->getMargin().right;
+                fixedWidthUsed += child->getDesiredSize(context).x() + child->getMargin().left + child->getMargin().right;
             }
         }
 
@@ -48,10 +48,10 @@ namespace Axiom {
             if (child->getHorizontalAlignment() == UIAlignment::Fill && child->getFixedSize().x() < 0.0f) {
                 childWidth = widthPerFillChild - child->getMargin().left - child->getMargin().right;
             } else {
-                childWidth = child->getDesiredSize().x();
+                childWidth = child->getDesiredSize(context).x();
             }
 
-            float childDesiredHeight = child->getDesiredSize().y() - child->getMargin().top - child->getMargin().bottom;
+            float childDesiredHeight = child->getDesiredSize(context).y() - child->getMargin().top - child->getMargin().bottom;
             float finalHeight = availableHeight;
             float finalY = startY;
 
@@ -77,7 +77,7 @@ namespace Axiom {
             Math::Vec2 childAllocSize(childWidth, finalHeight);
             Math::Vec2 childPosition(currentX, finalY);
 
-            child->arrange(childPosition, childAllocSize);
+            child->arrange(context, childPosition, childAllocSize);
 
             currentX += childWidth + child->getMargin().right;
         }

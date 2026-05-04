@@ -1,7 +1,7 @@
 #include "UIImage.h"
 
 namespace Axiom {
-    Math::Vec2 UIImage::getDesiredSize() {
+    Math::Vec2 UIImage::getDesiredSize(const UIContext& context) {
         Math::Vec2 size = Math::Vec2::zero();
 
         if (fixedSize.x() > 0) {
@@ -16,10 +16,10 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIImage::onRender(UIRenderer* uiRenderer) {
+    void UIImage::onRender(const UIContext& context) {
         if (texture) {
-            uiRenderer->addImageQuad(arrangedPosition, arrangedSize, texture.get());
+            context.renderer->addImageQuad(arrangedPosition, arrangedSize, texture.get());
         }
-        UIElement::onRender(uiRenderer);
+        UIElement::onRender(context);
     }
 } // namespace Axiom

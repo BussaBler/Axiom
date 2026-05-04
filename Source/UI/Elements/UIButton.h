@@ -6,10 +6,9 @@ namespace Axiom {
       public:
         UIButton(const std::string& text) : text(text) {}
 
-        virtual Math::Vec2 getDesiredSize() override;
-        virtual void arrange(const Math::Vec2& position, const Math::Vec2& size) override;
+        virtual Math::Vec2 getDesiredSize(const UIContext& context) override;
 
-        virtual void onRender(UIRenderer* renderer) override;
+        virtual void onRender(const UIContext& context) override;
         virtual bool onEvent(Event& event) override;
 
         inline virtual void setNormalColor(const Color& color) { overrideNormalColor = color; }

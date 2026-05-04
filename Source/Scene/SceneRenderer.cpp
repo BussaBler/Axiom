@@ -1,5 +1,4 @@
 #include "SceneRenderer.h"
-#include "Core/Application.h"
 
 namespace Axiom {
     SceneRenderer::SceneRenderer() {
@@ -8,14 +7,14 @@ namespace Axiom {
         globalDataLayoutBindings[0].type = ResourceType::UniformBuffer;
         globalDataLayoutBindings[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
         globalDataLayoutBindings[0].count = 1;
-        globalDataResourceLayout = Application::getRenderer()->createResourceLayout(globalDataLayoutBindings);
+        globalDataResourceLayout = Locator::getRenderer()->createResourceLayout(globalDataLayoutBindings);
 
         Buffer::CreateInfo globalDataBufferCreateInfo = {
             .size = sizeof(GlobalData),
             .usage = BufferUsage::Uniform,
             .memoryUsage = MemoryUsage::GPUandCPU,
         };
-        globalDataBuffer = Application::getRenderer()->createBuffer(globalDataBufferCreateInfo);
+        globalDataBuffer = Locator::getRenderer()->createBuffer(globalDataBufferCreateInfo);
 
         createGeometryPassResources();
         createGizmoPassResources();
@@ -24,7 +23,7 @@ namespace Axiom {
     void SceneRenderer::geometryPass(const SceneRenderPassData& data) {
         std::vector<SpriteInstance> spriteInstances;
         spriteInstances.reserve(MAX_SPRITE_INSTANCES);
-        std::vector<Texture*> spriteTextureSlots = {Application::getRenderer()->getDefaultTexture()};
+        std::vector<Texture*> spriteTextureSlots = {Locator::getRenderer()->getDefaultTexture()};
         auto spriteEntities = data.scene->view<TransformComponent, Sprite2DComponent>();
 
         for (uint32_t entityId : spriteEntities) {
@@ -55,7 +54,7 @@ namespace Axiom {
                 }
             }
 
-            Math::Mat4 model = Math::Mat4::model(transform.position, transform.rotation, transform.scale);
+            Math::Mat4 model = Math::Mat4::model(transform.position, transform.rotation * Math::DEG_TO_RAD, transform.scale);
             spriteInstances.push_back({model, sprite.color, Math::Vec4((float)textureSlotIndex, 0.0f, 0.0f, 0.0f)});
         }
 
@@ -65,7 +64,7 @@ namespace Axiom {
         for (uint32_t entityId : meshEntities) {
             auto& transform = data.scene->getEntity(entityId).getComponent<TransformComponent>();
             auto& mesh = data.scene->getEntity(entityId).getComponent<MeshComponent>();
-            auto model = Math::Mat4::model(transform.position, transform.rotation, transform.scale);
+            auto model = Math::Mat4::model(transform.position, transform.rotation * Math::DEG_TO_RAD, transform.scale);
             meshBatches[mesh.meshId].push_back({model});
         }
 
@@ -75,7 +74,7 @@ namespace Axiom {
         for (uint32_t entityId : directionalLightEntities) {
             auto& transform = data.scene->getEntity(entityId).getComponent<TransformComponent>();
             auto& directionalLight = data.scene->getEntity(entityId).getComponent<DirectionalLightComponent>();
-            Math::Mat4 rotation = Math::Mat4::model(Math::Vec3::zero(), transform.rotation, Math::Vec3::one());
+            Math::Mat4 rotation = Math::Mat4::model(Math::Vec3::zero(), transform.rotation * Math::DEG_TO_RAD, Math::Vec3::one());
             Math::Vec3 lightDir = rotation.getForward();
 
             globalData.directionalLightColor = directionalLight.color;
@@ -100,7 +99,7 @@ namespace Axiom {
             resourceSetBindings[0].maxNumberOfResources = MAX_TEXTURE_SLOTS;
             resourceSetBindings[1].binding = 1;
             resourceSetBindings[1].type = ResourceType::Sampler;
-            resourceSetBindings[1].samplers = {Application::getRenderer()->getLinearSampler()};
+            resourceSetBindings[1].samplers = {Locator::getRenderer()->getLinearSampler()};
             spriteResourceSets[1]->update(resourceSetBindings);
 
             data.commandBuffer->bindPipeline(spritePipeline.get());
@@ -180,32 +179,32 @@ namespace Axiom {
 
         Buffer::CreateInfo spriteVertexBufferCreateInfo = {
             .size = sizeof(SpriteVertex) * 4, .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        spriteVertexBuffer = Application::getRenderer()->createBuffer(spriteVertexBufferCreateInfo);
+        spriteVertexBuffer = Locator::getRenderer()->createBuffer(spriteVertexBufferCreateInfo);
         Buffer::CreateInfo spriteVertexStagingBufferCreateInfo = {
             .size = sizeof(SpriteVertex) * 4, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> spriteVertexStagingBuffer = Application::getRenderer()->createBuffer(spriteVertexStagingBufferCreateInfo);
+        std::unique_ptr<Buffer> spriteVertexStagingBuffer = Locator::getRenderer()->createBuffer(spriteVertexStagingBufferCreateInfo);
         std::vector<SpriteVertex> vertices = {
             {{-0.5f, -0.5f}, {0.0f, 0.0f}}, {{0.5f, -0.5f}, {1.0f, 0.0f}}, {{0.5f, 0.5f}, {1.0f, 1.0f}}, {{-0.5f, 0.5f}, {0.0f, 1.0f}}};
         spriteVertexStagingBuffer->setData<SpriteVertex>(vertices);
-        auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         commandBuffer->copyBuffer(spriteVertexStagingBuffer.get(), spriteVertexBuffer.get(), spriteVertexBufferCreateInfo.size);
-        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
         Buffer::CreateInfo spriteIndexBufferCreateInfo = {
             .size = sizeof(uint32_t) * 6, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        spriteIndexBuffer = Application::getRenderer()->createBuffer(spriteIndexBufferCreateInfo);
+        spriteIndexBuffer = Locator::getRenderer()->createBuffer(spriteIndexBufferCreateInfo);
         Buffer::CreateInfo spriteStagingBufferCreateInfo = {
             .size = sizeof(uint32_t) * 6, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> spriteStagingBuffer = Application::getRenderer()->createBuffer(spriteStagingBufferCreateInfo);
+        std::unique_ptr<Buffer> spriteStagingBuffer = Locator::getRenderer()->createBuffer(spriteStagingBufferCreateInfo);
         std::vector<uint32_t> indices = {0, 1, 2, 0, 2, 3};
-        commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         spriteStagingBuffer->setData<uint32_t>(indices);
         commandBuffer->copyBuffer(spriteStagingBuffer.get(), spriteIndexBuffer.get(), spriteStagingBufferCreateInfo.size);
-        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
         Buffer::CreateInfo spriteInstanceBufferCreateInfo = {
             .size = sizeof(SpriteInstance) * MAX_SPRITE_INSTANCES, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
-        spriteInstanceBuffer = Application::getRenderer()->createBuffer(spriteInstanceBufferCreateInfo);
+        spriteInstanceBuffer = Locator::getRenderer()->createBuffer(spriteInstanceBufferCreateInfo);
 
         std::vector<VertexBindingDescription> spriteVertexBindings = {{.binding = 0, .stride = sizeof(SpriteVertex), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> spriteVertexAttributes = {
@@ -218,7 +217,7 @@ namespace Axiom {
         spriteResourceLayoutBindings[0].type = ResourceType::StorageBuffer;
         spriteResourceLayoutBindings[0].stages = ShaderStage::Vertex;
         spriteResourceLayoutBindings[0].count = 1;
-        spriteResourceLayouts.push_back(Application::getRenderer()->createResourceLayout(spriteResourceLayoutBindings));
+        spriteResourceLayouts.push_back(Locator::getRenderer()->createResourceLayout(spriteResourceLayoutBindings));
         std::vector<ResourceLayout::BindingCreateInfo> spriteResourceLayoutBindings2(2);
         spriteResourceLayoutBindings2[0].binding = 0;
         spriteResourceLayoutBindings2[0].type = ResourceType::Texture;
@@ -228,7 +227,7 @@ namespace Axiom {
         spriteResourceLayoutBindings2[1].type = ResourceType::Sampler;
         spriteResourceLayoutBindings2[1].stages = ShaderStage::Fragment;
         spriteResourceLayoutBindings2[1].count = 1;
-        spriteResourceLayouts.push_back(Application::getRenderer()->createResourceLayout(spriteResourceLayoutBindings2));
+        spriteResourceLayouts.push_back(Locator::getRenderer()->createResourceLayout(spriteResourceLayoutBindings2));
 
         std::vector<ResourceSet::Binding> spriteResourceSetBindings(1);
         spriteResourceSetBindings[0].binding = 0;
@@ -245,10 +244,10 @@ namespace Axiom {
                                                          .enableBlending = false,
                                                          .enableDepthTest = true,
                                                          .enableDepthWrite = true,
-                                                         .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
-                                                         .depthAttachmentFormat = Application::getRenderer()->getDepthTextureFormat(),
+                                                         .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
+                                                         .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
                                                          .resourceLayouts = {spriteResourceLayouts[0].get(), spriteResourceLayouts[1].get()}};
-        spritePipeline = Application::getRenderer()->createPipeline(spritePipelineCreateInfo);
+        spritePipeline = Locator::getRenderer()->createPipeline(spritePipelineCreateInfo);
         spriteResourceSets.push_back(spritePipeline->createResourceSet(spriteResourceLayouts[0].get()));
         spriteResourceSets.push_back(spritePipeline->createResourceSet(spriteResourceLayouts[1].get()));
         spriteResourceSets[0]->update(spriteResourceSetBindings);
@@ -259,7 +258,7 @@ namespace Axiom {
 
         Buffer::CreateInfo meshInstanceBufferCreateInfo = {
             .size = sizeof(MeshInstance) * MAX_MESH_INSTANCES, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
-        meshInstanceBuffer = Application::getRenderer()->createBuffer(meshInstanceBufferCreateInfo);
+        meshInstanceBuffer = Locator::getRenderer()->createBuffer(meshInstanceBufferCreateInfo);
 
         std::vector<VertexBindingDescription> meshVertexBindings = {{.binding = 0, .stride = sizeof(MeshVertex), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> meshVertexAttributes = {
@@ -273,7 +272,7 @@ namespace Axiom {
         meshResourceLayoutBindings[0].type = ResourceType::StorageBuffer;
         meshResourceLayoutBindings[0].stages = ShaderStage::Vertex;
         meshResourceLayoutBindings[0].count = 1;
-        meshResourceLayouts.push_back(Application::getRenderer()->createResourceLayout(meshResourceLayoutBindings));
+        meshResourceLayouts.push_back(Locator::getRenderer()->createResourceLayout(meshResourceLayoutBindings));
 
         std::vector<ResourceSet::Binding> meshResourceSetBindings(1);
         meshResourceSetBindings[0].binding = 0;
@@ -290,10 +289,10 @@ namespace Axiom {
                                                        .enableBlending = false,
                                                        .enableDepthTest = true,
                                                        .enableDepthWrite = true,
-                                                       .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
-                                                       .depthAttachmentFormat = Application::getRenderer()->getDepthTextureFormat(),
+                                                       .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
+                                                       .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
                                                        .resourceLayouts = {globalDataResourceLayout.get(), meshResourceLayouts.back().get()}};
-        meshPipeline = Application::getRenderer()->createPipeline(meshPipelineCreateInfo);
+        meshPipeline = Locator::getRenderer()->createPipeline(meshPipelineCreateInfo);
         meshResourceSets.push_back(meshPipeline->createResourceSet(meshResourceLayouts.back().get()));
         meshResourceSets.back()->update(meshResourceSetBindings);
         globalDataResourceSet = meshPipeline->createResourceSet(globalDataResourceLayout.get());
@@ -310,18 +309,18 @@ namespace Axiom {
         gizmoShader = AssetManager::getAsset<ShaderAsset>(gizmoShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(GizmoVertex) * 2 * 3, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
-        gizmoVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        gizmoVertexBuffer = Locator::getRenderer()->createBuffer(vertexBufferCreateInfo);
         Buffer::CreateInfo stagingBufferCreateInfo = {
             .size = sizeof(GizmoVertex) * 2 * 3, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> stagingBuffer = Application::getRenderer()->createBuffer(stagingBufferCreateInfo);
+        std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(stagingBufferCreateInfo);
         std::vector<GizmoVertex> vertices = {
             {{0.0f, 0.0f, 0.0f, 1.0f}, Color::red()},     {{100.0f, 0.0f, 0.0f, 1.0f}, Color::red()}, {{0.0f, 0.0f, 0.0f, 1.0f}, Color::green()},
             {{0.0f, 100.0f, 0.0f, 1.0f}, Color::green()}, {{0.0f, 0.0f, 0.0f, 1.0f}, Color::blue()},  {{0.0f, 0.0f, 100.0f, 1.0f}, Color::blue()},
         };
         stagingBuffer->setData<GizmoVertex>(vertices);
-        auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         commandBuffer->copyBuffer(stagingBuffer.get(), gizmoVertexBuffer.get(), vertexBufferCreateInfo.size);
-        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
         RenderAttachment colorAttachment{};
         colorAttachment.loadOp = LoadOp::Load;
@@ -346,9 +345,9 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = false,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
+                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
                                                    .depthAttachmentFormat = Format::Undefined,
                                                    .resourceLayouts = {}};
-        gizmoPipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
+        gizmoPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
     }
 } // namespace Axiom

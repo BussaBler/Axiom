@@ -1,13 +1,10 @@
-#include "UIButton.h"
-#include "Core/Application.h"
+#include "UICheckbox.h"
 #include "Event/MouseEvent.h"
 
 namespace Axiom {
-    Math::Vec2 UIButton::getDesiredSize(const UIContext& context) {
-        textWidth = context.renderer->calculateTextWidth(text, resolvedTheme->fontSize, context.dpiScale);
-        textHeight = context.renderer->calculateTextHeight(resolvedTheme->fontSize, context.dpiScale);
-        desiredSize.x() = textWidth + padding.left + padding.right + margin.left + margin.right;
-        desiredSize.y() = textHeight + padding.top + padding.bottom + margin.top + margin.bottom;
+    Math::Vec2 UICheckbox::getDesiredSize(const UIContext& context) {
+        desiredSize.x() = 20.0f;
+        desiredSize.y() = 20.0f;
 
         if (fixedSize.x() > 0) {
             desiredSize.x() = fixedSize.x();
@@ -15,26 +12,27 @@ namespace Axiom {
         if (fixedSize.y() > 0) {
             desiredSize.y() = fixedSize.y();
         }
+
         return desiredSize;
     }
 
-    void UIButton::onRender(const UIContext& context) {
+    void UICheckbox::onRender(const UIContext& context) {
         Color normalColor = overrideNormalColor.value_or(resolvedTheme->controlNormalColor);
         Color hoverColor = overrideHoverColor.value_or(resolvedTheme->controlHoverColor);
         Color activeColor = overrideActiveColor.value_or(resolvedTheme->controlActiveColor);
-        Color backgroundColor = isActive ? activeColor : (isHovered ? hoverColor : normalColor);
+
+        bool value = valueGetter && valueGetter();
+        Color backgroundColor = isHovered ? hoverColor : normalColor;
 
         context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius);
-
-        float textX = arrangedPosition.x() + (arrangedSize.x() - textWidth) / 2.0f;
-        float textY = arrangedPosition.y() + (arrangedSize.y() - textHeight) / 2.0f;
-
-        context.renderer->addText(text, Math::Vec2(textX, textY), getTheme()->fontSize, context.dpiScale, getTheme()->textColor);
-
-        UIElement::onRender(context);
+        if (value) {
+            Math::Vec2 checkSize = arrangedSize * 0.7f;
+            Math::Vec2 checkPos = arrangedPosition + (arrangedSize - checkSize) * 0.5f;
+            context.renderer->addBasicQuad(checkPos, Math::Vec2(checkSize), activeColor, resolvedTheme->borderRadius * 0.8f);
+        }
     }
 
-    bool UIButton::onEvent(Event& event) {
+    bool UICheckbox::onEvent(Event& event) {
         if (UIElement::onEvent(event)) {
             return true;
         }
@@ -59,10 +57,13 @@ namespace Axiom {
         });
 
         dispatcher.dispatch<MouseButtonReleasedEvent>([this](const MouseButtonReleasedEvent& event) {
-            if (isActive && event.getMouseButton() == KeyCode::LeftButton) {
-                isActive = false;
-                if (isHovered && onClick) {
-                    onClick();
+            if (isHovered && event.getMouseButton() == KeyCode::LeftButton) {
+                if (isActive && event.getMouseButton() == KeyCode::LeftButton) {
+                    isActive = false;
+                    if (valueSetter) {
+                        bool currentValue = valueGetter ? valueGetter() : false;
+                        valueSetter(!currentValue);
+                    }
                 }
                 return true;
             }

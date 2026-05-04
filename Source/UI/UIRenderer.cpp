@@ -13,15 +13,15 @@ namespace Axiom {
                                                    .aspect = TextureAspect::Color,
                                                    .initialState = TextureState::Undefined,
                                                    .memoryUsage = MemoryUsage::GPUOnly};
-        fontAtlasTexture = Application::getRenderer()->createTexture(fontAtlasCreateInfo);
+        fontAtlasTexture = Locator::getRenderer()->createTexture(fontAtlasCreateInfo);
 
-        std::unique_ptr<Buffer> stagingBuffer = Application::getRenderer()->createBuffer(
+        std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(
             {.size = asciiAtlas.width * asciiAtlas.height * asciiAtlas.channels, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU});
         stagingBuffer->setData<uint8_t>(asciiAtlas.pixels);
 
-        auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         commandBuffer->copyBufferToTexture(stagingBuffer.get(), fontAtlasTexture.get(), asciiAtlas.width, asciiAtlas.height);
-        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
         createBasicRenderObjects();
         createFontRenderObjects();
@@ -158,7 +158,7 @@ namespace Axiom {
     }
 
     void UIRenderer::onRender(CommandBuffer* commandBuffer, Texture* renderTarget) {
-        Math::Vec2 windowSize = Math::Vec2(Application::getWindow()->getWidth(), Application::getWindow()->getHeight());
+        Math::Vec2 windowSize = Math::Vec2(Locator::getWindow()->getWidth(), Locator::getWindow()->getHeight());
         Math::iVec2 renderTargetSize = renderTarget->getSize();
         Math::Mat4 projection = Math::Mat4::orthographic(0.0f, windowSize.x(), 0.0f, windowSize.y(), -1.0f, 1.0f);
 
@@ -236,15 +236,15 @@ namespace Axiom {
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
             .size = sizeof(UIVertex) * 4 * MAX_BASIC_QUADS, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
-        basicVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        basicVertexBuffer = Locator::getRenderer()->createBuffer(vertexBufferCreateInfo);
 
         Buffer::CreateInfo indexBufferCreateInfo = {
             .size = sizeof(uint32_t) * 6 * MAX_BASIC_QUADS, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        basicIndexBuffer = Application::getRenderer()->createBuffer(indexBufferCreateInfo);
+        basicIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
 
         Buffer::CreateInfo stagingBufferCreateInfo = {
             .size = sizeof(uint32_t) * 6 * MAX_BASIC_QUADS, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> stagingBuffer = Application::getRenderer()->createBuffer(stagingBufferCreateInfo);
+        std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(stagingBufferCreateInfo);
 
         std::vector<uint32_t> indices(MAX_BASIC_QUADS * 6);
         uint32_t offset = 0;
@@ -258,9 +258,9 @@ namespace Axiom {
             offset += 4;
         }
         stagingBuffer->setData<uint32_t>(indices);
-        auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         commandBuffer->copyBuffer(stagingBuffer.get(), basicIndexBuffer.get(), stagingBufferCreateInfo.size);
-        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
         RenderAttachment colorAttachment{};
         colorAttachment.loadOp = LoadOp::Load;
@@ -288,10 +288,10 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = false,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
+                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
                                                    .depthAttachmentFormat = Format::Undefined,
                                                    .resourceLayouts = {}};
-        basicPipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
+        basicPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
     }
 
     void UIRenderer::createFontRenderObjects() {
@@ -300,15 +300,15 @@ namespace Axiom {
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
             .size = sizeof(UIVertex) * 4 * MAX_FONT_QUADS, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
-        fontVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        fontVertexBuffer = Locator::getRenderer()->createBuffer(vertexBufferCreateInfo);
 
         Buffer::CreateInfo indexBufferCreateInfo = {
             .size = sizeof(uint32_t) * 6 * MAX_FONT_QUADS, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        fontIndexBuffer = Application::getRenderer()->createBuffer(indexBufferCreateInfo);
+        fontIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
 
         Buffer::CreateInfo stagingBufferCreateInfo = {
             .size = sizeof(uint32_t) * 6 * MAX_FONT_QUADS, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> stagingBuffer = Application::getRenderer()->createBuffer(stagingBufferCreateInfo);
+        std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(stagingBufferCreateInfo);
 
         std::vector<uint32_t> indices(MAX_FONT_QUADS * 6);
         uint32_t offset = 0;
@@ -323,9 +323,9 @@ namespace Axiom {
         }
 
         stagingBuffer->setData<uint32_t>(indices);
-        auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         commandBuffer->copyBuffer(stagingBuffer.get(), fontIndexBuffer.get(), stagingBufferCreateInfo.size);
-        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
         RenderAttachment colorAttachment{};
         colorAttachment.loadOp = LoadOp::Load;
@@ -357,9 +357,9 @@ namespace Axiom {
         resourceSetBindings[0].textures = {fontAtlasTexture.get()};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].samplers = {Application::getRenderer()->getNearestSampler()};
+        resourceSetBindings[1].samplers = {Locator::getRenderer()->getNearestSampler()};
 
-        fontResourceLayout = Application::getRenderer()->createResourceLayout(resourceLayoutBindings);
+        fontResourceLayout = Locator::getRenderer()->createResourceLayout(resourceLayoutBindings);
 
         Pipeline::CreateInfo pipelineCreateInfo = {.shader = fontShader->getShader(),
                                                    .vertexBindings = vertexBindings,
@@ -371,10 +371,10 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = false,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
+                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
                                                    .depthAttachmentFormat = Format::Undefined,
                                                    .resourceLayouts = {fontResourceLayout.get()}};
-        fontPipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
+        fontPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
         fontResourceSet = fontPipeline->createResourceSet(fontResourceLayout.get());
         fontResourceSet->update(resourceSetBindings);
     }
@@ -384,21 +384,21 @@ namespace Axiom {
         imageShader = AssetManager::getAsset<ShaderAsset>(imageShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(UIVertex) * 4, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
-        imageVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        imageVertexBuffer = Locator::getRenderer()->createBuffer(vertexBufferCreateInfo);
 
         Buffer::CreateInfo indexBufferCreateInfo = {
             .size = sizeof(uint32_t) * 6, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        imageIndexBuffer = Application::getRenderer()->createBuffer(indexBufferCreateInfo);
+        imageIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
 
         Buffer::CreateInfo stagingBufferCreateInfo = {.size = sizeof(uint32_t) * 6, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> stagingBuffer = Application::getRenderer()->createBuffer(stagingBufferCreateInfo);
+        std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(stagingBufferCreateInfo);
 
         std::vector<uint32_t> indices = {0, 1, 2, 0, 2, 3};
         stagingBuffer->setData<uint32_t>(indices);
 
-        auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         commandBuffer->copyBuffer(stagingBuffer.get(), imageIndexBuffer.get(), stagingBufferCreateInfo.size);
-        Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
         RenderAttachment colorAttachment{};
         colorAttachment.loadOp = LoadOp::Load;
@@ -429,9 +429,9 @@ namespace Axiom {
         resourceSetBindings[0].textures = {nullptr}; // will be set dynamically during rendering
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].samplers = {Application::getRenderer()->getNearestSampler()};
+        resourceSetBindings[1].samplers = {Locator::getRenderer()->getNearestSampler()};
 
-        imageResourceLayout = Application::getRenderer()->createResourceLayout(resourceLayoutBindings);
+        imageResourceLayout = Locator::getRenderer()->createResourceLayout(resourceLayoutBindings);
 
         Pipeline::CreateInfo pipelineCreateInfo = {.shader = imageShader->getShader(),
                                                    .vertexBindings = vertexBindings,
@@ -443,10 +443,10 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = false,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Application::getRenderer()->getRenderTargetFormat()},
+                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
                                                    .depthAttachmentFormat = Format::Undefined,
                                                    .resourceLayouts = {imageResourceLayout.get()}};
-        imagePipeline = Application::getRenderer()->createPipeline(pipelineCreateInfo);
+        imagePipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
     }
 
     ResourceSet* UIRenderer::getResourceSetForTexture(Texture* texture) {
@@ -461,7 +461,7 @@ namespace Axiom {
         resourceSetBindings[0].textures = {texture};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
-        resourceSetBindings[1].samplers = {Application::getRenderer()->getNearestSampler()};
+        resourceSetBindings[1].samplers = {Locator::getRenderer()->getNearestSampler()};
         std::unique_ptr<ResourceSet> resourceSet = imagePipeline->createResourceSet(imageResourceLayout.get());
         resourceSet->update(resourceSetBindings);
         ResourceSet* resourceSetPtr = resourceSet.get();

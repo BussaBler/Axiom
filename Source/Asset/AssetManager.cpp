@@ -1,7 +1,8 @@
 #include "AssetManager.h"
 #include "AxImageLoader.h"
 #include "AxModelLoader.h"
-#include "Core/Application.h"
+#include "Renderer/Renderer.h"
+#include "Utils/FileSystem.h"
 #include "Utils/JSONSerializer.h"
 
 namespace Axiom {
@@ -50,16 +51,16 @@ namespace Axiom {
                                               .initialState = TextureState::Undefined,
                                               .memoryUsage = MemoryUsage::GPUOnly};
 
-            std::unique_ptr<Texture> texture = Application::getRenderer()->createTexture(createInfo);
+            std::unique_ptr<Texture> texture = Locator::getRenderer()->createTexture(createInfo);
 
             Buffer::CreateInfo stagingBufferCreateInfo = {
                 .size = imageResult->data.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> stagingBuffer = Application::getRenderer()->createBuffer(stagingBufferCreateInfo);
+            std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(stagingBufferCreateInfo);
             stagingBuffer->setData(imageResult->data.data(), imageResult->data.size());
 
-            std::unique_ptr<CommandBuffer> commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+            std::unique_ptr<CommandBuffer> commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
             commandBuffer->copyBufferToTexture(stagingBuffer.get(), texture.get(), imageResult->width, imageResult->height);
-            Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+            Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
             return std::make_shared<TextureAsset>(uuid, path.filename().string(), std::move(texture));
         }
@@ -77,7 +78,7 @@ namespace Axiom {
         std::string vertexSource = source.substr(vertexPos + 13, fragmentPos - (vertexPos + 13));
         std::string fragmentSource = source.substr(fragmentPos + 15, std::string::npos);
 
-        std::unique_ptr<Shader> shader = Application::getRenderer()->createShader(vertexSource, fragmentSource);
+        std::unique_ptr<Shader> shader = Locator::getRenderer()->createShader(vertexSource, fragmentSource);
         return std::make_shared<ShaderAsset>(uuid, path.filename().string(), std::move(shader));
     }
 
@@ -101,19 +102,19 @@ namespace Axiom {
             uint32_t indexBytes = indexCount * sizeof(uint32_t);
 
             Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> vertexStaging = Application::getRenderer()->createBuffer(vertexStagingInfo);
+            std::unique_ptr<Buffer> vertexStaging = Locator::getRenderer()->createBuffer(vertexStagingInfo);
             vertexStaging->setData(vertices.data(), vertexBytes);
 
             Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> indexStaging = Application::getRenderer()->createBuffer(indexStagingInfo);
+            std::unique_ptr<Buffer> indexStaging = Locator::getRenderer()->createBuffer(indexStagingInfo);
             indexStaging->setData(modelResult->indices.data(), indexBytes);
 
-            auto commandBuffer = Application::getRenderer()->beginSingleTimeCommands();
+            auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
             uint32_t vertexByteDstOffset = currentVertexCount * sizeof(MeshVertex);
             uint32_t indexByteDstOffset = currentIndexCount * sizeof(uint32_t);
             commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, vertexByteDstOffset);
             commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, indexByteDstOffset);
-            Application::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+            Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
             currentVertexCount += vertexCount;
             currentIndexCount += indexCount;
@@ -131,10 +132,10 @@ namespace Axiom {
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
             .size = globalBufferSize, .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        globalVertexBuffer = Application::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        globalVertexBuffer = Locator::getRenderer()->createBuffer(vertexBufferCreateInfo);
         Buffer::CreateInfo indexBufferCreateInfo = {
             .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        globalIndexBuffer = Application::getRenderer()->createBuffer(indexBufferCreateInfo);
+        globalIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
 
         std::string manifestStr = FileSystem::readFileStr("Assets/AssetManifest.json");
         if (manifestStr.empty()) {
