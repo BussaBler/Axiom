@@ -4,8 +4,9 @@
 
 namespace Axiom {
     Math::Vec2 UIButton::getDesiredSize(const UIContext& context) {
-        textWidth = context.renderer->calculateTextWidth(text, resolvedTheme->fontSize, context.dpiScale);
-        textHeight = context.renderer->calculateTextHeight(resolvedTheme->fontSize, context.dpiScale);
+        float fontSize = overrideFontSize.value_or(getTheme()->fontSize);
+        textWidth = context.renderer->calculateTextWidth(text, fontSize, context.dpiScale);
+        textHeight = context.renderer->calculateTextHeight(fontSize, context.dpiScale);
         desiredSize.x() = textWidth + padding.left + padding.right + margin.left + margin.right;
         desiredSize.y() = textHeight + padding.top + padding.bottom + margin.top + margin.bottom;
 
@@ -23,13 +24,14 @@ namespace Axiom {
         Color hoverColor = overrideHoverColor.value_or(resolvedTheme->controlHoverColor);
         Color activeColor = overrideActiveColor.value_or(resolvedTheme->controlActiveColor);
         Color backgroundColor = isActive ? activeColor : (isHovered ? hoverColor : normalColor);
+        float fontSize = overrideFontSize.value_or(getTheme()->fontSize);
 
-        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius);
+        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius, context.layer);
 
         float textX = arrangedPosition.x() + (arrangedSize.x() - textWidth) / 2.0f;
         float textY = arrangedPosition.y() + (arrangedSize.y() - textHeight) / 2.0f;
 
-        context.renderer->addText(text, Math::Vec2(textX, textY), getTheme()->fontSize, context.dpiScale, getTheme()->textColor);
+        context.renderer->addText(text, Math::Vec2(textX, textY), fontSize, context.dpiScale, getTheme()->textColor, context.layer);
 
         UIElement::onRender(context);
     }

@@ -18,7 +18,7 @@ namespace Axiom {
 
     void UIImage::onRender(const UIContext& context) {
         if (texture) {
-            context.renderer->addImageQuad(arrangedPosition, arrangedSize, texture.get());
+            context.renderer->addImageQuad(arrangedPosition, arrangedSize, texture.get(), context.layer);
         }
         UIElement::onRender(context);
     }

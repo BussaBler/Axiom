@@ -71,7 +71,7 @@ namespace Axiom {
         Color hoverColor = overrideHoverColor.value_or(resolvedTheme->controlHoverColor);
         Color activeColor = overrideActiveColor.value_or(resolvedTheme->controlActiveColor);
         Color backgroundColor = isActive ? activeColor : (isHovered ? hoverColor : normalColor);
-        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius);
+        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius, context.layer);
 
         std::string displayText;
         if (state == ScalarFieldState::Typing) {
@@ -92,7 +92,7 @@ namespace Axiom {
         float textX = arrangedPosition.x() + (arrangedSize.x() - textWidth) / 2.0f;
         float textY = arrangedPosition.y() + (arrangedSize.y() - textHeight) / 2.0f;
 
-        context.renderer->addText(displayText, Math::Vec2(textX, textY), fontSize, context.dpiScale, resolvedTheme->textColor);
+        context.renderer->addText(displayText, Math::Vec2(textX, textY), fontSize, context.dpiScale, resolvedTheme->textColor, context.layer);
 
         UIElement::onRender(context);
     }

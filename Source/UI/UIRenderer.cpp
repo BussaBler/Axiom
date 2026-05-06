@@ -29,14 +29,18 @@ namespace Axiom {
     }
 
     void UIRenderer::beginFrame() {
-        basicVertices.clear();
-        fontVertices.clear();
-        imageDrawCommands.clear();
+        for (auto& layer : renderLayers) {
+            layer.basicVertices.clear();
+            layer.fontVertices.clear();
+            layer.imageDrawCommands.clear();
+        }
     }
 
-    void UIRenderer::addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii) {
+    void UIRenderer::addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii, uint8_t layer) {
+        auto& basicVertices = renderLayers[layer].basicVertices;
+
         if (basicVertices.size() + 4 > MAX_BASIC_QUADS * 4) {
-            AX_CORE_LOG_WARN("Maximum basic quad count reached! Cannot add more quads this frame.");
+            AX_CORE_LOG_WARN("Maximum basic quad count for layer {} reached! Cannot add more quads this frame.", layer);
             return;
         }
         Math::Vec4 params = Math::Vec4(size.x(), size.y(), 0.0f, 0.0f);
@@ -58,9 +62,11 @@ namespace Axiom {
         addBasicQuad(pos + Math::Vec2(size.x() - thickness, 0.0f), Math::Vec2(thickness, size.y()), color);
     }
 
-    void UIRenderer::addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color) {
+    void UIRenderer::addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color,
+                                 uint8_t layer) {
+        auto& fontVertices = renderLayers[layer].fontVertices;
         if (fontVertices.size() + 4 > MAX_FONT_QUADS * 4) {
-            AX_CORE_LOG_WARN("Maximum font quad count reached! Cannot add more quads this frame.");
+            AX_CORE_LOG_WARN("Maximum font quad count for layer {} reached! Cannot add more quads this frame.", layer);
             return;
         }
 
@@ -71,7 +77,7 @@ namespace Axiom {
         fontVertices.push_back(UIVertex(pos + Math::Vec2(0.0f, size.y()), Math::Vec2(uv0.x(), uv1.y()), color, Math::Vec4::zero()));
     }
 
-    void UIRenderer::addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color) {
+    void UIRenderer::addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color, uint8_t layer) {
         const auto& asciiAtlas = openSansFont.getAsciiAtlas();
 
         float pixelSize = fontSize * dpiScale;
@@ -103,16 +109,17 @@ namespace Axiom {
                 float maxX = cursorX + (metrics.quadMax.x() * fontScale);
                 float maxY = cursorY - (metrics.quadMin.y() * fontScale);
 
-                addFontQuad(Math::Vec2(minX, minY), Math::Vec2(maxX - minX, maxY - minY), metrics.uv0, metrics.uv1, color);
+                addFontQuad(Math::Vec2(minX, minY), Math::Vec2(maxX - minX, maxY - minY), metrics.uv0, metrics.uv1, color, layer);
             }
 
             cursorX += (metrics.advance * fontScale);
         }
     }
 
-    void UIRenderer::addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture) {
+    void UIRenderer::addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture, uint8_t layer) {
+        auto& imageDrawCommands = renderLayers[layer].imageDrawCommands;
         if (imageDrawCommands.size() + 1 > MAX_IMAGE_QUADS) {
-            AX_CORE_LOG_WARN("Maximum image quad count reached! Cannot add more quads this frame.");
+            AX_CORE_LOG_WARN("Maximum image quad count for layer {} reached! Cannot add more quads this frame.", layer);
             return;
         }
         imageDrawCommands.push_back({texture, pos, size});
@@ -162,71 +169,102 @@ namespace Axiom {
         Math::iVec2 renderTargetSize = renderTarget->getSize();
         Math::Mat4 projection = Math::Mat4::orthographic(0.0f, windowSize.x(), 0.0f, windowSize.y(), -1.0f, 1.0f);
 
-        if (!basicVertices.empty()) {
-            basicVertexBuffer->setData<UIVertex>(basicVertices);
+        std::vector<UIVertex> allBasicVertices;
+        std::vector<UIVertex> allFontVertices;
+        std::vector<UIVertex> allImageVertices;
 
-            basicRenderPass.colorAttachments[0].texture = renderTarget;
-            basicRenderPass.width = renderTargetSize.x();
-            basicRenderPass.height = renderTargetSize.y();
-
-            commandBuffer->beginRendering(basicRenderPass);
-            commandBuffer->bindPipeline(basicPipeline.get());
-            commandBuffer->bindPushConstants(&projection, sizeof(projection));
-            commandBuffer->bindVertexBuffers({basicVertexBuffer.get()});
-            commandBuffer->bindIndexBuffer(basicIndexBuffer.get());
-            commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
-            commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
-            commandBuffer->drawIndexed(static_cast<uint32_t>(basicVertices.size() / 4) * 6, 1, 0, 0, 0);
-            commandBuffer->endRendering();
+        for (auto& layer : renderLayers) {
+            allBasicVertices.insert(allBasicVertices.end(), layer.basicVertices.begin(), layer.basicVertices.end());
+            allFontVertices.insert(allFontVertices.end(), layer.fontVertices.begin(), layer.fontVertices.end());
+            for (const auto& drawCommand : layer.imageDrawCommands) {
+                allImageVertices.push_back(UIVertex(drawCommand.pos, Math::Vec2(0.0f), Color::white(), Math::Vec4::zero()));
+                allImageVertices.push_back(
+                    UIVertex(drawCommand.pos + Math::Vec2(drawCommand.size.x(), 0.0f), Math::Vec2(1.0f, 0.0f), Color::white(), Math::Vec4::zero()));
+                allImageVertices.push_back(UIVertex(drawCommand.pos + drawCommand.size, Math::Vec2(1.0f), Color::white(), Math::Vec4::zero()));
+                allImageVertices.push_back(
+                    UIVertex(drawCommand.pos + Math::Vec2(0.0f, drawCommand.size.y()), Math::Vec2(0.0f, 1.0f), Color::white(), Math::Vec4::zero()));
+            }
         }
 
-        if (!fontVertices.empty()) {
-            fontVertexBuffer->setData<UIVertex>(fontVertices);
-
-            fontRenderPass.colorAttachments[0].texture = renderTarget;
-            fontRenderPass.width = renderTargetSize.x();
-            fontRenderPass.height = renderTargetSize.y();
-
-            commandBuffer->beginRendering(fontRenderPass);
-            commandBuffer->bindPipeline(fontPipeline.get());
-            commandBuffer->bindPushConstants(&projection, sizeof(projection));
-            commandBuffer->bindResources({fontResourceSet.get()});
-            commandBuffer->bindVertexBuffers({fontVertexBuffer.get()});
-            commandBuffer->bindIndexBuffer(fontIndexBuffer.get());
-            commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
-            commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
-            commandBuffer->drawIndexed(static_cast<uint32_t>(fontVertices.size() / 4) * 6, 1, 0, 0, 0);
-            commandBuffer->endRendering();
+        if (!allBasicVertices.empty()) {
+            basicVertexBuffer->setData<UIVertex>(allBasicVertices);
+        }
+        if (!allFontVertices.empty()) {
+            fontVertexBuffer->setData<UIVertex>(allFontVertices);
+        }
+        if (!allImageVertices.empty()) {
+            imageVertexBuffer->setData<UIVertex>(allImageVertices);
         }
 
-        if (!imageDrawCommands.empty()) {
-            imageRenderPass.colorAttachments[0].texture = renderTarget;
-            imageRenderPass.width = renderTargetSize.x();
-            imageRenderPass.height = renderTargetSize.y();
+        uint32_t basicVertexOffset = 0;
+        uint32_t fontVertexOffset = 0;
+        uint32_t imageVertexOffset = 0;
 
-            commandBuffer->beginRendering(imageRenderPass);
-            commandBuffer->bindPipeline(imagePipeline.get());
-            commandBuffer->bindPushConstants(&projection, sizeof(projection));
-            commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
-            commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+        for (const auto& layer : renderLayers) {
 
-            for (const auto& drawCommand : imageDrawCommands) {
-                ResourceSet* resourceSet = getResourceSetForTexture(drawCommand.texture);
-                commandBuffer->bindResources({resourceSet});
+            if (!layer.basicVertices.empty()) {
+                basicRenderPass.colorAttachments[0].texture = renderTarget;
+                basicRenderPass.width = renderTargetSize.x();
+                basicRenderPass.height = renderTargetSize.y();
 
-                std::vector<UIVertex> vertices = {
-                    UIVertex(drawCommand.pos, Math::Vec2(0.0f), Color::white(), Math::Vec4::zero()),
-                    UIVertex(drawCommand.pos + Math::Vec2(drawCommand.size.x(), 0.0f), Math::Vec2(1.0f, 0.0f), Color::white(), Math::Vec4::zero()),
-                    UIVertex(drawCommand.pos + drawCommand.size, Math::Vec2(1.0f), Color::white(), Math::Vec4::zero()),
-                    UIVertex(drawCommand.pos + Math::Vec2(0.0f, drawCommand.size.y()), Math::Vec2(0.0f, 1.0f), Color::white(), Math::Vec4::zero()),
-                };
-                imageVertexBuffer->setData<UIVertex>(vertices);
+                commandBuffer->beginRendering(basicRenderPass);
+                commandBuffer->bindPipeline(basicPipeline.get());
+                commandBuffer->bindPushConstants(&projection, sizeof(projection));
+                commandBuffer->bindVertexBuffers({basicVertexBuffer.get()});
+                commandBuffer->bindIndexBuffer(basicIndexBuffer.get());
+                commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+                commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+
+                uint32_t indexCount = static_cast<uint32_t>(layer.basicVertices.size() / 4) * 6;
+                commandBuffer->drawIndexed(indexCount, 1, 0, basicVertexOffset, 0);
+                commandBuffer->endRendering();
+
+                basicVertexOffset += static_cast<uint32_t>(layer.basicVertices.size());
+            }
+
+            if (!layer.fontVertices.empty()) {
+                fontRenderPass.colorAttachments[0].texture = renderTarget;
+                fontRenderPass.width = renderTargetSize.x();
+                fontRenderPass.height = renderTargetSize.y();
+
+                commandBuffer->beginRendering(fontRenderPass);
+                commandBuffer->bindPipeline(fontPipeline.get());
+                commandBuffer->bindPushConstants(&projection, sizeof(projection));
+                commandBuffer->bindResources({fontResourceSet.get()});
+                commandBuffer->bindVertexBuffers({fontVertexBuffer.get()});
+                commandBuffer->bindIndexBuffer(fontIndexBuffer.get());
+                commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+                commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+
+                uint32_t indexCount = static_cast<uint32_t>(layer.fontVertices.size() / 4) * 6;
+                commandBuffer->drawIndexed(indexCount, 1, 0, fontVertexOffset, 0);
+                commandBuffer->endRendering();
+
+                fontVertexOffset += static_cast<uint32_t>(layer.fontVertices.size());
+            }
+
+            if (!layer.imageDrawCommands.empty()) {
+                imageRenderPass.colorAttachments[0].texture = renderTarget;
+                imageRenderPass.width = renderTargetSize.x();
+                imageRenderPass.height = renderTargetSize.y();
+
+                commandBuffer->beginRendering(imageRenderPass);
+                commandBuffer->bindPipeline(imagePipeline.get());
+                commandBuffer->bindPushConstants(&projection, sizeof(projection));
                 commandBuffer->bindVertexBuffers({imageVertexBuffer.get()});
                 commandBuffer->bindIndexBuffer(imageIndexBuffer.get());
-                commandBuffer->drawIndexed(6, 1, 0, 0, 0);
+                commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+                commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+
+                for (const auto& drawCommand : layer.imageDrawCommands) {
+                    ResourceSet* resourceSet = getResourceSetForTexture(drawCommand.texture);
+                    commandBuffer->bindResources({resourceSet});
+                    commandBuffer->drawIndexed(6, 1, 0, imageVertexOffset, 0);
+
+                    imageVertexOffset += 4;
+                }
+                commandBuffer->endRendering();
             }
-            commandBuffer->endRendering();
-            imageDrawCommands.clear();
         }
     }
 

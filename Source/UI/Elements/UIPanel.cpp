@@ -105,7 +105,8 @@ namespace Axiom {
             break;
         }
 
-        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, overridePanelBackgroundColor.value_or(resolvedTheme->panelBackgroundColor), radii);
+        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, overridePanelBackgroundColor.value_or(resolvedTheme->panelBackgroundColor), radii,
+                                       context.layer);
         UIElement::onRender(context);
     }
 } // namespace Axiom

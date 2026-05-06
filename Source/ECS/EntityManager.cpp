@@ -2,7 +2,7 @@
 
 namespace Axiom {
     EntityManager::EntityManager() {
-        for (uint32_t entityId = 0; entityId < MAX_ENTITIES; ++entityId) {
+        for (uint32_t entityId = 1; entityId < MAX_ENTITIES + 1; ++entityId) {
             availableEntitiesIds.push_back(entityId);
             aliveEntities[entityId] = false;
         }

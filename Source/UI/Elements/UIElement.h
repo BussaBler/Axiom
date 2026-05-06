@@ -36,6 +36,7 @@ namespace Axiom {
     struct UIContext {
         UIRenderer* renderer;
         float dpiScale;
+        uint8_t layer = 0;
     };
 
     class UIElement {
@@ -108,6 +109,8 @@ namespace Axiom {
         const UIMargin& getPadding() const { return padding; }
         UIAlignment getHorizontalAlignment() const { return horizontalAlignment; }
         UIAlignment getVerticalAlignment() const { return verticalAlignment; }
+        Math::Vec2 getArrangedPosition() const { return arrangedPosition; }
+        Math::Vec2 getArrangedSize() const { return arrangedSize; }
         const Math::Vec2& getFixedSize() const { return fixedSize; }
         const std::shared_ptr<UITheme>& getTheme() const { return resolvedTheme; }
 

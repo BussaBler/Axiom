@@ -24,11 +24,11 @@ namespace Axiom {
         bool value = valueGetter && valueGetter();
         Color backgroundColor = isHovered ? hoverColor : normalColor;
 
-        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius);
+        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius, context.layer);
         if (value) {
             Math::Vec2 checkSize = arrangedSize * 0.7f;
             Math::Vec2 checkPos = arrangedPosition + (arrangedSize - checkSize) * 0.5f;
-            context.renderer->addBasicQuad(checkPos, Math::Vec2(checkSize), activeColor, resolvedTheme->borderRadius * 0.8f);
+            context.renderer->addBasicQuad(checkPos, Math::Vec2(checkSize), activeColor, resolvedTheme->borderRadius * 0.8f, context.layer);
         }
     }
 

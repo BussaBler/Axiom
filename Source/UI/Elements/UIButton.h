@@ -15,6 +15,7 @@ namespace Axiom {
         inline virtual void setHoverColor(const Color& color) { overrideHoverColor = color; }
         inline virtual void setActiveColor(const Color& color) { overrideActiveColor = color; }
         inline virtual void setOnClick(std::function<void()> callback) { onClick = std::move(callback); }
+        inline virtual void setFontSize(float fontSize) { overrideFontSize = fontSize; }
 
       private:
         std::string text;
@@ -29,5 +30,7 @@ namespace Axiom {
         bool isActive = false;
 
         std::function<void()> onClick;
+
+        std::optional<float> overrideFontSize;
     };
 } // namespace Axiom

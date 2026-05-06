@@ -15,13 +15,13 @@ namespace Axiom {
 
         void beginFrame();
 
-        void addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii = Math::Vec4::zero());
+        void addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii = Math::Vec4::zero(), uint8_t layer = 0);
         void addDebugRect(const Math::Vec2& pos, const Math::Vec2& size, const Color& color);
-        void addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color);
-        void addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color);
+        void addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color, uint8_t layer = 0);
+        void addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color, uint8_t layer = 0);
         float calculateTextWidth(const std::string& text, float fontSize, float dpiScale);
         float calculateTextHeight(float fontSize, float dpiScale);
-        void addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture);
+        void addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture, uint8_t layer = 0);
 
         void onRender(CommandBuffer* commandBuffer, Texture* targetTexture);
 
@@ -45,7 +45,6 @@ namespace Axiom {
         RenderPass basicRenderPass;
         std::unique_ptr<Buffer> basicVertexBuffer = nullptr;
         std::unique_ptr<Buffer> basicIndexBuffer = nullptr;
-        std::vector<UIVertex> basicVertices;
 
         static const uint32_t MAX_FONT_QUADS = 1000;
         Font openSansFont{"Assets/Fonts/OpenSans-SemiBold.ttf"};
@@ -57,14 +56,12 @@ namespace Axiom {
         std::unique_ptr<Buffer> fontIndexBuffer = nullptr;
         std::unique_ptr<ResourceLayout> fontResourceLayout = nullptr;
         std::unique_ptr<ResourceSet> fontResourceSet = nullptr;
-        std::vector<UIVertex> fontVertices;
 
         struct ImageDrawCommand {
             Texture* texture;
             Math::Vec2 pos;
             Math::Vec2 size;
         };
-        std::vector<ImageDrawCommand> imageDrawCommands;
         static const uint32_t MAX_IMAGE_QUADS = 100;
         std::shared_ptr<ShaderAsset> imageShader = nullptr;
         std::unique_ptr<Pipeline> imagePipeline = nullptr;
@@ -73,5 +70,13 @@ namespace Axiom {
         std::unique_ptr<Buffer> imageIndexBuffer = nullptr;
         std::unique_ptr<ResourceLayout> imageResourceLayout = nullptr;
         std::unordered_map<Texture*, std::unique_ptr<ResourceSet>> imageResourceSets;
+
+        struct RenderLayer {
+            std::vector<UIVertex> basicVertices;
+            std::vector<UIVertex> fontVertices;
+            std::vector<ImageDrawCommand> imageDrawCommands;
+        };
+        uint8_t constexpr static MAX_RENDER_LAYERS = 4;
+        std::array<RenderLayer, MAX_RENDER_LAYERS> renderLayers;
     };
 }; // namespace Axiom

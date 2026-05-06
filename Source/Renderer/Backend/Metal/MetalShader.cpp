@@ -45,7 +45,7 @@ namespace Axiom {
         spirv_cross::CompilerMSL mslCompiler(spirv);
         spirv_cross::CompilerMSL::Options mslOptions = {};
         mslOptions.platform = spirv_cross::CompilerMSL::Options::Platform::macOS;
-        mslOptions.set_msl_version(2, 0);
+        mslOptions.set_msl_version(3, 0);
         mslOptions.argument_buffers = true;
         mslCompiler.set_msl_options(mslOptions);
 

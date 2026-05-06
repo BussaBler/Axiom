@@ -24,6 +24,6 @@ namespace Axiom {
 
         Math::Vec2 textPos = arrangedPosition + Math::Vec2(margin.left + padding.left, margin.top + padding.top);
         context.renderer->addText(text, textPos, overrideFontSize.value_or(resolvedTheme->fontSize), context.dpiScale,
-                                  overrideTextColor.value_or(resolvedTheme->textColor));
+                                  overrideTextColor.value_or(resolvedTheme->textColor), context.layer);
     }
 } // namespace Axiom

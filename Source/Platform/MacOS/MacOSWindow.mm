@@ -149,6 +149,19 @@ namespace Axiom {
     }
 }
 
+@interface AxiomMacWindow : NSWindow
+@end
+
+@implementation AxiomMacWindow
+- (BOOL)canBecomeKeyWindow {
+    return YES;
+}
+
+- (BOOL)canBecomeMainWindow {
+    return YES;
+}
+@end
+
 @interface MacOSWindowDelegate : NSObject <NSWindowDelegate>
 @property (nonatomic, assign) Axiom::WindowData* wData;
 @end
@@ -188,6 +201,10 @@ namespace Axiom {
 
 @implementation MacOSWindowView
 - (BOOL)acceptsFirstResponder {
+    return YES;
+}
+
+- (BOOL)acceptsFirstMouse:(NSEvent *)event {
     return YES;
 }
 
@@ -311,7 +328,7 @@ namespace Axiom {
         NSRect frame = NSMakeRect(0, 0, data.width, data.height);
         NSUInteger styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable;
         
-        window = [[NSWindow alloc] initWithContentRect:frame styleMask:styleMask backing:NSBackingStoreBuffered defer:NO];
+        window = [[AxiomMacWindow alloc] initWithContentRect:frame styleMask:styleMask backing:NSBackingStoreBuffered defer:NO];
                                                 
         [window setTitle:[NSString stringWithUTF8String:data.title.c_str()]];
         [window center];
@@ -356,8 +373,8 @@ namespace Axiom {
         NSEvent* event;
         while ((event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES])) {
             [NSApp sendEvent:event];
-            [NSApp updateWindows];
         }
+        [NSApp updateWindows];
     }
 
     void MacOSWindow::setVSync(bool enabled) {

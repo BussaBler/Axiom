@@ -22,6 +22,10 @@ namespace Axiom {
         return Entity(entityId, registry.get());
     }
 
+    void Scene::destroyEntity(Entity entity) {
+        registry->destroyEntityId(entity.getId());
+    }
+
     Entity Scene::getEntity(uint32_t entityId) {
         return Entity(entityId, registry.get());
     }

@@ -14,7 +14,7 @@ namespace Axiom {
         Math::Vec2 position;
         Math::Vec2 uv;
         Math::Vec4 color;
-        Math::Vec4 params; // custom params
+        Math::Vec4 params;
         Math::Vec4 radii;
     };
 } // namespace Axiom

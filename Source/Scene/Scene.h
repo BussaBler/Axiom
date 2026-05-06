@@ -19,6 +19,7 @@ namespace Axiom {
         ~Scene() = default;
 
         Entity createEntity(const std::string& name = "Entity");
+        void destroyEntity(Entity entity);
         Entity getEntity(uint32_t entityId);
         Entity getEntity(const std::string& name);
 

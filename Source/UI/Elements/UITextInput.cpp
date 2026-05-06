@@ -28,7 +28,7 @@ namespace Axiom {
     void UITextInput::onRender(const UIContext& context) {
         Color backgroundColor =
             isActive ? resolvedTheme->controlActiveColor : (isHovered ? resolvedTheme->controlHoverColor : resolvedTheme->controlNormalColor);
-        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius);
+        context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius, context.layer);
         Color textColor = overrideTextColor.value_or(resolvedTheme->textColor);
 
         float fontSize = overrideFontSize.value_or(resolvedTheme->fontSize);
@@ -40,8 +40,8 @@ namespace Axiom {
             displayText = getValue ? getValue() : "";
         }
 
-        Math::Vec2 textPos = arrangedPosition + Math::Vec2(margin.left + padding.left, margin.top + padding.top);
-        context.renderer->addText(displayText, textPos, fontSize, context.dpiScale, textColor);
+        Math::Vec2 textPos = arrangedPosition + Math::Vec2(margin.left + padding.left + 5.0f, margin.top + padding.top);
+        context.renderer->addText(displayText, textPos, fontSize, context.dpiScale, textColor, context.layer);
     }
 
     bool UITextInput::onEvent(Event& event) {
