@@ -9,7 +9,7 @@ namespace Axiom {
 
         Math::Vec2 getDesiredSize(const UIContext& context) override;
 
-        void onRender(const UIContext& context) override;
+        void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
 
         void setText(const std::string& newText) { text = newText; }
         void setColor(const Color& newColor) { overrideTextColor = newColor; }

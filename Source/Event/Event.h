@@ -50,24 +50,16 @@ namespace Axiom {
     }
 
     class Event {
-        friend class EventDispatcher;
-
       public:
         virtual EventType getEventType() const = 0;
         virtual const char* getName() const = 0;
         virtual EventCategory getCategoryFlags() const = 0;
-        virtual std::string toString() const {
-            return getName();
-        }
+        virtual std::string toString() const { return getName(); }
 
-        bool isHandled() const {
-            return handled;
-        }
-        bool isInCategory(EventCategory category) const {
-            return (getCategoryFlags() & category) != EventCategory::Empty;
-        }
+        bool isHandled() const { return handled; }
+        bool isInCategory(EventCategory category) const { return (getCategoryFlags() & category) != EventCategory::Empty; }
 
-      protected:
+      public:
         bool handled = false;
     };
 
@@ -75,11 +67,10 @@ namespace Axiom {
         template <typename T> using EventFunction = std::function<bool(T&)>;
 
       public:
-        EventDispatcher(Event& event) : event(event) {
-        }
+        EventDispatcher(Event& event) : event(event) {}
         template <typename T> bool dispatch(EventFunction<T> func) {
             if (event.getEventType() == T::getStaticType()) {
-                event.handled = func(*(T*)&event);
+                event.handled |= func(*(T*)&event);
                 return true;
             }
             return false;

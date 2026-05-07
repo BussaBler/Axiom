@@ -1,8 +1,8 @@
-#include "UIVerticalBox.h"
+#include "UIScrollBox.h"
 
 namespace Axiom {
-    Math::Vec2 UIVerticalBox::getDesiredSize(const UIContext& context) {
-        Math::Vec2 desiredSize(0, 0);
+    Math::Vec2 UIScrollBox::getDesiredSize(const UIContext& context) {
+        Math::Vec2 desiredSize(0.0f, 0.0f);
 
         for (const auto& child : children) {
             Math::Vec2 childDesiredSize = child->getDesiredSize(context);
@@ -16,7 +16,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIVerticalBox::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
+    void UIScrollBox::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
         arrangedPosition = position;
         arrangedSize = size;
 
@@ -36,6 +36,9 @@ namespace Axiom {
                 fixedHeightUsed += child->getDesiredSize(context).y() + child->getMargin().top + child->getMargin().bottom;
             }
         }
+
+        float maxScroll = std::max(0.0f, fixedHeightUsed - availableHeight);
+        scrollOffset.y() = std::clamp(scrollOffset.y(), 0.0f, maxScroll);
 
         float remainingHeight = std::max(0.0f, availableHeight - fixedHeightUsed);
         float heightPerFillChild = fillChildCount > 0 ? (remainingHeight / fillChildCount) : 0.0f;
@@ -74,8 +77,37 @@ namespace Axiom {
                 break;
             }
 
-            child->arrange(context, Math::Vec2(finalX, currentY), Math::Vec2(finalWidth, childHeight));
+            float finalY = currentY - scrollOffset.y();
+
+            child->arrange(context, Math::Vec2(finalX, finalY), Math::Vec2(finalWidth, childHeight));
             currentY += childHeight + child->getMargin().bottom;
         }
+    }
+
+    void UIScrollBox::onRender(const UIContext& context, const Math::Rect& scissorRect) {
+        Math::Rect contentRect(arrangedPosition, arrangedSize);
+        Math::Rect visibleRect = contentRect.getIntersection(scissorRect);
+
+        if (visibleRect.width() <= 0.0f || visibleRect.height() <= 0.0f) {
+            return;
+        }
+
+        context.renderer->pushScissorRect(visibleRect, context.layer);
+        UIElement::onRender(context, visibleRect);
+        context.renderer->popScissorRect(context.layer);
+    }
+
+    bool UIScrollBox::onEvent(Event& event) {
+        if (UIElement::onEvent(event)) {
+            return true;
+        }
+
+        EventDispatcher dispatcher(event);
+        dispatcher.dispatch<MouseScrolledEvent>([this](const MouseScrolledEvent& e) {
+            scrollOffset.y() -= e.getYOffset();
+            return true;
+        });
+
+        return false;
     }
 } // namespace Axiom

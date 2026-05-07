@@ -1,14 +1,14 @@
 #include "CommandRegistry.h"
 
 namespace Axiom {
-    std::unordered_map<std::string, CommandRegistry::CommandCallback> CommandRegistry::registry = {
+    std::map<std::string, CommandRegistry::CommandCallback> CommandRegistry::registry = {
         {"clear", [](const std::vector<std::string>& args) { CommandRegistry::commandHistory.clear(); }},
         {"help",
          [](const std::vector<std::string>& args) {
+             CommandRegistry::log("Available commands:");
              for (const auto& pair : CommandRegistry::getRegistry()) {
                  CommandRegistry::log("- " + pair.first);
              }
-             CommandRegistry::log("Available commands:");
          }},
         {"echo", [](const std::vector<std::string>& args) {
              std::string output;

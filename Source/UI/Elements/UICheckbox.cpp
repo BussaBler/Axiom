@@ -16,7 +16,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UICheckbox::onRender(const UIContext& context) {
+    void UICheckbox::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Color normalColor = overrideNormalColor.value_or(resolvedTheme->controlNormalColor);
         Color hoverColor = overrideHoverColor.value_or(resolvedTheme->controlHoverColor);
         Color activeColor = overrideActiveColor.value_or(resolvedTheme->controlActiveColor);

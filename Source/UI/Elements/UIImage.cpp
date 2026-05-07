@@ -16,10 +16,10 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIImage::onRender(const UIContext& context) {
+    void UIImage::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         if (texture) {
             context.renderer->addImageQuad(arrangedPosition, arrangedSize, texture.get(), context.layer);
         }
-        UIElement::onRender(context);
+        UIElement::onRender(context, scissorRect);
     }
 } // namespace Axiom

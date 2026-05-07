@@ -19,7 +19,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIButton::onRender(const UIContext& context) {
+    void UIButton::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Color normalColor = overrideNormalColor.value_or(resolvedTheme->controlNormalColor);
         Color hoverColor = overrideHoverColor.value_or(resolvedTheme->controlHoverColor);
         Color activeColor = overrideActiveColor.value_or(resolvedTheme->controlActiveColor);
@@ -33,7 +33,7 @@ namespace Axiom {
 
         context.renderer->addText(text, Math::Vec2(textX, textY), fontSize, context.dpiScale, getTheme()->textColor, context.layer);
 
-        UIElement::onRender(context);
+        UIElement::onRender(context, scissorRect);
     }
 
     bool UIButton::onEvent(Event& event) {

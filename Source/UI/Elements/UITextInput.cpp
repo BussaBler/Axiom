@@ -25,7 +25,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UITextInput::onRender(const UIContext& context) {
+    void UITextInput::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Color backgroundColor =
             isActive ? resolvedTheme->controlActiveColor : (isHovered ? resolvedTheme->controlHoverColor : resolvedTheme->controlNormalColor);
         context.renderer->addBasicQuad(arrangedPosition, arrangedSize, backgroundColor, resolvedTheme->borderRadius, context.layer);

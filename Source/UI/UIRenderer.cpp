@@ -30,6 +30,8 @@ namespace Axiom {
 
     void UIRenderer::beginFrame() {
         for (auto& layer : renderLayers) {
+            layer.basicRenderBatches.clear();
+            layer.fontRenderBatches.clear();
             layer.basicVertices.clear();
             layer.fontVertices.clear();
             layer.imageDrawCommands.clear();
@@ -37,7 +39,15 @@ namespace Axiom {
     }
 
     void UIRenderer::addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii, uint8_t layer) {
+        if (renderLayers[layer].basicRenderBatches.empty()) {
+            return;
+        }
         auto& basicVertices = renderLayers[layer].basicVertices;
+        auto& currentBatch = renderLayers[layer].basicRenderBatches.back();
+
+        if (currentBatch.vertexCount == 0) {
+            currentBatch.vertexOffset = basicVertices.size();
+        }
 
         if (basicVertices.size() + 4 > MAX_BASIC_QUADS * 4) {
             AX_CORE_LOG_WARN("Maximum basic quad count for layer {} reached! Cannot add more quads this frame.", layer);
@@ -52,6 +62,7 @@ namespace Axiom {
         basicVertices.push_back(UIVertex(pos + size, Math::Vec2(1.0f), color, params, radii));
         // Top-Right
         basicVertices.push_back(UIVertex(pos + Math::Vec2(0.0f, size.y()), Math::Vec2(0.0f, 1.0f), color, params, radii));
+        currentBatch.vertexCount += 4;
     }
 
     void UIRenderer::addDebugRect(const Math::Vec2& pos, const Math::Vec2& size, const Color& color) {
@@ -64,7 +75,16 @@ namespace Axiom {
 
     void UIRenderer::addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color,
                                  uint8_t layer) {
+        if (renderLayers[layer].fontRenderBatches.empty()) {
+            return;
+        }
         auto& fontVertices = renderLayers[layer].fontVertices;
+        auto& currentBatch = renderLayers[layer].fontRenderBatches.back();
+
+        if (currentBatch.vertexCount == 0) {
+            currentBatch.vertexOffset = fontVertices.size();
+        }
+
         if (fontVertices.size() + 4 > MAX_FONT_QUADS * 4) {
             AX_CORE_LOG_WARN("Maximum font quad count for layer {} reached! Cannot add more quads this frame.", layer);
             return;
@@ -75,6 +95,7 @@ namespace Axiom {
         fontVertices.push_back(UIVertex(pos + Math::Vec2(size.x(), 0.0f), Math::Vec2(uv1.x(), uv0.y()), color, Math::Vec4::zero()));
         fontVertices.push_back(UIVertex(pos + size, uv1, color, Math::Vec4::zero()));
         fontVertices.push_back(UIVertex(pos + Math::Vec2(0.0f, size.y()), Math::Vec2(uv0.x(), uv1.y()), color, Math::Vec4::zero()));
+        currentBatch.vertexCount += 4;
     }
 
     void UIRenderer::addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color, uint8_t layer) {
@@ -118,11 +139,33 @@ namespace Axiom {
 
     void UIRenderer::addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture, uint8_t layer) {
         auto& imageDrawCommands = renderLayers[layer].imageDrawCommands;
+
         if (imageDrawCommands.size() + 1 > MAX_IMAGE_QUADS) {
             AX_CORE_LOG_WARN("Maximum image quad count for layer {} reached! Cannot add more quads this frame.", layer);
             return;
         }
-        imageDrawCommands.push_back({texture, pos, size});
+        if (scissorRectStack.empty()) {
+            imageDrawCommands.push_back({texture, pos, size, Math::Rect()});
+        } else {
+            imageDrawCommands.push_back({texture, pos, size, scissorRectStack.top()});
+        }
+    }
+
+    void UIRenderer::pushScissorRect(const Math::Rect& rect, uint8_t layer) {
+        float dpi = Locator::getWindow()->getWindowDPI() / 96.0f;
+        Math::Rect scaledRect = Math::Rect(rect.getPos() * dpi, rect.getSize() * dpi);
+
+        scissorRectStack.push(scaledRect);
+        renderLayers[layer].basicRenderBatches.push_back({0, 0, scaledRect});
+        renderLayers[layer].fontRenderBatches.push_back({0, 0, scaledRect});
+    }
+
+    void UIRenderer::popScissorRect(uint8_t layer) {
+        if (!scissorRectStack.empty()) {
+            scissorRectStack.pop();
+        }
+        renderLayers[layer].basicRenderBatches.push_back({0, 0, scissorRectStack.empty() ? Math::Rect() : scissorRectStack.top()});
+        renderLayers[layer].fontRenderBatches.push_back({0, 0, scissorRectStack.empty() ? Math::Rect() : scissorRectStack.top()});
     }
 
     float UIRenderer::calculateTextWidth(const std::string& text, float fontSize, float dpiScale) {
@@ -173,6 +216,20 @@ namespace Axiom {
         std::vector<UIVertex> allFontVertices;
         std::vector<UIVertex> allImageVertices;
 
+        size_t totalBaisicVertexCount = 0;
+        size_t totalFontVertexCount = 0;
+        size_t totalImageVertexCount = 0;
+
+        for (const auto& layer : renderLayers) {
+            totalBaisicVertexCount += layer.basicVertices.size();
+            totalFontVertexCount += layer.fontVertices.size();
+            totalImageVertexCount += layer.imageDrawCommands.size() * 4; // 4 vertices per quad
+        }
+
+        allBasicVertices.reserve(totalBaisicVertexCount);
+        allFontVertices.reserve(totalFontVertexCount);
+        allImageVertices.reserve(totalImageVertexCount);
+
         for (auto& layer : renderLayers) {
             allBasicVertices.insert(allBasicVertices.end(), layer.basicVertices.begin(), layer.basicVertices.end());
             allFontVertices.insert(allFontVertices.end(), layer.fontVertices.begin(), layer.fontVertices.end());
@@ -196,9 +253,9 @@ namespace Axiom {
             imageVertexBuffer->setData<UIVertex>(allImageVertices);
         }
 
-        uint32_t basicVertexOffset = 0;
-        uint32_t fontVertexOffset = 0;
-        uint32_t imageVertexOffset = 0;
+        size_t basicVertexOffset = 0;
+        size_t fontVertexOffset = 0;
+        size_t imageVertexOffset = 0;
 
         for (const auto& layer : renderLayers) {
 
@@ -213,13 +270,17 @@ namespace Axiom {
                 commandBuffer->bindVertexBuffers({basicVertexBuffer.get()});
                 commandBuffer->bindIndexBuffer(basicIndexBuffer.get());
                 commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
-                commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
 
-                uint32_t indexCount = static_cast<uint32_t>(layer.basicVertices.size() / 4) * 6;
-                commandBuffer->drawIndexed(indexCount, 1, 0, basicVertexOffset, 0);
+                for (const auto& batch : layer.basicRenderBatches) {
+                    if (batch.vertexCount == 0) {
+                        continue;
+                    }
+                    commandBuffer->setScissor(batch.scissorRect.x(), batch.scissorRect.y(), batch.scissorRect.width(), batch.scissorRect.height());
+                    commandBuffer->drawIndexed(batch.vertexCount / 4 * 6, 1, 0, basicVertexOffset + batch.vertexOffset, 0);
+                }
+
                 commandBuffer->endRendering();
-
-                basicVertexOffset += static_cast<uint32_t>(layer.basicVertices.size());
+                basicVertexOffset += layer.basicVertices.size();
             }
 
             if (!layer.fontVertices.empty()) {
@@ -234,13 +295,17 @@ namespace Axiom {
                 commandBuffer->bindVertexBuffers({fontVertexBuffer.get()});
                 commandBuffer->bindIndexBuffer(fontIndexBuffer.get());
                 commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
-                commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
 
-                uint32_t indexCount = static_cast<uint32_t>(layer.fontVertices.size() / 4) * 6;
-                commandBuffer->drawIndexed(indexCount, 1, 0, fontVertexOffset, 0);
+                for (const auto& batch : layer.fontRenderBatches) {
+                    if (batch.vertexCount == 0) {
+                        continue;
+                    }
+                    commandBuffer->setScissor(batch.scissorRect.x(), batch.scissorRect.y(), batch.scissorRect.width(), batch.scissorRect.height());
+                    commandBuffer->drawIndexed(batch.vertexCount / 4 * 6, 1, 0, fontVertexOffset + batch.vertexOffset, 0);
+                }
+
                 commandBuffer->endRendering();
-
-                fontVertexOffset += static_cast<uint32_t>(layer.fontVertices.size());
+                fontVertexOffset += layer.fontVertices.size();
             }
 
             if (!layer.imageDrawCommands.empty()) {
@@ -254,9 +319,10 @@ namespace Axiom {
                 commandBuffer->bindVertexBuffers({imageVertexBuffer.get()});
                 commandBuffer->bindIndexBuffer(imageIndexBuffer.get());
                 commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
-                commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
 
                 for (const auto& drawCommand : layer.imageDrawCommands) {
+                    commandBuffer->setScissor(drawCommand.scissorRect.x(), drawCommand.scissorRect.y(), drawCommand.scissorRect.width(),
+                                              drawCommand.scissorRect.height());
                     ResourceSet* resourceSet = getResourceSetForTexture(drawCommand.texture);
                     commandBuffer->bindResources({resourceSet});
                     commandBuffer->drawIndexed(6, 1, 0, imageVertexOffset, 0);

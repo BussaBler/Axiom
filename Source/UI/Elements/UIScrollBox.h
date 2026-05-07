@@ -1,19 +1,17 @@
 #pragma once
+#include "Event/MouseEvent.h"
 #include "UIElement.h"
 
 namespace Axiom {
-    class UIImage : public UIElement {
+    class UIScrollBox : public UIElement {
       public:
-        UIImage() = default;
-        ~UIImage() = default;
-
         Math::Vec2 getDesiredSize(const UIContext& context) override;
+        void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) override;
 
         void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
-
-        void setTexture(const std::shared_ptr<Texture>& newTexture) { texture = newTexture; }
+        bool onEvent(Event& event) override;
 
       private:
-        std::shared_ptr<Texture> texture = nullptr;
+        Math::Vec2 scrollOffset{0.0f, 0.0f};
     };
 } // namespace Axiom

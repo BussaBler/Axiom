@@ -17,7 +17,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    void UIText::onRender(const UIContext& context) {
+    void UIText::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         if (text.empty()) {
             return;
         }

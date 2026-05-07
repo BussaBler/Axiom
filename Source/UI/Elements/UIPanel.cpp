@@ -85,7 +85,7 @@ namespace Axiom {
         }
     }
 
-    void UIPanel::onRender(const UIContext& context) {
+    void UIPanel::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Math::Vec4 radii = Math::Vec4::zero();
         switch (horizontalAlignment) {
         case UIAlignment::Fill:
@@ -107,6 +107,6 @@ namespace Axiom {
 
         context.renderer->addBasicQuad(arrangedPosition, arrangedSize, overridePanelBackgroundColor.value_or(resolvedTheme->panelBackgroundColor), radii,
                                        context.layer);
-        UIElement::onRender(context);
+        UIElement::onRender(context, scissorRect);
     }
 } // namespace Axiom

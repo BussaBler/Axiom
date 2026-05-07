@@ -82,9 +82,9 @@ namespace Axiom {
             }
         }
 
-        virtual void onRender(const UIContext& context) {
+        virtual void onRender(const UIContext& context, const Math::Rect& scissorRect) {
             for (const auto& child : children) {
-                child->onRender(context);
+                child->onRender(context, scissorRect);
             }
         }
         virtual bool onEvent(Event& event) {

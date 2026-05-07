@@ -41,6 +41,7 @@ namespace Axiom {
         dispatcher.dispatch<MouseButtonPressedEvent>(std::bind(&Application::onMouseButtonPressed, this, std::placeholders::_1));
         dispatcher.dispatch<MouseButtonReleasedEvent>(std::bind(&Application::onMouseButtonReleased, this, std::placeholders::_1));
         dispatcher.dispatch<MouseMovedEvent>(std::bind(&Application::onMouseMoved, this, std::placeholders::_1));
+
         for (auto it = layerStack.rbegin(); it != layerStack.rend(); it++) {
             if (event.isHandled()) {
                 break;

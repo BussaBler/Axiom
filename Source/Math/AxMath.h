@@ -48,6 +48,7 @@ namespace Math {
 
 // TODO: implement SIMD versions of these types and improve the overall implementation
 #include "Mat.h"
+#include "Rect.h"
 #include "Vec.h"
 
 // ------- Axiom Math Type Formatters -------

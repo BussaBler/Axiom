@@ -8,7 +8,7 @@ namespace Axiom {
 
         virtual Math::Vec2 getDesiredSize(const UIContext& context) override;
 
-        virtual void onRender(const UIContext& context) override;
+        virtual void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
         virtual bool onEvent(Event& event) override;
 
         inline virtual void setNormalColor(const Color& color) { overrideNormalColor = color; }

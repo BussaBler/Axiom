@@ -18,4 +18,8 @@ namespace Axiom {
     template <BitMaskEnum E> constexpr E operator^(E lhs, E rhs) {
         return static_cast<E>(static_cast<std::underlying_type_t<E>>(lhs) ^ static_cast<std::underlying_type_t<E>>(rhs));
     }
+
+    template <BitMaskEnum E> constexpr bool operator!(E value) {
+        return static_cast<std::underlying_type_t<E>>(value) == 0;
+    }
 } // namespace Axiom

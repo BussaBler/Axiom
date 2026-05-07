@@ -65,7 +65,7 @@ namespace Axiom {
         }
     }
 
-    void UICollapsableGroup::onRender(const UIContext& context) {
+    void UICollapsableGroup::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Math::Vec2 headerPos = arrangedPosition + Math::Vec2(padding.left, padding.top);
         Math::Vec2 headerSize = Math::Vec2(arrangedSize.x() - padding.left - padding.right, headerHeight);
 
@@ -78,7 +78,7 @@ namespace Axiom {
 
         if (isOpen) {
             for (const auto& child : children) {
-                child->onRender(context);
+                child->onRender(context, scissorRect);
             }
         }
     }

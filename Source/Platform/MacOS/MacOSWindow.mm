@@ -284,6 +284,14 @@ namespace Axiom {
     [self mouseMoved:event];
 }
 
+- (void)scrollWheel:(NSEvent *)event {
+    CGFloat deltaX = [event scrollingDeltaX];
+    CGFloat deltaY = [event scrollingDeltaY];
+
+    Axiom::MouseScrolledEvent scrollEvent(deltaX, deltaY);
+    _wData->eventCallback(scrollEvent);
+}
+
 - (void)updateTrackingAreas {
     [super updateTrackingAreas];
     

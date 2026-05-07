@@ -10,7 +10,7 @@ namespace Axiom {
       public:
         Math::Vec2 getDesiredSize(const UIContext& context) override;
 
-        void onRender(const UIContext& context) override;
+        void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
         bool onEvent(Event& event) override;
 
         void setDragSpeed(float speed) { dragSpeed = speed; }
@@ -66,7 +66,7 @@ namespace Axiom {
         return desiredSize;
     }
 
-    template <typename T> inline void UIScalarField<T>::onRender(const UIContext& context) {
+    template <typename T> inline void UIScalarField<T>::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Color normalColor = overrideNormalColor.value_or(resolvedTheme->controlNormalColor);
         Color hoverColor = overrideHoverColor.value_or(resolvedTheme->controlHoverColor);
         Color activeColor = overrideActiveColor.value_or(resolvedTheme->controlActiveColor);
@@ -94,7 +94,7 @@ namespace Axiom {
 
         context.renderer->addText(displayText, Math::Vec2(textX, textY), fontSize, context.dpiScale, resolvedTheme->textColor, context.layer);
 
-        UIElement::onRender(context);
+        UIElement::onRender(context, scissorRect);
     }
 
     template <typename T> inline bool UIScalarField<T>::onEvent(Event& event) {

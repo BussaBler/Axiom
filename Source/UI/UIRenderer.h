@@ -2,6 +2,7 @@
 #include "Asset/AssetManager.h"
 #include "Core/Locator.h"
 #include "Font.h"
+#include "Math/AxMath.h"
 #include "Math/Color.h"
 #include "Renderer/Renderer.h"
 #include "UIVertex.h"
@@ -23,6 +24,9 @@ namespace Axiom {
         float calculateTextHeight(float fontSize, float dpiScale);
         void addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture, uint8_t layer = 0);
 
+        void pushScissorRect(const Math::Rect& rect, uint8_t layer = 0);
+        void popScissorRect(uint8_t layer = 0);
+
         void onRender(CommandBuffer* commandBuffer, Texture* targetTexture);
 
         inline Font& getFont() { return openSansFont; }
@@ -38,6 +42,8 @@ namespace Axiom {
         // used for rendering lines in the editor (e.g. gizmos)
         Math::Mat4 gizmosProjection;
         Math::Mat4 gizmosView;
+
+        std::stack<Math::Rect> scissorRectStack;
 
         static const uint32_t MAX_BASIC_QUADS = 1000;
         std::shared_ptr<ShaderAsset> basicShader = nullptr;
@@ -61,6 +67,8 @@ namespace Axiom {
             Texture* texture;
             Math::Vec2 pos;
             Math::Vec2 size;
+
+            Math::Rect scissorRect;
         };
         static const uint32_t MAX_IMAGE_QUADS = 100;
         std::shared_ptr<ShaderAsset> imageShader = nullptr;
@@ -71,7 +79,17 @@ namespace Axiom {
         std::unique_ptr<ResourceLayout> imageResourceLayout = nullptr;
         std::unordered_map<Texture*, std::unique_ptr<ResourceSet>> imageResourceSets;
 
+        struct RenderBatch {
+            size_t vertexOffset = 0;
+            uint32_t vertexCount = 0;
+
+            Math::Rect scissorRect;
+        };
+
         struct RenderLayer {
+            std::vector<RenderBatch> basicRenderBatches;
+            std::vector<RenderBatch> fontRenderBatches;
+
             std::vector<UIVertex> basicVertices;
             std::vector<UIVertex> fontVertices;
             std::vector<ImageDrawCommand> imageDrawCommands;
