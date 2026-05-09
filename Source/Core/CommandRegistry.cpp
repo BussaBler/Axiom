@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "CommandRegistry.h"
 
 namespace Axiom {

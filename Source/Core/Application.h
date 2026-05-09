@@ -14,7 +14,11 @@
 #include "UI/UIRenderer.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
-#include "axpch.h"
+
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace Axiom {
     struct ApplicationInfo {

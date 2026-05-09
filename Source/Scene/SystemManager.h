@@ -1,6 +1,7 @@
 #pragma once
 #include "ECS/Registry.h"
-#include "axpch.h"
+
+#include <unordered_map>
 
 namespace Axiom {
     class System {

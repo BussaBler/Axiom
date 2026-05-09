@@ -1,5 +1,6 @@
-#include "Log.h"
 #include "axpch.h"
+
+#include "Log.h"
 
 namespace Axiom {
     std::shared_ptr<Logger> Log::coreLogger = nullptr;

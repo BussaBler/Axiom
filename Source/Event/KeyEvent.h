@@ -1,7 +1,6 @@
 #pragma once
 #include "Event.h"
 #include "KeyCodes.h"
-#include "axpch.h"
 
 namespace Axiom {
     class KeyEvent : public Event {

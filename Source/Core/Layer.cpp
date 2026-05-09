@@ -1,6 +1,8 @@
-#include "Layer.h"
-#include "Application.h"
 #include "axpch.h"
+
+#include "Layer.h"
+
+#include "Application.h"
 
 namespace Axiom {
     void Layer::requestLayerAction(std::unique_ptr<Layer> newLayer, ActionType action) {

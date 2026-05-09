@@ -1,5 +1,10 @@
 #pragma once
-#include "axpch.h"
+#include <cmath>
+#include <format>
+#include <limits>
+#include <random>
+#include <sstream>
+#include <string>
 
 namespace Math {
     // ------- Axiom Math Constants -------

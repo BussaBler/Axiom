@@ -1,6 +1,5 @@
 #pragma once
 #include "Texture.h"
-#include "axpch.h"
 
 namespace Axiom {
     class SwapChain {

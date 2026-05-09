@@ -2,7 +2,12 @@
 #include "Event/Event.h"
 #include "Math/AxMath.h"
 #include "UI/UIRenderer.h"
-#include "axpch.h"
+
+#include <algorithm>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace Axiom {
     enum class UIAlignment { Fill, Start, Center, End };

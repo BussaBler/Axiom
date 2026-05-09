@@ -1,7 +1,11 @@
 #pragma once
 #include "Core/Log.h"
 #include "ECS/Entity.h"
-#include "axpch.h"
+
+#include <string>
+#include <typeindex>
+#include <unordered_map>
+#include <vector>
 
 namespace Axiom {
     enum class FieldType {
@@ -15,12 +19,14 @@ namespace Axiom {
         Vec4,
         Color,
         AssetHandle,
+        Enum,
     };
 
     struct FieldInfo {
         std::string name;
         FieldType type;
         size_t offset;
+        std::vector<std::string> enumOptions = {};
     };
 
     struct ComponentInfo {
@@ -53,5 +59,6 @@ namespace Axiom {
 
       private:
         static std::unordered_map<std::type_index, ComponentInfo> componentRegistry;
+        static std::unordered_map<std::string, std::vector<std::string>> enumRegistry;
     };
 } // namespace Axiom

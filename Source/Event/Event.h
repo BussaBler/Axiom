@@ -1,6 +1,8 @@
 #pragma once
 #include "Utils/BitMaskEnum.h"
-#include "axpch.h"
+
+#include <functional>
+#include <string>
 
 namespace Axiom {
     enum class EventType {

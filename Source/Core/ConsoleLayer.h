@@ -11,7 +11,9 @@
 #include "UI/Elements/UIText.h"
 #include "UI/Elements/UITextInput.h"
 #include "UI/Elements/UIVerticalBox.h"
-#include "axpch.h"
+
+#include <memory>
+#include <string>
 
 namespace Axiom {
     class ConsoleLayer : public Layer {

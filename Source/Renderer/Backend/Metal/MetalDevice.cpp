@@ -1,8 +1,9 @@
+#include "axpch.h"
 #define NS_PRIVATE_IMPLEMENTATION
 #define CA_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION
-#include "MetalDevice.h"
 #include "Core/Assert.h"
+#include "MetalDevice.h"
 #include "Platform/MacOS/MacOSWindow.h"
 
 namespace Axiom {

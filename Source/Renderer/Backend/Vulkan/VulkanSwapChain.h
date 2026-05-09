@@ -3,6 +3,9 @@
 #include "VulkanTexture.h"
 #include "VulkanUtils.h"
 
+#include <memory>
+#include <vector>
+
 namespace Axiom {
     class VulkanSwapChain : public SwapChain {
       public:

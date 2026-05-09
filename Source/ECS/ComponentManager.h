@@ -1,6 +1,8 @@
 #pragma once
 #include "EntityManager.h"
 
+#include <typeindex>
+
 namespace Axiom {
     class IComponentArray {
       public:

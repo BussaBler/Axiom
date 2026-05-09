@@ -1,5 +1,6 @@
+#include "axpch.h"
+
 #include "UIRenderer.h"
-#include "Core/Application.h"
 
 namespace Axiom {
     UIRenderer::UIRenderer() {
@@ -258,7 +259,6 @@ namespace Axiom {
         size_t imageVertexOffset = 0;
 
         for (const auto& layer : renderLayers) {
-
             if (!layer.basicVertices.empty()) {
                 basicRenderPass.colorAttachments[0].texture = renderTarget;
                 basicRenderPass.width = renderTargetSize.x();

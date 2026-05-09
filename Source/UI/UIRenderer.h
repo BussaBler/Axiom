@@ -6,7 +6,11 @@
 #include "Math/Color.h"
 #include "Renderer/Renderer.h"
 #include "UIVertex.h"
-#include "axpch.h"
+
+#include <array>
+#include <memory>
+#include <stack>
+#include <vector>
 
 namespace Axiom {
     class UIRenderer {

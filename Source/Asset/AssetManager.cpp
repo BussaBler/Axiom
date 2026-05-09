@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "AssetManager.h"
+
 #include "AxImageLoader.h"
 #include "AxModelLoader.h"
 #include "Renderer/Renderer.h"

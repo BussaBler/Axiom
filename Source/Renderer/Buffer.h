@@ -1,6 +1,7 @@
 #pragma once
 #include "Utils/BitMaskEnum.h"
-#include "axpch.h"
+
+#include <span>
 
 namespace Axiom {
     enum class BufferUsage {

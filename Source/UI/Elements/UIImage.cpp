@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "UIImage.h"
 
 namespace Axiom {

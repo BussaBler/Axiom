@@ -4,7 +4,10 @@
 #include "MeshAsset.h"
 #include "ShaderAsset.h"
 #include "TextureAsset.h"
-#include "axpch.h"
+
+#include <filesystem>
+#include <string>
+#include <unordered_map>
 
 namespace Axiom {
     struct AssetMetadata {

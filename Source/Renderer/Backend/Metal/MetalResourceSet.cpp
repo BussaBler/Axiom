@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "MetalResourceSet.h"
+
 #include "MetalBuffer.h"
 #include "MetalSampler.h"
 #include "MetalTexture.h"

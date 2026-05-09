@@ -1,6 +1,10 @@
 #pragma once
 #include "Core/Assert.h"
-#include "axpch.h"
+
+#include <array>
+#include <cmath>
+#include <sstream>
+#include <string>
 
 namespace Math {
     template <typename T, size_t N> struct Vec {
@@ -12,8 +16,7 @@ namespace Math {
         }
 
         template <typename... Scalars, typename = std::enable_if_t<(sizeof...(Scalars) == N) && (std::conjunction_v<std::is_convertible<Scalars, T>...>)>>
-        Vec(Scalars... s) : data{{static_cast<T>(s)...}} {
-        }
+        Vec(Scalars... s) : data{{static_cast<T>(s)...}} {}
 
         Vec(T value) {
             for (size_t i = 0; i < N; ++i) {
@@ -49,9 +52,7 @@ namespace Math {
             return isNear;
         }
 
-        static Vec<T, N> zero() {
-            return Vec<T, N>();
-        }
+        static Vec<T, N> zero() { return Vec<T, N>(); }
 
         static Vec<T, N> one() {
             Vec<T, N> result;
@@ -61,13 +62,9 @@ namespace Math {
             return result;
         }
 
-        T& operator[](size_t i) {
-            return data[i];
-        }
+        T& operator[](size_t i) { return data[i]; }
 
-        const T& operator[](size_t i) const {
-            return data[i];
-        }
+        const T& operator[](size_t i) const { return data[i]; }
 
         Vec<T, N> operator+(const Vec<T, N>& other) const {
             Vec<T, N> result;
@@ -139,9 +136,7 @@ namespace Math {
             return *this;
         }
 
-        friend Vec<T, N> operator*(const T& scalar, const Vec<T, N>& vec) {
-            return vec * scalar;
-        }
+        friend Vec<T, N> operator*(const T& scalar, const Vec<T, N>& vec) { return vec * scalar; }
 
         T x() const
             requires(N >= 2)

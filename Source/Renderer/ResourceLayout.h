@@ -1,6 +1,5 @@
 #pragma once
 #include "Utils/BitMaskEnum.h"
-#include "axpch.h"
 
 namespace Axiom {
     enum class ResourceType {

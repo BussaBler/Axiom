@@ -1,6 +1,5 @@
 #pragma once
 #include "Math/AxMath.h"
-#include "axpch.h"
 
 namespace Axiom {
     class UIVertex {

@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "Scene.h"
 
 namespace Axiom {

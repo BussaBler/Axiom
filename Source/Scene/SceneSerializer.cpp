@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "SceneSerializer.h"
 
 namespace Axiom {

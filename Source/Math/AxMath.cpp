@@ -1,5 +1,6 @@
-#include "AxMath.h"
 #include "axpch.h"
+
+#include "AxMath.h"
 
 namespace Math {
     float sin(float radians) {

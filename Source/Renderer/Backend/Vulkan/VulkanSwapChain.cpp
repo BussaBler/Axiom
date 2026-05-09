@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "VulkanSwapChain.h"
+
 #include "Math/AxMath.h"
 
 namespace Axiom {

@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "SceneRenderer.h"
 
 namespace Axiom {
@@ -32,9 +34,11 @@ namespace Axiom {
             std::shared_ptr<TextureAsset> textureAsset = AssetManager::getAsset<TextureAsset>(sprite.textureId);
 
             int32_t textureSlotIndex = 0;
+            int32_t samplerType = 0;
 
             if (textureAsset) {
                 Texture* rawTexture = textureAsset->getTexture();
+                samplerType = (textureAsset->getFilterMode() == SamplerFilterMode::Linear) ? 0 : 1;
                 bool found = false;
                 for (uint32_t i = 0; i < spriteTextureSlots.size(); i++) {
                     if (spriteTextureSlots[i] == rawTexture) {
@@ -55,7 +59,7 @@ namespace Axiom {
             }
 
             Math::Mat4 model = Math::Mat4::model(transform.position, transform.rotation * Math::DEG_TO_RAD, transform.scale);
-            spriteInstances.push_back({model, sprite.color, Math::Vec4((float)textureSlotIndex, 0.0f, 0.0f, 0.0f)});
+            spriteInstances.push_back({model, sprite.color, Math::Vec4((float)textureSlotIndex, (float)samplerType, 0.0f, 0.0f)});
         }
 
         std::unordered_map<UUID, std::vector<MeshInstance>> meshBatches;
@@ -99,7 +103,7 @@ namespace Axiom {
             resourceSetBindings[0].maxNumberOfResources = MAX_TEXTURE_SLOTS;
             resourceSetBindings[1].binding = 1;
             resourceSetBindings[1].type = ResourceType::Sampler;
-            resourceSetBindings[1].samplers = {Locator::getRenderer()->getLinearSampler()};
+            resourceSetBindings[1].samplers = {Locator::getRenderer()->getLinearSampler(), Locator::getRenderer()->getNearestSampler()};
             spriteResourceSets[1]->update(resourceSetBindings);
 
             data.commandBuffer->bindPipeline(spritePipeline.get());
@@ -226,7 +230,7 @@ namespace Axiom {
         spriteResourceLayoutBindings2[1].binding = 1;
         spriteResourceLayoutBindings2[1].type = ResourceType::Sampler;
         spriteResourceLayoutBindings2[1].stages = ShaderStage::Fragment;
-        spriteResourceLayoutBindings2[1].count = 1;
+        spriteResourceLayoutBindings2[1].count = 2; // linear and nearest sampler
         spriteResourceLayouts.push_back(Locator::getRenderer()->createResourceLayout(spriteResourceLayoutBindings2));
 
         std::vector<ResourceSet::Binding> spriteResourceSetBindings(1);

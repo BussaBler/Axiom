@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "MetalSwapChain.h"
 
 namespace Axiom {

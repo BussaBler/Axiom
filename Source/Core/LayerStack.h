@@ -49,31 +49,15 @@ namespace Axiom {
             layerInsertIndex--;
         }
 
-        std::vector<std::unique_ptr<Layer>>::iterator begin() {
-            return layers.begin();
-        }
-        std::vector<std::unique_ptr<Layer>>::iterator end() {
-            return layers.end();
-        }
-        std::vector<std::unique_ptr<Layer>>::reverse_iterator rbegin() {
-            return layers.rbegin();
-        }
-        std::vector<std::unique_ptr<Layer>>::reverse_iterator rend() {
-            return layers.rend();
-        }
+        std::vector<std::unique_ptr<Layer>>::iterator begin() { return layers.begin(); }
+        std::vector<std::unique_ptr<Layer>>::iterator end() { return layers.end(); }
+        std::vector<std::unique_ptr<Layer>>::reverse_iterator rbegin() { return layers.rbegin(); }
+        std::vector<std::unique_ptr<Layer>>::reverse_iterator rend() { return layers.rend(); }
 
-        std::vector<std::unique_ptr<Layer>>::const_iterator begin() const {
-            return layers.begin();
-        }
-        std::vector<std::unique_ptr<Layer>>::const_iterator end() const {
-            return layers.end();
-        }
-        std::vector<std::unique_ptr<Layer>>::const_reverse_iterator rbegin() const {
-            return layers.rbegin();
-        }
-        std::vector<std::unique_ptr<Layer>>::const_reverse_iterator rend() const {
-            return layers.rend();
-        }
+        std::vector<std::unique_ptr<Layer>>::const_iterator begin() const { return layers.begin(); }
+        std::vector<std::unique_ptr<Layer>>::const_iterator end() const { return layers.end(); }
+        std::vector<std::unique_ptr<Layer>>::const_reverse_iterator rbegin() const { return layers.rbegin(); }
+        std::vector<std::unique_ptr<Layer>>::const_reverse_iterator rend() const { return layers.rend(); }
 
       private:
         template <typename T> static bool isLayerOfType(Layer* layer) {

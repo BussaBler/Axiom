@@ -1,6 +1,5 @@
 #pragma once
 #include "AxMath.h"
-#include "axpch.h"
 
 namespace Axiom {
     class Color {

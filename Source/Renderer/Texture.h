@@ -2,7 +2,6 @@
 #include "Buffer.h"
 #include "Math/AxMath.h"
 #include "Utils/BitMaskEnum.h"
-#include "axpch.h"
 
 namespace Axiom {
     enum class Format {

@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "XLibWindow.h"
 
 namespace Axiom {

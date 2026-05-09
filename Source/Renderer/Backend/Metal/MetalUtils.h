@@ -1,10 +1,11 @@
 #pragma once
+
 #include "Renderer/Buffer.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/Sampler.h"
 #include "Renderer/Texture.h"
-#include "axpch.h"
+
 #include <Metal/Metal.hpp>
 
 namespace Axiom {

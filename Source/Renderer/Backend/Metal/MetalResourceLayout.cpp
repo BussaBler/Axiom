@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "MetalResourceLayout.h"
 
 namespace Axiom {

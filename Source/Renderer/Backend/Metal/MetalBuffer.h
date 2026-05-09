@@ -11,9 +11,7 @@ namespace Axiom {
         uint32_t getSize() const override;
         void setData(const void* data, uint64_t size, uint64_t offset = 0) override;
 
-        MTL::Buffer* getHandle() const {
-            return metalBuffer;
-        }
+        MTL::Buffer* getHandle() const { return metalBuffer; }
 
       private:
         MTL::Buffer* metalBuffer = nullptr;

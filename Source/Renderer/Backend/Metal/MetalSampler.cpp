@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "MetalSampler.h"
 
 namespace Axiom {

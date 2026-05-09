@@ -1,20 +1,14 @@
 #pragma once
 #include "Event.h"
 #include "KeyCodes.h"
-#include "axpch.h"
 
 namespace Axiom {
     class MouseMovedEvent : public Event {
       public:
-        MouseMovedEvent(float x, float y) : mouseX(x), mouseY(y) {
-        }
+        MouseMovedEvent(float x, float y) : mouseX(x), mouseY(y) {}
 
-        float getMouseX() const {
-            return mouseX;
-        }
-        float getMouseY() const {
-            return mouseY;
-        }
+        float getMouseX() const { return mouseX; }
+        float getMouseY() const { return mouseY; }
         std::string toString() const override {
             std::stringstream ss;
             ss << "MouseMovedEvent: " << mouseX << ", " << mouseY;
@@ -29,15 +23,10 @@ namespace Axiom {
 
     class MouseScrolledEvent : public Event {
       public:
-        MouseScrolledEvent(float xOffset, float yOffset) : xOffset(xOffset), yOffset(yOffset) {
-        }
+        MouseScrolledEvent(float xOffset, float yOffset) : xOffset(xOffset), yOffset(yOffset) {}
 
-        float getXOffset() const {
-            return xOffset;
-        }
-        float getYOffset() const {
-            return yOffset;
-        }
+        float getXOffset() const { return xOffset; }
+        float getYOffset() const { return yOffset; }
         std::string toString() const override {
             std::stringstream ss;
             ss << "MouseScrolledEvent: " << xOffset << ", " << yOffset;
@@ -52,14 +41,11 @@ namespace Axiom {
 
     class MouseButtonEvent : public Event {
       public:
-        KeyCode getMouseButton() const {
-            return button;
-        }
+        KeyCode getMouseButton() const { return button; }
 
         EVENT_CLASS_CATEGORY(EventCategory::EventCategoryMouse | EventCategory::EventCategoryApplicationInput)
       protected:
-        MouseButtonEvent(KeyCode button) : button(button) {
-        }
+        MouseButtonEvent(KeyCode button) : button(button) {}
 
       protected:
         KeyCode button;
@@ -67,8 +53,7 @@ namespace Axiom {
 
     class MouseButtonPressedEvent : public MouseButtonEvent {
       public:
-        MouseButtonPressedEvent(KeyCode button) : MouseButtonEvent(button) {
-        }
+        MouseButtonPressedEvent(KeyCode button) : MouseButtonEvent(button) {}
 
         std::string toString() const override {
             std::stringstream ss;
@@ -81,8 +66,7 @@ namespace Axiom {
 
     class MouseButtonReleasedEvent : public MouseButtonEvent {
       public:
-        MouseButtonReleasedEvent(KeyCode button) : MouseButtonEvent(button) {
-        }
+        MouseButtonReleasedEvent(KeyCode button) : MouseButtonEvent(button) {}
 
         std::string toString() const override {
             std::stringstream ss;

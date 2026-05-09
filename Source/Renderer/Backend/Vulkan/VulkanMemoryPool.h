@@ -2,6 +2,8 @@
 #include "Core/Assert.h"
 #include "VulkanInclude.h"
 
+#include <list>
+
 namespace Axiom {
     struct MemoryChunk {
         size_t offset;

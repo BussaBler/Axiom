@@ -3,7 +3,10 @@
 #include "Math/AxMath.h"
 #include "Utils/BinaryReader.h"
 #include "Utils/ContainerUtils.h"
-#include "axpch.h"
+
+#include <list>
+#include <unordered_map>
+#include <vector>
 
 namespace Axiom {
     struct GlyphMetrics {

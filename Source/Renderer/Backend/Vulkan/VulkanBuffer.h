@@ -14,9 +14,7 @@ namespace Axiom {
         uint32_t getSize() const override;
         void setData(const void* data, uint64_t size, uint64_t offset = 0) override;
 
-        inline Vk::Buffer getHandle() const {
-            return buffer;
-        }
+        inline Vk::Buffer getHandle() const { return buffer; }
 
       private:
         Vk::Device device = nullptr;

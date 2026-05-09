@@ -8,9 +8,7 @@ namespace Axiom {
         VulkanResourceLayout(Vk::Device logicalDevice, const std::vector<BindingCreateInfo>& bindings);
         ~VulkanResourceLayout() override;
 
-        inline Vk::DescriptorSetLayout getHandle() const {
-            return descriptorSetLayout;
-        }
+        inline Vk::DescriptorSetLayout getHandle() const { return descriptorSetLayout; }
 
       private:
         Vk::Device device = nullptr;

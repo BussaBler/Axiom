@@ -6,12 +6,8 @@ namespace Axiom {
       public:
         static void init();
 
-        static std::shared_ptr<Logger> getCoreLogger() {
-            return coreLogger;
-        }
-        static std::shared_ptr<Logger> getClientLogger() {
-            return clientLogger;
-        }
+        static std::shared_ptr<Logger> getCoreLogger() { return coreLogger; }
+        static std::shared_ptr<Logger> getClientLogger() { return clientLogger; }
 
       private:
         static std::shared_ptr<Logger> coreLogger;

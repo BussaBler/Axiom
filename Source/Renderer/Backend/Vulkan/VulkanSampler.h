@@ -8,9 +8,7 @@ namespace Axiom {
         VulkanSampler(Vk::Device logicalDevice, const CreateInfo& createInfo);
         ~VulkanSampler() override;
 
-        inline Vk::Sampler getSampler() const {
-            return sampler;
-        }
+        inline Vk::Sampler getSampler() const { return sampler; }
 
       private:
         Vk::Device device = nullptr;

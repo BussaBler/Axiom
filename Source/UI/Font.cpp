@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "Font.h"
+
 #include "MSDFGen/msdfgen.h"
 
 namespace Axiom {

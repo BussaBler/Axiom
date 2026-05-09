@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "axpch.h"
 
 namespace Axiom {
     Application* Application::instance = nullptr;

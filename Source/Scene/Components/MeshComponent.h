@@ -1,9 +1,9 @@
 #pragma once
 #include "Asset/UUID.h"
-#include "Component.h"
+#include "Core/Base.h"
 
 namespace Axiom {
-    AX_COMPONENT struct MeshComponent {
+    AX_COMPONENT() struct MeshComponent {
         UUID meshId;
     };
 } // namespace Axiom

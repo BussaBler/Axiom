@@ -12,9 +12,7 @@ namespace Axiom {
         ~VulkanResourceSet() = default;
         void update(const std::vector<Binding>& bindings) override;
 
-        inline Vk::DescriptorSet getHandle() const {
-            return descriptorSet;
-        }
+        inline Vk::DescriptorSet getHandle() const { return descriptorSet; }
 
       private:
         Vk::Device device = nullptr;

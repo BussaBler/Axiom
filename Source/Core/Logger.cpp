@@ -1,5 +1,6 @@
-#include "Logger.h"
 #include "axpch.h"
+
+#include "Logger.h"
 
 namespace Axiom {
     Logger::Logger() : mPriority(Logger::Priority::Debug), mInitialString("") {

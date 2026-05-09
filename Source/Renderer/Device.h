@@ -7,7 +7,8 @@
 #include "Sampler.h"
 #include "SwapChain.h"
 #include "Texture.h"
-#include "axpch.h"
+
+#include <memory>
 
 namespace Axiom {
     enum class GraphicsApi { Vulkan, DirectX12, Metal };

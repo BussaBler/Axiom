@@ -1,6 +1,7 @@
 #pragma once
 #include "Event/KeyCodes.h"
 #include "Math/AxMath.h"
+
 #include <array>
 
 namespace Axiom {

@@ -1,5 +1,8 @@
 #pragma once
-#include "axpch.h"
+
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace Axiom {
     enum class JSONValueType { Null, Object, Array, String, Float, Int, Bool };

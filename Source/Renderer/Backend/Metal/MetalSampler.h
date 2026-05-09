@@ -8,9 +8,7 @@ namespace Axiom {
         MetalSampler(const CreateInfo& createInfo, MTL::Device* device);
         ~MetalSampler() override;
 
-        MTL::SamplerState* getHandle() const {
-            return samplerState;
-        }
+        MTL::SamplerState* getHandle() const { return samplerState; }
 
       private:
         MTL::SamplerState* samplerState = nullptr;

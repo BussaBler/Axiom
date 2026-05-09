@@ -2,6 +2,7 @@
 #include "Core/Assert.h"
 #include "Core/Window.h"
 #include "Event/ApplicationEvent.h"
+
 #include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -16,27 +17,14 @@ namespace Axiom {
         ~XLibWindow();
         void onUpdate() override;
 
-        void setEventCallback(const EventCallback& callback) override {
-            data.eventCallback = callback;
-        }
-        void setVSync(bool enabled) override {
-        }
-        bool isVSync() const override {
-            return false;
-        }
+        void setEventCallback(const EventCallback& callback) override { data.eventCallback = callback; }
+        void setVSync(bool enabled) override {}
+        bool isVSync() const override { return false; }
 
-        void* getNativeWindow() override {
-            return &window;
-        }
-        void* getNativeDisplay() const override {
-            return display;
-        }
-        uint32_t getWidth() const override {
-            return data.width;
-        }
-        uint32_t getHeight() const override {
-            return data.height;
-        }
+        void* getNativeWindow() override { return &window; }
+        void* getNativeDisplay() const override { return display; }
+        uint32_t getWidth() const override { return data.width; }
+        uint32_t getHeight() const override { return data.height; }
 
       private:
         void init(const WindowProps& props);

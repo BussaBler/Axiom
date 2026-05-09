@@ -1,6 +1,8 @@
 #pragma once
 #include "Core/Assert.h"
-#include "axpch.h"
+
+#include <cstdint>
+#include <fstream>
 
 namespace Axiom {
     class BinaryReader {
@@ -23,9 +25,7 @@ namespace Axiom {
 
         std::string readString(size_t length);
 
-        inline static bool isFlagBitSet(uint16_t flag, uint16_t index) {
-            return (flag & (1 << index)) != 0;
-        }
+        inline static bool isFlagBitSet(uint16_t flag, uint16_t index) { return (flag & (1 << index)) != 0; }
 
       private:
         std::fstream fileStream;

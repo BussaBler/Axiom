@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "EntityManager.h"
 
 namespace Axiom {

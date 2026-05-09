@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "VulkanShader.h"
+
 #include <shaderc/shaderc.hpp>
 
 namespace Axiom {

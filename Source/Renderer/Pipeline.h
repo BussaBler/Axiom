@@ -3,7 +3,8 @@
 #include "ResourceSet.h"
 #include "Shader.h"
 #include "Vertex.h"
-#include "axpch.h"
+
+#include <memory>
 
 namespace Axiom {
     enum class VertexInputRate { Vertex, Instance };

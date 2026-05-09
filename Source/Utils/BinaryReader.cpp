@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "BinaryReader.h"
 
 namespace Axiom {

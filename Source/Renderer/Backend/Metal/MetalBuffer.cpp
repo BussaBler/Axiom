@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "MetalBuffer.h"
 
 namespace Axiom {

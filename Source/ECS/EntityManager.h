@@ -1,6 +1,10 @@
 #pragma once
 #include "Core/Assert.h"
-#include "axpch.h"
+
+#include <array>
+#include <bitset>
+#include <deque>
+#include <unordered_map>
 
 namespace Axiom {
     const uint32_t MAX_ENTITIES = 5000;

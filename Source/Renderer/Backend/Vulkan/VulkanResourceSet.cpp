@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "VulkanResourceSet.h"
 
 namespace Axiom {

@@ -1,3 +1,5 @@
+#include "axpch.h"
+
 #include "StringUtils.h"
 
 namespace Axiom {

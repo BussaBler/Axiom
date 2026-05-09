@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "MetalPipeline.h"
+
 #include "Core/Assert.h"
 #include "MetalResourceLayout.h"
 #include "MetalResourceSet.h"

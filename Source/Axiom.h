@@ -26,6 +26,7 @@
 #include "UI/Elements/UICanvas.h"
 #include "UI/Elements/UICheckbox.h"
 #include "UI/Elements/UICollapsableGroup.h"
+#include "UI/Elements/UIDropdown.h"
 #include "UI/Elements/UIElement.h"
 #include "UI/Elements/UIHorizontalBox.h"
 #include "UI/Elements/UIImage.h"

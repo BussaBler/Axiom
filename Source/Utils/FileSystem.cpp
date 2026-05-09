@@ -1,5 +1,6 @@
-#include "FileSystem.h"
 #include "axpch.h"
+
+#include "FileSystem.h"
 
 namespace Axiom {
     std::filesystem::path FileSystem::workingDirectory = std::filesystem::current_path();

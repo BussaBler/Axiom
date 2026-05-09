@@ -13,7 +13,9 @@
 #include "VulkanSwapChain.h"
 #include "VulkanTexture.h"
 #include "VulkanUtils.h"
-#include "axpch.h"
+
+#include <memory>
+#include <vector>
 
 #if defined(AX_PLATFORM_WINDOWS)
 #include "Platform/Windows/Win32Window.h"

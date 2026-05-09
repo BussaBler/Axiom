@@ -1,5 +1,4 @@
 #pragma once
-#include "axpch.h"
 
 // std::list utils
 template <typename T> inline T getNextWrapped(T it, T end, T begin) {

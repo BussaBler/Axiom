@@ -1,6 +1,5 @@
 #pragma once
 #include "Vec.h"
-#include "axpch.h"
 
 namespace Math {
     /// <summary>

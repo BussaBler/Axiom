@@ -30,9 +30,7 @@ namespace Axiom {
         void copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel = 0,
                                  uint32_t arrayLayer = 0) override;
 
-        inline Vk::CommandBuffer getHandle() const {
-            return commandBuffer;
-        }
+        inline Vk::CommandBuffer getHandle() const { return commandBuffer; }
 
       private:
       private:

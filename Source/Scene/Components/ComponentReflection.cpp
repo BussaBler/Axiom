@@ -10,7 +10,6 @@
 #include "TransformComponent.h"
 
 namespace Axiom {
-
     std::unordered_map<std::type_index, ComponentInfo> ComponentReflection::componentRegistry;
 
     void ComponentReflection::init() {
@@ -45,6 +44,8 @@ namespace Axiom {
         info.size = sizeof(Sprite2DComponent);
         info.fields = {
             {"textureId", FieldType::AssetHandle, offsetof(Sprite2DComponent, textureId)},
+            {"textureAddressMode", FieldType::Enum, offsetof(Sprite2DComponent, textureAddressMode)},
+            {"textureFilterMode", FieldType::Enum, offsetof(Sprite2DComponent, textureFilterMode)},
             {"color", FieldType::Color, offsetof(Sprite2DComponent, color)},
         };
         componentRegistry[std::type_index(typeid(Sprite2DComponent))] = info;

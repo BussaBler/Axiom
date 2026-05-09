@@ -1,6 +1,7 @@
 #pragma once
 #include "Registry.h"
-#include "axpch.h"
+
+#include <typeindex>
 
 namespace Axiom {
     class Entity {

@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "UIText.h"
+
 #include "Core/Application.h"
 
 namespace Axiom {

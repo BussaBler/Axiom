@@ -1,6 +1,8 @@
 #pragma once
 #include "UUID.h"
-#include "axpch.h"
+
+#include <memory>
+#include <string>
 
 namespace Axiom {
     enum class AssetType { None, Texture, Mesh, Font, Audio, Shader };

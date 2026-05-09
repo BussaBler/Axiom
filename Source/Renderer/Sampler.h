@@ -1,9 +1,10 @@
 #pragma once
+#include "Core/Base.h"
 
 namespace Axiom {
-    enum class SamplerAddressMode { Repeat, MirroredRepeat, ClampToEdge, ClampToBorder };
+    AX_ENUM() enum class SamplerAddressMode { Repeat, MirroredRepeat, ClampToEdge, ClampToBorder };
 
-    enum class SamplerFilterMode { Linear, Nearest };
+    AX_ENUM() enum class SamplerFilterMode { Linear, Nearest };
 
     class Sampler {
       public:

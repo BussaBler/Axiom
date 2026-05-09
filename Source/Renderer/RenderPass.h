@@ -1,7 +1,8 @@
 #pragma once
 #include "Math/AxMath.h"
 #include "Texture.h"
-#include "axpch.h"
+
+#include <array>
 
 namespace Axiom {
     enum class LoadOp { Load, Clear, DontCare };

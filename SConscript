@@ -67,6 +67,18 @@ localEnv.Append(
 )
 localEnv.Prepend(LIBS=[axImageLoaderLib, spirvCrossLib, axModelLoaderLib])
 
+if platform.startswith('windows'):
+    localEnv['PCHSTOP'] = 'axpch.h'
+    localEnv.PrecompiledHeader('Source/axpch.h')
+else:
+    pchHeader = 'Source/axpch.h'
+    pchFile = pchHeader.replace('.h', '.gch')
+
+    pchCmd = localEnv.Command(pchFile, pchHeader,
+        '$CXX $CXXFLAGS $CCFLAGS $CPPFLAGS $_CPPDEFFLAGS $_CPPINCFLAGS -x c++-header -c $SOURCE -o $TARGET'
+    )
+    localEnv.Depends(sources, pchCmd)
+
 axiomLib = localEnv.StaticLibrary(f'#/Bin/{configName}/Axiom/Axiom', sources)
 
 axiomProject = None

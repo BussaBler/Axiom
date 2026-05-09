@@ -1,4 +1,7 @@
+#include "axpch.h"
+
 #include "MetalShader.h"
+
 #include <SpirvCross/spirv_msl.hpp>
 #include <shaderc/shaderc.hpp>
 

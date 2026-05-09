@@ -2,7 +2,7 @@ import os
 import re
 
 componentRegex = re.compile(r'AX_COMPONENT\s*(?:struct|class)\s+(\w+)\s*\{([^}]+)\}')
-fieldRegex = re.compile(r'\s*(float|int|bool|std::string|Math::Vec2|Math::Vec3|Math::Vec4|Color|UUID)\s+(\w+)(?:\s*=[^;]+)?;')
+fieldRegex = re.compile(r'\s*(float|int|bool|std::string|Math::Vec2|Math::Vec3|Math::Vec4|Color|UUID|SamplerAddressMode|SamplerFilterMode)\s+(\w+)(?:\s*=[^;]+)?;')
 fiedlMapping = {
     'float': 'FieldType::Float',
     'int': 'FieldType::Int',
@@ -12,7 +12,9 @@ fiedlMapping = {
     'Math::Vec3': 'FieldType::Vec3',
     'Math::Vec4': 'FieldType::Vec4',
     'Color': 'FieldType::Color',
-    'UUID': 'FieldType::AssetHandle'
+    'UUID': 'FieldType::AssetHandle',
+    'SamplerAddressMode': 'FieldType::Enum',
+    'SamplerFilterMode': 'FieldType::Enum',
 }
 
 def getFieldType(fieldType):
@@ -41,8 +43,9 @@ def generateReflection():
     for compName, filepath, fields in components:
         cppCode += f"#include \"{compName}.h\"\n"
 
-    cppCode += "\nnamespace Axiom {\n\n"
-    cppCode += "std::unordered_map<std::type_index, ComponentInfo> ComponentReflection::componentRegistry;\n\n"
+    cppCode += "\nnamespace Axiom {\n"
+    cppCode += "std::unordered_map<std::type_index, ComponentInfo> ComponentReflection::componentRegistry;\n"
+    cppCode += "std::unordered_map<std::string, std::vector<std::string>> ComponentReflection::enumRegistry;\n\n"
 
     cppCode += "void ComponentReflection::init() {\n"
     cppCode += "ComponentInfo info;\n"

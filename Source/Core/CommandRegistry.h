@@ -1,5 +1,9 @@
 #pragma once
-#include "axpch.h"
+#include <deque>
+#include <functional>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace Axiom {
     class CommandRegistry {
