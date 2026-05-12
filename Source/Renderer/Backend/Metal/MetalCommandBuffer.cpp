@@ -146,11 +146,11 @@ namespace Axiom {
         MTL::Origin origin = {0, 0, 0};
         MTL::Size sourceSize = {width, height, 1};
 
-        uint32_t bytesPerPixel = 4;
+        uint32_t bytesPerPixel = getStride(dst->getFormat());
         NS::UInteger bytesPerRow = width * bytesPerPixel;
         NS::UInteger bytesPerImage = bytesPerRow * height;
 
-        blitEncoder->copyFromBuffer(source->getHandle(), 0, bytesPerRow, 0, sourceSize, dst->getHandle(), arrayLayer, mipLevel, origin);
+        blitEncoder->copyFromBuffer(source->getHandle(), 0, bytesPerRow, bytesPerImage, sourceSize, dst->getHandle(), arrayLayer, mipLevel, origin);
 
         blitEncoder->endEncoding();
     }

@@ -239,7 +239,6 @@ namespace Axiom {
         Texture::Barrier transferBarrier = {.texture = dstTexture,
                                             .oldState = TextureState::Undefined,
                                             .newState = TextureState::TransferDst,
-                                            .aspect = TextureAspect::Color,
                                             .baseMipLevel = mipLevel,
                                             .mipLevelCount = 1,
                                             .baseArrayLayer = arrayLayer,
@@ -248,26 +247,21 @@ namespace Axiom {
 
         Vk::BufferImageCopy copyRegion{};
         copyRegion.setBufferOffset(0);
+
         copyRegion.setBufferRowLength(0);
         copyRegion.setBufferImageHeight(0);
-        copyRegion.setImageSubresource(
-            {axToVkImageAspectFlags(transferBarrier.aspect), transferBarrier.baseMipLevel, transferBarrier.baseArrayLayer, transferBarrier.arrayLayerCount});
+
+        copyRegion.setImageSubresource({axToVkImageAspectFlags(transferBarrier.aspect), mipLevel, arrayLayer, 1});
+
         copyRegion.setImageOffset({0, 0, 0});
         copyRegion.setImageExtent({width, height, 1});
 
-        Vk::Buffer vkSrcBuffer = static_cast<VulkanBuffer*>(srcBuffer)->getHandle();
-        Vk::Image vkDstImage = static_cast<VulkanTexture*>(dstTexture)->getImage();
+        commandBuffer.copyBufferToImage(static_cast<VulkanBuffer*>(srcBuffer)->getHandle(), static_cast<VulkanTexture*>(dstTexture)->getImage(),
+                                        Vk::ImageLayout::eTransferDstOptimal, copyRegion);
 
-        commandBuffer.copyBufferToImage(vkSrcBuffer, vkDstImage, Vk::ImageLayout::eTransferDstOptimal, copyRegion);
-
-        Texture::Barrier shaderReadBarrier = {.texture = dstTexture,
-                                              .oldState = TextureState::TransferDst,
-                                              .newState = TextureState::ShaderResource,
-                                              .aspect = TextureAspect::Color,
-                                              .baseMipLevel = mipLevel,
-                                              .mipLevelCount = 1,
-                                              .baseArrayLayer = arrayLayer,
-                                              .arrayLayerCount = 1};
+        Texture::Barrier shaderReadBarrier = transferBarrier;
+        shaderReadBarrier.oldState = TextureState::TransferDst;
+        shaderReadBarrier.newState = TextureState::ShaderResource;
         pipelineBarrier({shaderReadBarrier});
     }
 } // namespace Axiom

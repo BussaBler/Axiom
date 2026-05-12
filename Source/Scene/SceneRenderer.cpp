@@ -2,6 +2,8 @@
 
 #include "SceneRenderer.h"
 
+#include "Core/Profiler.h"
+
 namespace Axiom {
     SceneRenderer::SceneRenderer() {
         std::vector<ResourceLayout::BindingCreateInfo> globalDataLayoutBindings(1);
@@ -18,11 +20,37 @@ namespace Axiom {
         };
         globalDataBuffer = Locator::getRenderer()->createBuffer(globalDataBufferCreateInfo);
 
-        createGeometryPassResources();
+        createOpaquePassResources();
+        createSkyboxPassResources();
+        createWorldGridPassResources();
         createGizmoPassResources();
     }
 
-    void SceneRenderer::geometryPass(const SceneRenderPassData& data) {
+    void SceneRenderer::beginScene(Scene* scene, const Math::Mat4& projection, const Math::Mat4& view, const Math::Vec3& cameraPosition) {
+        globalData.projection = projection;
+        globalData.view = view;
+        globalData.cameraPosition = Math::Vec4(cameraPosition.x(), cameraPosition.y(), cameraPosition.z(), 1.0f);
+
+        globalData.ambientColor = Color::gray();
+
+        auto directionalLightEntities = scene->view<TransformComponent, DirectionalLightComponent>();
+
+        for (uint32_t entityId : directionalLightEntities) {
+            auto& transform = scene->getEntity(entityId).getComponent<TransformComponent>();
+            auto& directionalLight = scene->getEntity(entityId).getComponent<DirectionalLightComponent>();
+            Math::Mat4 rotation = Math::Mat4::model(Math::Vec3::zero(), transform.rotation * Math::DEG_TO_RAD, Math::Vec3::one());
+            Math::Vec3 lightDir = rotation.getForward();
+
+            globalData.directionalLightColor = directionalLight.color;
+            globalData.directionalLightDirection = Math::Vec4(lightDir.x(), lightDir.y(), lightDir.z(), 0.0f);
+            break; // Only support one directional light for now
+        }
+
+        globalDataBuffer->setData(&globalData, sizeof(GlobalData));
+    }
+
+    void SceneRenderer::opaquePass(const SceneRenderPassData& data) {
+        AX_PROFILE_FUNCTION();
         std::vector<SpriteInstance> spriteInstances;
         spriteInstances.reserve(MAX_SPRITE_INSTANCES);
         std::vector<Texture*> spriteTextureSlots = {Locator::getRenderer()->getDefaultTexture()};
@@ -72,27 +100,12 @@ namespace Axiom {
             meshBatches[mesh.meshId].push_back({model});
         }
 
-        GlobalData globalData = {.ambientColor = Color::gray()};
-        auto directionalLightEntities = data.scene->view<TransformComponent, DirectionalLightComponent>();
-
-        for (uint32_t entityId : directionalLightEntities) {
-            auto& transform = data.scene->getEntity(entityId).getComponent<TransformComponent>();
-            auto& directionalLight = data.scene->getEntity(entityId).getComponent<DirectionalLightComponent>();
-            Math::Mat4 rotation = Math::Mat4::model(Math::Vec3::zero(), transform.rotation * Math::DEG_TO_RAD, Math::Vec3::one());
-            Math::Vec3 lightDir = rotation.getForward();
-
-            globalData.directionalLightColor = directionalLight.color;
-            globalData.directionalLightDirection = Math::Vec4(lightDir.x(), lightDir.y(), lightDir.z(), 0.0f);
-            break; // Only support one directional light for now
-        }
-
         Math::iVec2 renderTargetSize = data.renderTarget->getSize();
-        Math::Mat4 viewProjection = data.projection * data.view;
-        geometryRenderPass.colorAttachments[0].texture = data.renderTarget;
-        geometryRenderPass.width = renderTargetSize.x();
-        geometryRenderPass.height = renderTargetSize.y();
-        geometryRenderPass.depthAttachment.texture = data.depthTarget;
-        data.commandBuffer->beginRendering(geometryRenderPass);
+        opaqueRenderPass.colorAttachments[0].texture = data.renderTarget;
+        opaqueRenderPass.width = renderTargetSize.x();
+        opaqueRenderPass.height = renderTargetSize.y();
+        opaqueRenderPass.depthAttachment.texture = data.depthTarget;
+        data.commandBuffer->beginRendering(opaqueRenderPass);
 
         if (!spriteInstances.empty()) {
             spriteInstanceBuffer->setData<SpriteInstance>(spriteInstances);
@@ -107,12 +120,11 @@ namespace Axiom {
             spriteResourceSets[1]->update(resourceSetBindings);
 
             data.commandBuffer->bindPipeline(spritePipeline.get());
-            data.commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
             data.commandBuffer->bindVertexBuffers({spriteVertexBuffer.get()});
             data.commandBuffer->bindIndexBuffer(spriteIndexBuffer.get());
             data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
             data.commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
-            data.commandBuffer->bindResources({spriteResourceSets[0].get(), spriteResourceSets[1].get()});
+            data.commandBuffer->bindResources({globalDataResourceSet.get(), spriteResourceSets[0].get(), spriteResourceSets[1].get()});
             data.commandBuffer->drawIndexed(6, spriteInstances.size(), 0, 0, 0);
         }
 
@@ -120,7 +132,6 @@ namespace Axiom {
             globalDataBuffer->setData(&globalData, sizeof(GlobalData));
 
             data.commandBuffer->bindPipeline(meshPipeline.get());
-            data.commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
             data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
             data.commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
             data.commandBuffer->bindVertexBuffers({AssetManager::getGlobalVertexBuffer()});
@@ -143,9 +154,43 @@ namespace Axiom {
         data.commandBuffer->endRendering();
     }
 
+    void SceneRenderer::skyboxPass(const SceneRenderPassData& data) {
+        Math::iVec2 renderTargetSize = data.renderTarget->getSize();
+        skyboxRenderPass.colorAttachments[0].texture = data.renderTarget;
+        skyboxRenderPass.width = renderTargetSize.x();
+        skyboxRenderPass.height = renderTargetSize.y();
+        skyboxRenderPass.depthAttachment.texture = data.depthTarget;
+
+        data.commandBuffer->beginRendering(skyboxRenderPass);
+        data.commandBuffer->bindPipeline(skyboxPipeline.get());
+        data.commandBuffer->bindVertexBuffers({skyboxVertexBuffer.get()});
+        data.commandBuffer->bindIndexBuffer(skyboxIndexBuffer.get());
+        data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->bindResources({globalDataResourceSet.get()});
+        data.commandBuffer->drawIndexed(36, 1, 0, 0, 0);
+        data.commandBuffer->endRendering();
+    }
+
+    void SceneRenderer::worldGridPass(const SceneRenderPassData& data) {
+
+        Math::iVec2 renderTargetSize = data.renderTarget->getSize();
+        worldGridRenderPass.colorAttachments[0].texture = data.renderTarget;
+        worldGridRenderPass.width = renderTargetSize.x();
+        worldGridRenderPass.height = renderTargetSize.y();
+        worldGridRenderPass.depthAttachment.texture = data.depthTarget;
+
+        data.commandBuffer->beginRendering(worldGridRenderPass);
+        data.commandBuffer->bindPipeline(gridPipeline.get());
+        data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->bindResources({globalDataResourceSet.get()});
+        data.commandBuffer->draw(6, 1, 0);
+        data.commandBuffer->endRendering();
+    }
+
     void SceneRenderer::gizmoPass(const SceneRenderPassData& data, const Math::Vec3& gizmoPosition) {
         Math::Mat4 model = Math::Mat4::model(gizmoPosition, Math::Vec3::zero(), Math::Vec3(1.0f));
-        Math::Mat4 viewProjection = data.projection * data.view * model;
 
         Math::iVec2 renderTargetSize = data.renderTarget->getSize();
         gizmoRenderPass.colorAttachments[0].texture = data.renderTarget;
@@ -155,30 +200,30 @@ namespace Axiom {
 
         data.commandBuffer->beginRendering(gizmoRenderPass);
         data.commandBuffer->bindPipeline(gizmoPipeline.get());
-        data.commandBuffer->bindPushConstants(&viewProjection, sizeof(viewProjection));
         data.commandBuffer->bindVertexBuffers({gizmoVertexBuffer.get()});
         data.commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
         data.commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+        data.commandBuffer->bindResources({globalDataResourceSet.get()});
         data.commandBuffer->draw(6, 1, 0);
         data.commandBuffer->endRendering();
     }
 
-    void SceneRenderer::createGeometryPassResources() {
+    void SceneRenderer::createOpaquePassResources() {
         RenderAttachment colorAttachment{};
         colorAttachment.loadOp = LoadOp::Clear;
         colorAttachment.storeOp = StoreOp::Store;
         colorAttachment.clearColor = Color::white();
-        geometryRenderPass.colorAttachments[0] = colorAttachment;
-        geometryRenderPass.colorAttachmentCount = 1;
+        opaqueRenderPass.colorAttachments[0] = colorAttachment;
+        opaqueRenderPass.colorAttachmentCount = 1;
         RenderAttachment depthAttachment{};
         depthAttachment.loadOp = LoadOp::Clear;
         depthAttachment.storeOp = StoreOp::Store;
         depthAttachment.clearDepth = 1.0f;
-        geometryRenderPass.depthAttachment = depthAttachment;
-        geometryRenderPass.hasDepthAttachment = true;
+        opaqueRenderPass.depthAttachment = depthAttachment;
+        opaqueRenderPass.hasDepthAttachment = true;
 
         // 2d objects
-        UUID spriteShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Sprite2D.axs", AssetType::Shader);
+        UUID spriteShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Scene.Sprite2D.axs", AssetType::Shader);
         spriteShader = AssetManager::getAsset<ShaderAsset>(spriteShaderHandle);
 
         Buffer::CreateInfo spriteVertexBufferCreateInfo = {
@@ -238,26 +283,34 @@ namespace Axiom {
         spriteResourceSetBindings[0].type = ResourceType::StorageBuffer;
         spriteResourceSetBindings[0].buffers = {spriteInstanceBuffer.get()};
 
-        Pipeline::CreateInfo spritePipelineCreateInfo = {.shader = spriteShader->getShader(),
-                                                         .vertexBindings = spriteVertexBindings,
-                                                         .vertexAttributes = spriteVertexAttributes,
-                                                         .topology = PrimitiveTopology::TriangleList,
-                                                         .polygonMode = PolygonMode::Fill,
-                                                         .cullMode = CullMode::None,
-                                                         .frontFaceClockwise = true,
-                                                         .enableBlending = false,
-                                                         .enableDepthTest = true,
-                                                         .enableDepthWrite = true,
-                                                         .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
-                                                         .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
-                                                         .resourceLayouts = {spriteResourceLayouts[0].get(), spriteResourceLayouts[1].get()}};
+        Pipeline::CreateInfo spritePipelineCreateInfo = {
+            .shader = spriteShader->getShader(),
+            .vertexBindings = spriteVertexBindings,
+            .vertexAttributes = spriteVertexAttributes,
+            .topology = PrimitiveTopology::TriangleList,
+            .polygonMode = PolygonMode::Fill,
+            .cullMode = CullMode::None,
+            .frontFaceClockwise = true,
+            .enableBlending = false,
+            .enableDepthTest = true,
+            .enableDepthWrite = true,
+            .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
+            .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
+            .resourceLayouts = {globalDataResourceLayout.get(), spriteResourceLayouts[0].get(), spriteResourceLayouts[1].get()}};
         spritePipeline = Locator::getRenderer()->createPipeline(spritePipelineCreateInfo);
+        globalDataResourceSet = spritePipeline->createResourceSet(globalDataResourceLayout.get());
+        std::vector<ResourceSet::Binding> globalDataSetBindings(1);
+        globalDataSetBindings[0].binding = 0;
+        globalDataSetBindings[0].type = ResourceType::UniformBuffer;
+        globalDataSetBindings[0].buffers = {globalDataBuffer.get()};
+        globalDataSetBindings[0].maxNumberOfResources = 1;
+        globalDataResourceSet->update(globalDataSetBindings);
         spriteResourceSets.push_back(spritePipeline->createResourceSet(spriteResourceLayouts[0].get()));
         spriteResourceSets.push_back(spritePipeline->createResourceSet(spriteResourceLayouts[1].get()));
         spriteResourceSets[0]->update(spriteResourceSetBindings);
 
         // 3d objects
-        UUID meshShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Mesh.axs", AssetType::Shader);
+        UUID meshShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Scene.Mesh.axs", AssetType::Shader);
         meshShader = AssetManager::getAsset<ShaderAsset>(meshShaderHandle);
 
         Buffer::CreateInfo meshInstanceBufferCreateInfo = {
@@ -300,6 +353,111 @@ namespace Axiom {
         meshResourceSets.push_back(meshPipeline->createResourceSet(meshResourceLayouts.back().get()));
         meshResourceSets.back()->update(meshResourceSetBindings);
         globalDataResourceSet = meshPipeline->createResourceSet(globalDataResourceLayout.get());
+        globalDataResourceSet->update(globalDataSetBindings);
+    }
+
+    void SceneRenderer::createSkyboxPassResources() {
+        UUID skyboxShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Scene.Skybox.axs", AssetType::Shader);
+        skyboxShader = AssetManager::getAsset<ShaderAsset>(skyboxShaderHandle);
+
+        RenderAttachment colorAttachment{};
+        colorAttachment.loadOp = LoadOp::Load;
+        colorAttachment.storeOp = StoreOp::Store;
+        colorAttachment.clearColor = Color::transparent();
+        skyboxRenderPass.colorAttachments[0] = colorAttachment;
+        skyboxRenderPass.colorAttachmentCount = 1;
+        RenderAttachment depthAttachment{};
+        depthAttachment.loadOp = LoadOp::Load;
+        depthAttachment.storeOp = StoreOp::Store;
+        depthAttachment.clearDepth = 1.0f;
+        skyboxRenderPass.depthAttachment = depthAttachment;
+        skyboxRenderPass.hasDepthAttachment = true;
+
+        std::vector<Math::Vec3> skyboxVertices = {{-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f},
+                                                  {-0.5f, -0.5f, 0.5f},  {0.5f, -0.5f, 0.5f},  {0.5f, 0.5f, 0.5f},  {-0.5f, 0.5f, 0.5f}};
+        std::vector<uint32_t> skyboxIndices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4, 0, 4, 7, 7, 3, 0, 1, 5, 6, 6, 2, 1, 3, 2, 6, 6, 7, 3, 0, 1, 5, 5, 4, 0};
+
+        Buffer::CreateInfo skyboxVertexBufferCreateInfo = {
+            .size = sizeof(Math::Vec3) * skyboxVertices.size(), .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        skyboxVertexBuffer = Locator::getRenderer()->createBuffer(skyboxVertexBufferCreateInfo);
+        Buffer::CreateInfo skyboxVertexStagingBufferCreateInfo = {
+            .size = sizeof(Math::Vec3) * skyboxVertices.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+        std::unique_ptr<Buffer> skyboxVertexStagingBuffer = Locator::getRenderer()->createBuffer(skyboxVertexStagingBufferCreateInfo);
+        skyboxVertexStagingBuffer->setData<Math::Vec3>(skyboxVertices);
+
+        Buffer::CreateInfo skyboxIndexBufferCreateInfo = {
+            .size = sizeof(uint32_t) * skyboxIndices.size(), .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        skyboxIndexBuffer = Locator::getRenderer()->createBuffer(skyboxIndexBufferCreateInfo);
+        Buffer::CreateInfo skyboxIndexStagingBufferCreateInfo = {
+            .size = sizeof(uint32_t) * skyboxIndices.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+        std::unique_ptr<Buffer> skyboxIndexStagingBuffer = Locator::getRenderer()->createBuffer(skyboxIndexStagingBufferCreateInfo);
+        skyboxIndexStagingBuffer->setData<uint32_t>(skyboxIndices);
+
+        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+        commandBuffer->copyBuffer(skyboxVertexStagingBuffer.get(), skyboxVertexBuffer.get(), skyboxVertexBufferCreateInfo.size);
+        commandBuffer->copyBuffer(skyboxIndexStagingBuffer.get(), skyboxIndexBuffer.get(), skyboxIndexBufferCreateInfo.size);
+        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+
+        std::vector<VertexBindingDescription> skyboxVertexBindings = {{.binding = 0, .stride = sizeof(Math::Vec3), .inputRate = VertexInputRate::Vertex}};
+        std::vector<VertexAttributeDescription> skyboxVertexAttributes = {
+            {.location = 0, .binding = 0, .format = Format::R32G32B32Sfloat, .offset = 0},
+        };
+
+        Pipeline::CreateInfo skyboxPipelineCreateInfo = {.shader = skyboxShader->getShader(),
+                                                         .vertexBindings = skyboxVertexBindings,
+                                                         .vertexAttributes = skyboxVertexAttributes,
+                                                         .topology = PrimitiveTopology::TriangleList,
+                                                         .polygonMode = PolygonMode::Fill,
+                                                         .cullMode = CullMode::Front,
+                                                         .frontFaceClockwise = true,
+                                                         .enableBlending = false,
+                                                         .enableDepthTest = true,
+                                                         .enableDepthWrite = false,
+                                                         .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
+                                                         .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
+                                                         .resourceLayouts = {globalDataResourceLayout.get()}};
+        skyboxPipeline = Locator::getRenderer()->createPipeline(skyboxPipelineCreateInfo);
+        globalDataResourceSet = skyboxPipeline->createResourceSet(globalDataResourceLayout.get());
+        std::vector<ResourceSet::Binding> globalDataSetBindings(1);
+        globalDataSetBindings[0].binding = 0;
+        globalDataSetBindings[0].type = ResourceType::UniformBuffer;
+        globalDataSetBindings[0].buffers = {globalDataBuffer.get()};
+        globalDataSetBindings[0].maxNumberOfResources = 1;
+        globalDataResourceSet->update(globalDataSetBindings);
+    }
+
+    void SceneRenderer::createWorldGridPassResources() {
+        UUID gridShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Scene.Grid.axs", AssetType::Shader);
+        gridShader = AssetManager::getAsset<ShaderAsset>(gridShaderHandle);
+
+        RenderAttachment colorAttachment{};
+        colorAttachment.loadOp = LoadOp::Load;
+        colorAttachment.storeOp = StoreOp::Store;
+        colorAttachment.clearColor = Color::transparent();
+        RenderAttachment depthAttachment{};
+        depthAttachment.loadOp = LoadOp::Load;
+        depthAttachment.storeOp = StoreOp::Store;
+        depthAttachment.clearDepth = 1.0f;
+        worldGridRenderPass.colorAttachments[0] = colorAttachment;
+        worldGridRenderPass.colorAttachmentCount = 1;
+        worldGridRenderPass.depthAttachment = depthAttachment;
+        worldGridRenderPass.hasDepthAttachment = true;
+
+        Pipeline::CreateInfo pipelineCreateInfo = {.shader = gridShader->getShader(),
+                                                   .vertexBindings = {},
+                                                   .vertexAttributes = {},
+                                                   .topology = PrimitiveTopology::TriangleList,
+                                                   .polygonMode = PolygonMode::Fill,
+                                                   .cullMode = CullMode::None,
+                                                   .frontFaceClockwise = true,
+                                                   .enableBlending = true,
+                                                   .enableDepthTest = true,
+                                                   .enableDepthWrite = false,
+                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
+                                                   .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
+                                                   .resourceLayouts = {globalDataResourceLayout.get()}};
+        gridPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
+        globalDataResourceSet = gridPipeline->createResourceSet(globalDataResourceLayout.get());
         std::vector<ResourceSet::Binding> globalDataSetBindings(1);
         globalDataSetBindings[0].binding = 0;
         globalDataSetBindings[0].type = ResourceType::UniformBuffer;
@@ -309,7 +467,7 @@ namespace Axiom {
     }
 
     void SceneRenderer::createGizmoPassResources() {
-        UUID gizmoShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.UI.Gizmo.axs", AssetType::Shader);
+        UUID gizmoShaderHandle = AssetManager::importAsset("Assets/Shaders/BuiltIn.Scene.Gizmo.axs", AssetType::Shader);
         gizmoShader = AssetManager::getAsset<ShaderAsset>(gizmoShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(GizmoVertex) * 2 * 3, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};
@@ -351,7 +509,14 @@ namespace Axiom {
                                                    .enableDepthWrite = false,
                                                    .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
                                                    .depthAttachmentFormat = Format::Undefined,
-                                                   .resourceLayouts = {}};
+                                                   .resourceLayouts = {globalDataResourceLayout.get()}};
         gizmoPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
+        globalDataResourceSet = gizmoPipeline->createResourceSet(globalDataResourceLayout.get());
+        std::vector<ResourceSet::Binding> globalDataSetBindings(1);
+        globalDataSetBindings[0].binding = 0;
+        globalDataSetBindings[0].type = ResourceType::UniformBuffer;
+        globalDataSetBindings[0].buffers = {globalDataBuffer.get()};
+        globalDataSetBindings[0].maxNumberOfResources = 1;
+        globalDataResourceSet->update(globalDataSetBindings);
     }
 } // namespace Axiom

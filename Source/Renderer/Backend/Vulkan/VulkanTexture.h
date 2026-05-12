@@ -13,8 +13,10 @@ namespace Axiom {
 
         Format getFormat() const override;
         Math::iVec2 getSize() const override;
+        uint32_t getMipLevels() const override;
+        uint32_t getArrayLayers() const override;
 
-        void createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags);
+        void createImageView(Vk::Format format, Vk::ImageAspectFlags aspectFlags, Vk::ImageViewType viewType);
 
         inline Vk::Image getImage() const { return image; }
         inline Vk::ImageView getImageView() const { return imageView; }
@@ -25,6 +27,8 @@ namespace Axiom {
         Vk::ImageView imageView = nullptr;
         Vk::Format imageFormat = Vk::Format::eUndefined;
         Math::iVec2 size = Math::iVec2(0, 0);
+        uint32_t mipLevels = 1;
+        uint32_t arrayLayers = 1;
 
         bool ownsImage = false;
         Allocation imageAllocation;

@@ -3,13 +3,25 @@
 #include "MetalTexture.h"
 
 namespace Axiom {
-    MetalTexture::MetalTexture(const CreateInfo& createInfo, MTL::Device* device) {
+    MetalTexture::MetalTexture(const CreateInfo& createInfo, MTL::Device* device) : size(createInfo.width, createInfo.height) {
         format = createInfo.format;
-        size = Math::iVec2(createInfo.width, createInfo.height);
-        MTL::TextureDescriptor* descriptor =
-            MTL::TextureDescriptor::texture2DDescriptor(axToMetalPixelFormat(createInfo.format), createInfo.width, createInfo.height, createInfo.mipLevels > 1);
+        mipLevels = createInfo.mipLevels;
+        arrayLayers = createInfo.arrayLayers;
+
+        MTL::TextureDescriptor* descriptor = MTL::TextureDescriptor::alloc()->init();
+        descriptor->setPixelFormat(axToMetalPixelFormat(createInfo.format));
+        descriptor->setWidth(createInfo.width);
+        descriptor->setHeight(createInfo.height);
         descriptor->setUsage(axToMetalTextureUsage(createInfo.usage));
         descriptor->setStorageMode(axToMetalStorageMode(createInfo.memoryUsage));
+        descriptor->setMipmapLevelCount(createInfo.mipLevels);
+        descriptor->setTextureType(axToMetalTextureType(createInfo.type));
+        if (createInfo.type == TextureType::TextureCube) {
+            arrayLayers = 1;
+        }
+        descriptor->setArrayLength(arrayLayers);
+        descriptor->setResourceOptions(axToMetalResourceOptions(createInfo.memoryUsage));
+        descriptor->setAllowGPUOptimizedContents(true);
 
         metalTexture = device->newTexture(descriptor);
     }
@@ -35,5 +47,13 @@ namespace Axiom {
 
     Math::iVec2 MetalTexture::getSize() const {
         return size;
+    }
+
+    uint32_t MetalTexture::getMipLevels() const {
+        return mipLevels;
+    }
+
+    uint32_t MetalTexture::getArrayLayers() const {
+        return arrayLayers;
     }
 } // namespace Axiom

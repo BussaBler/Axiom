@@ -8,6 +8,7 @@ namespace Axiom {
         samplerDescriptor->setSAddressMode(axToMetalAdressMode(createInfo.adressMode));
         samplerDescriptor->setTAddressMode(axToMetalAdressMode(createInfo.adressMode));
         samplerDescriptor->setRAddressMode(axToMetalAdressMode(createInfo.adressMode));
+        samplerDescriptor->setSAddressMode(axToMetalAdressMode(createInfo.adressMode));
         samplerDescriptor->setMinFilter(axToMetalFilterMode(createInfo.filterMode));
         samplerDescriptor->setMagFilter(axToMetalFilterMode(createInfo.filterMode));
         samplerDescriptor->setMipFilter(axToMetalMipmapFilterMode(createInfo.mipmapFilterMode));

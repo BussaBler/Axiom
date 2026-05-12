@@ -1,4 +1,6 @@
 #pragma once
+#include "axpch.h"
+
 #include "Renderer/Buffer.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
@@ -6,15 +8,12 @@
 #include "Renderer/Sampler.h"
 #include "Renderer/Texture.h"
 #include "VulkanInclude.h"
-#include "axpch.h"
 
 namespace Axiom {
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
-        bool isComplete() const {
-            return graphicsFamily.has_value() && presentFamily.has_value();
-        }
+        bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
     };
 
     struct SwapChainSupportDetails {
@@ -80,6 +79,38 @@ namespace Axiom {
             return Format::D32sFloat;
         default:
             return Format::Undefined;
+        }
+    }
+
+    inline Vk::ImageType axToVkImageType(TextureType type) {
+        switch (type) {
+        case TextureType::Texture2D:
+            return Vk::ImageType::e2D;
+        case TextureType::Texture3D:
+            return Vk::ImageType::e3D;
+        case TextureType::TextureCube:
+            return Vk::ImageType::e2D;
+        default:
+            return Vk::ImageType::e2D;
+        }
+    }
+
+    inline Vk::ImageViewType axToVkImageViewType(TextureType type) {
+        switch (type) {
+        case TextureType::Texture1D:
+            return Vk::ImageViewType::e1D;
+        case TextureType::Texture1DArray:
+            return Vk::ImageViewType::e1DArray;
+        case TextureType::Texture2D:
+            return Vk::ImageViewType::e2D;
+        case TextureType::Texture2DArray:
+            return Vk::ImageViewType::e2DArray;
+        case TextureType::Texture3D:
+            return Vk::ImageViewType::e3D;
+        case TextureType::TextureCube:
+            return Vk::ImageViewType::eCube;
+        default:
+            return Vk::ImageViewType::e2D;
         }
     }
 

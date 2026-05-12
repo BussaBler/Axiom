@@ -1,5 +1,8 @@
-#include "Application.h"
 #include "axpch.h"
+
+#include "Application.h"
+
+#include "Profiler.h"
 
 namespace Axiom {
     Application* Application::instance = nullptr;
@@ -15,7 +18,8 @@ namespace Axiom {
         AX_CORE_ASSERT(!instance, "Application already exists!");
         instance = this;
 
-        window = Window::create(WindowProps());
+        WindowProps windowProps{appInfo.name, 1280, 720};
+        window = Window::create(windowProps);
         Locator::provideWindow(window.get());
         window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
@@ -138,10 +142,12 @@ namespace Axiom {
 
     void Application::run() {
         while (running) {
+            Profiler::beginFrame();
             window->beginFrame();
             for (const auto& layer : layerStack) {
                 layer->onUpdate();
             }
+
             uiRenderer->beginFrame();
             for (const auto& layer : layerStack) {
                 layer->onUIRender();

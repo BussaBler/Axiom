@@ -17,8 +17,6 @@ namespace Axiom {
         CommandBuffer* commandBuffer;
         Texture* renderTarget;
         Texture* depthTarget;
-        Math::Mat4 projection;
-        Math::Mat4 view;
     };
 
     class SceneRenderer {
@@ -26,14 +24,22 @@ namespace Axiom {
         SceneRenderer();
         ~SceneRenderer() = default;
 
-        void geometryPass(const SceneRenderPassData& data);
+        // update the global data, with mattices and light info
+        void beginScene(Scene* scene, const Math::Mat4& projection, const Math::Mat4& view, const Math::Vec3& cameraPosition);
+
+        void opaquePass(const SceneRenderPassData& data);
+        void skyboxPass(const SceneRenderPassData& data);
+        void transparentPass(const SceneRenderPassData& data);
         void lightingPass(const SceneRenderPassData& data);
+        void worldGridPass(const SceneRenderPassData& data);
         void postProcessPass(const SceneRenderPassData& data);
         void gizmoPass(const SceneRenderPassData& data, const Math::Vec3& gizmoPosition);
 
       private:
-        void createGeometryPassResources();
+        void createOpaquePassResources();
+        void createSkyboxPassResources();
 
+        void createWorldGridPassResources();
         void createGizmoPassResources();
 
       private:
@@ -41,13 +47,18 @@ namespace Axiom {
         std::unique_ptr<ResourceSet> globalDataResourceSet;
         std::unique_ptr<Buffer> globalDataBuffer;
         struct GlobalData {
+            Math::Mat4 projection;
+            Math::Mat4 view;
+            Math::Vec4 cameraPosition;
+
             Math::Vec4 ambientColor;
             Math::Vec4 directionalLightDirection;
             Math::Vec4 directionalLightColor;
         };
+        GlobalData globalData;
 
         // geometry pass data
-        RenderPass geometryRenderPass;
+        RenderPass opaqueRenderPass;
         // 2d objects
         static const uint32_t MAX_SPRITE_INSTANCES = 1000;
         static const uint8_t MAX_TEXTURE_SLOTS = 16;
@@ -77,6 +88,18 @@ namespace Axiom {
         struct MeshInstance {
             Math::Mat4 model;
         };
+
+        // skybox pass data
+        RenderPass skyboxRenderPass;
+        std::shared_ptr<ShaderAsset> skyboxShader = nullptr;
+        std::unique_ptr<Pipeline> skyboxPipeline = nullptr;
+        std::unique_ptr<Buffer> skyboxVertexBuffer = nullptr;
+        std::unique_ptr<Buffer> skyboxIndexBuffer = nullptr;
+
+        // world grid pass data
+        RenderPass worldGridRenderPass;
+        std::shared_ptr<ShaderAsset> gridShader = nullptr;
+        std::unique_ptr<Pipeline> gridPipeline = nullptr;
 
         // gizmo pass data
         static const uint32_t MAX_GIZMO_LINES = 1000;

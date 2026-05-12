@@ -11,12 +11,13 @@
 namespace Axiom {
     MetalPipeline::MetalPipeline(const CreateInfo& createInfo, MTL::Device* device) : device(device) {
         MetalShader* metalShader = static_cast<MetalShader*>(createInfo.shader);
-        MTL::Library* library = metalShader->getLibrary();
-        MTL::Function* vertexFunction = library->newFunction(NS::String::string("vertexMain", NS::UTF8StringEncoding));
+        MTL::Library* vertexLibrary = metalShader->getVertexLibrary();
+        MTL::Library* fragmentLibrary = metalShader->getFragmentLibrary();
 
+        MTL::Function* vertexFunction = vertexLibrary->newFunction(NS::String::string("main0", NS::UTF8StringEncoding));
         AX_CORE_ASSERT(vertexFunction, "Failed to create vertex function");
 
-        MTL::Function* fragmentFunction = library->newFunction(NS::String::string("fragmentMain", NS::UTF8StringEncoding));
+        MTL::Function* fragmentFunction = fragmentLibrary->newFunction(NS::String::string("main0", NS::UTF8StringEncoding));
         AX_CORE_ASSERT(fragmentFunction, "Failed to create fragment function");
 
         MTL::RenderPipelineDescriptor* pipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
@@ -75,7 +76,7 @@ namespace Axiom {
         }
 
         MTL::DepthStencilDescriptor* depthStencilDescriptor = MTL::DepthStencilDescriptor::alloc()->init();
-        depthStencilDescriptor->setDepthCompareFunction(createInfo.enableDepthTest ? MTL::CompareFunctionLess : MTL::CompareFunctionAlways);
+        depthStencilDescriptor->setDepthCompareFunction(createInfo.enableDepthTest ? MTL::CompareFunctionLessEqual : MTL::CompareFunctionAlways);
         depthStencilDescriptor->setDepthWriteEnabled(createInfo.enableDepthWrite);
         depthStencilState = device->newDepthStencilState(depthStencilDescriptor);
         depthStencilDescriptor->release();

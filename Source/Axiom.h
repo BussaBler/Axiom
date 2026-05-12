@@ -7,6 +7,7 @@
 #include "Core/Layer.h"
 #include "Core/Locator.h"
 #include "Core/Log.h"
+#include "Core/Profiler.h"
 #include "ECS/Entity.h"
 #include "Event/KeyCodes.h"
 #include "Math/AxMath.h"

@@ -12,25 +12,33 @@ namespace Axiom {
 
         std::string vertexMSL = compileSPIRVtoMSL(vertexSPIRV);
         std::string fragmentMSL = compileSPIRVtoMSL(fragmentSPIRV);
-        std::string shaderSource = vertexMSL + "\n" + fragmentMSL;
-
-        NS::String* shaderSourceStr = NS::String::string(shaderSource.c_str(), NS::UTF8StringEncoding);
+        NS::String* vertexMSLStr = NS::String::alloc()->init(vertexMSL.c_str(), NS::StringEncoding::UTF8StringEncoding);
+        NS::String* fragmentMSLStr = NS::String::alloc()->init(fragmentMSL.c_str(), NS::StringEncoding::UTF8StringEncoding);
 
         MTL::CompileOptions* compileOptions = MTL::CompileOptions::alloc()->init();
         NS::Error* error = nullptr;
 
-        library = device->newLibrary(shaderSourceStr, compileOptions, &error);
-        AX_CORE_ASSERT(error == nullptr, "Failed to compile shader library: {}", error->localizedDescription()->utf8String());
-        AX_CORE_ASSERT(library, "Failed to create shader library");
+        vertexLibrary = device->newLibrary(vertexMSLStr, compileOptions, &error);
+        AX_CORE_ASSERT(error == nullptr, "Failed to compile vertex shader library: {}", error->localizedDescription()->utf8String());
+        AX_CORE_ASSERT(vertexLibrary, "Failed to create vertex shader library");
+
+        fragmentLibrary = device->newLibrary(fragmentMSLStr, compileOptions, &error);
+        AX_CORE_ASSERT(error == nullptr, "Failed to compile fragment shader library: {}", error->localizedDescription()->utf8String());
+        AX_CORE_ASSERT(fragmentLibrary, "Failed to create fragment shader library");
 
         compileOptions->release();
-        shaderSourceStr->release();
+        vertexMSLStr->release();
+        fragmentMSLStr->release();
     }
 
     MetalShader::~MetalShader() {
-        if (library) {
-            library->release();
-            library = nullptr;
+        if (vertexLibrary) {
+            vertexLibrary->release();
+            vertexLibrary = nullptr;
+        }
+        if (fragmentLibrary) {
+            fragmentLibrary->release();
+            fragmentLibrary = nullptr;
         }
     }
 
@@ -53,18 +61,6 @@ namespace Axiom {
         mslCompiler.set_msl_options(mslOptions);
 
         spv::ExecutionModel executionModel = mslCompiler.get_execution_model();
-        std::string newEntryPointName = "";
-        switch (executionModel) {
-        case spv::ExecutionModelVertex:
-            newEntryPointName = "vertexMain";
-            break;
-        case spv::ExecutionModelFragment:
-            newEntryPointName = "fragmentMain";
-            break;
-        default:
-            break;
-        }
-        mslCompiler.rename_entry_point("main", newEntryPointName, executionModel);
 
         spirv_cross::MSLResourceBinding pushConstantMap = {};
         pushConstantMap.stage = executionModel;
@@ -75,7 +71,7 @@ namespace Axiom {
 
         spirv_cross::ShaderResources resources = mslCompiler.get_shader_resources();
         uint32_t metalBufferOffset = 8;
-        uint32_t currentMetalId = 0;
+        // uint32_t currentMetalId = 0;
         auto mapDescriptorSets = [&](const spirv_cross::SmallVector<spirv_cross::Resource>& resources) {
             for (const auto& resource : resources) {
                 spirv_cross::SPIRType type = mslCompiler.get_type(resource.type_id);
@@ -85,8 +81,8 @@ namespace Axiom {
                 }
                 uint32_t set = mslCompiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
                 mslCompiler.set_decoration(resource.id, spv::DecorationDescriptorSet, metalBufferOffset + set);
-                mslCompiler.set_decoration(resource.id, spv::DecorationBinding, currentMetalId);
-                currentMetalId += arraySize;
+                // mslCompiler.set_decoration(resource.id, spv::DecorationBinding, currentMetalId);
+                // currentMetalId += arraySize;
             }
         };
 

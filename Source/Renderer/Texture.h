@@ -23,6 +23,15 @@ namespace Axiom {
         R32G32B32A32Sfloat
     };
 
+    enum class TextureType {
+        Texture1D,
+        Texture1DArray,
+        Texture2D,
+        Texture2DArray,
+        Texture3D,
+        TextureCube,
+    };
+
     enum class TextureUsage {
         None = 0,
         TransferSrc = 1 << 0,
@@ -47,6 +56,8 @@ namespace Axiom {
 
         virtual Format getFormat() const = 0;
         virtual Math::iVec2 getSize() const = 0;
+        virtual uint32_t getMipLevels() const = 0;
+        virtual uint32_t getArrayLayers() const = 0;
 
       public:
         struct CreateInfo {
@@ -59,6 +70,7 @@ namespace Axiom {
             TextureAspect aspect = TextureAspect::Color;
             TextureState initialState = TextureState::Undefined;
             MemoryUsage memoryUsage = MemoryUsage::GPUOnly;
+            TextureType type = TextureType::Texture2D;
         };
 
         struct Barrier {
