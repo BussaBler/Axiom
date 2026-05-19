@@ -1,8 +1,8 @@
 #pragma once
-#include "UIElement.h"
+#include "UIContainer.h"
 
 namespace Axiom {
-    class UICollapsableGroup : public UIElement {
+    class UICollapsableGroup : public UIContainer {
       public:
         explicit UICollapsableGroup(const std::string& title) : title(title) {}
         ~UICollapsableGroup() = default;
@@ -13,13 +13,11 @@ namespace Axiom {
         bool onEvent(Event& event) override;
 
       private:
-        static constexpr float HEADER_HEIGHT = 30.0f;
-        static constexpr float HEADER_TEXT_PADDING_X = 5.0f;
-        static constexpr float HEADER_TEXT_PADDING_Y = 4.0f;
+        static constexpr float HEADER_HEIGHT = 24.0f;
 
         std::string title;
+        bool isHeaderHovered = false;
+        bool isActive = false;
         bool isOpen = false;
-        bool isHovered = false;
-        float headerHeight = HEADER_HEIGHT;
     };
 } // namespace Axiom

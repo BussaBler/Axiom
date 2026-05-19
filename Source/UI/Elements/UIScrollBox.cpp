@@ -110,6 +110,6 @@ namespace Axiom {
             return true;
         });
 
-        return false;
+        return UIElement::onEvent(event);
     }
 } // namespace Axiom

@@ -36,20 +36,11 @@ namespace Axiom {
     }
 
     bool UICheckbox::onEvent(Event& event) {
-        if (UIElement::onEvent(event)) {
+        if (event.isHandled()) {
             return true;
         }
 
         EventDispatcher dispatcher(event);
-
-        dispatcher.dispatch<MouseMovedEvent>([this](const MouseMovedEvent& event) {
-            float mx = event.getMouseX();
-            float my = event.getMouseY();
-
-            isHovered = (mx >= arrangedPosition.x() && mx <= arrangedPosition.x() + arrangedSize.x() && my >= arrangedPosition.y() &&
-                         my <= arrangedPosition.y() + arrangedSize.y());
-            return false;
-        });
 
         dispatcher.dispatch<MouseButtonPressedEvent>([this](const MouseButtonPressedEvent& event) {
             if (isHovered && event.getMouseButton() == KeyCode::LeftButton) {
@@ -73,6 +64,6 @@ namespace Axiom {
             return false;
         });
 
-        return false;
+        return UIElement::onEvent(event);
     }
 } // namespace Axiom

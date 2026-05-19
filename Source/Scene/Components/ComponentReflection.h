@@ -59,6 +59,5 @@ namespace Axiom {
 
       private:
         static std::unordered_map<std::type_index, ComponentInfo> componentRegistry;
-        static std::unordered_map<std::string, std::vector<std::string>> enumRegistry;
     };
 } // namespace Axiom

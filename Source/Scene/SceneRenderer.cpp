@@ -62,11 +62,10 @@ namespace Axiom {
             std::shared_ptr<TextureAsset> textureAsset = AssetManager::getAsset<TextureAsset>(sprite.textureId);
 
             int32_t textureSlotIndex = 0;
-            int32_t samplerType = 0;
+            int32_t samplerType = (sprite.filterMode == SamplerFilterMode::Linear) ? 0 : 1;
 
             if (textureAsset) {
                 Texture* rawTexture = textureAsset->getTexture();
-                samplerType = (textureAsset->getFilterMode() == SamplerFilterMode::Linear) ? 0 : 1;
                 bool found = false;
                 for (uint32_t i = 0; i < spriteTextureSlots.size(); i++) {
                     if (spriteTextureSlots[i] == rawTexture) {

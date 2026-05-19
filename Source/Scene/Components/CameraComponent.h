@@ -3,9 +3,9 @@
 #include "Renderer/Camera.h"
 
 namespace Axiom {
-    AX_COMPONENT() struct CameraComponent {
+    struct AX_COMPONENT() CameraComponent {
         Camera camera;
-        bool isMainCamera = false;
-        bool isFixedAspectRatio = false;
+        AX_PROPERTY() bool isMainCamera = false;
+        AX_PROPERTY() bool isFixedAspectRatio = false;
     };
 } // namespace Axiom

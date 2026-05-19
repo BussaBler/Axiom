@@ -1,5 +1,6 @@
 #pragma once
 #include "Event/Event.h"
+#include "Event/MouseEvent.h"
 #include "Math/AxMath.h"
 #include "UI/UIRenderer.h"
 
@@ -20,17 +21,23 @@ namespace Axiom {
     };
 
     struct UITheme {
-        Color panelBackgroundColor = Color(0.11f, 0.11f, 0.11f, 1.0f);
-        Color headerBackgroundColor = Color(0.06f, 0.06f, 0.06f, 1.0f);
+        Color windowBackgroundColor = Color(0.12f, 0.12f, 0.12f, 1.0f);
+        Color panelBackgroundColor = Color(0.16f, 0.16f, 0.16f, 1.0f);
+        Color headerBackgroundColor = Color(0.10f, 0.10f, 0.10f, 1.0f);
 
-        Color controlNormalColor = Color(0.18f, 0.18f, 0.18f, 1.0f);
+        Color controlNormalColor = Color(0.20f, 0.20f, 0.20f, 1.0f);
         Color controlHoverColor = Color(0.25f, 0.25f, 0.25f, 1.0f);
-        Color controlActiveColor = Color(0.00f, 0.45f, 0.85f, 1.0f);
+        Color controlActiveColor = Color(0.18f, 0.18f, 0.18f, 1.0f);
+
+        Color accentColor = Color(0.15f, 0.45f, 0.85f, 1.0f);
+        Color errorColor = Color(0.80f, 0.25f, 0.25f, 1.0f);
 
         Color textColor = Color(0.85f, 0.85f, 0.85f, 1.0f);
-        float fontSize = 8.0f;
+        Color textMutedColor = Color(0.60f, 0.60f, 0.60f, 1.0f);
+        Color borderColor = Color(0.08f, 0.08f, 0.08f, 1.0f);
 
-        Math::Vec4 borderRadius = Math::Vec4(6.0f);
+        float fontSize = 6.0f;
+        Math::Vec4 borderRadius = Math::Vec4(4.0f);
 
         static std::shared_ptr<UITheme> getDefault() {
             static std::shared_ptr<UITheme> defaultTheme = std::make_shared<UITheme>();
@@ -45,60 +52,48 @@ namespace Axiom {
     };
 
     class UIElement {
+        friend class UIContainer;
+
       public:
         UIElement() = default;
         virtual ~UIElement() = default;
 
-        inline void addChild(std::shared_ptr<UIElement> child) {
-            child->parent = this;
-            children.push_back(child);
-            child->resolveTheme();
-        }
-        inline void removeChild(std::shared_ptr<UIElement> child) {
-            child->parent = nullptr;
-            children.erase(std::remove(children.begin(), children.end(), child), children.end());
-        }
-        inline void clearChildren() {
-            for (auto& child : children) {
-                child->parent = nullptr;
-            }
-            children.clear();
-        }
         inline UIElement* getParent() const { return parent; }
-        inline const std::vector<std::shared_ptr<UIElement>>& getChildren() const { return children; }
 
         virtual Math::Vec2 getDesiredSize(const UIContext& context) { return desiredSize; }
         virtual void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
             arrangedPosition = position;
             arrangedSize = size;
-            for (const auto& child : children) {
-                child->arrange(context, position, size);
-            }
         }
-        void resolveTheme() {
+        virtual void resolveTheme() {
             if (customTheme) {
                 resolvedTheme = customTheme;
             } else if (parent) {
                 resolvedTheme = parent->resolvedTheme;
             }
-
-            for (const auto& child : children) {
-                child->resolveTheme();
-            }
         }
 
-        virtual void onRender(const UIContext& context, const Math::Rect& scissorRect) {
-            for (const auto& child : children) {
-                child->onRender(context, scissorRect);
-            }
-        }
+        virtual void onRender(const UIContext& context, const Math::Rect& scissorRect) {}
         virtual bool onEvent(Event& event) {
-            for (auto it = children.rbegin(); it != children.rend(); ++it) {
-                if ((*it)->onEvent(event)) {
-                    return true;
-                }
+            if (event.isHandled()) {
+                return true;
             }
-            return false;
+
+            EventDispatcher dispatcher(event);
+            dispatcher.dispatch<MouseMovedEvent>([this](const MouseMovedEvent& e) {
+                float mouseX = e.getMouseX();
+                float mouseY = e.getMouseY();
+
+                isHovered = false;
+                if (mouseX >= arrangedPosition.x() && mouseX <= arrangedPosition.x() + arrangedSize.x() && mouseY >= arrangedPosition.y() &&
+                    mouseY <= arrangedPosition.y() + arrangedSize.y()) {
+                    isHovered = true;
+                }
+
+                return isHovered;
+            });
+
+            return event.isHandled();
         }
 
         void setID(const std::string& newID) { id = newID; }
@@ -121,7 +116,6 @@ namespace Axiom {
 
       protected:
         UIElement* parent = nullptr;
-        std::vector<std::shared_ptr<UIElement>> children;
 
         std::string id;
 
@@ -138,6 +132,8 @@ namespace Axiom {
         Math::Vec2 fixedSize = Math::Vec2(-1.0f);
 
         std::shared_ptr<UITheme> resolvedTheme = UITheme::getDefault();
+
+        bool isHovered = false;
 
       private:
         std::shared_ptr<UITheme> customTheme = nullptr;

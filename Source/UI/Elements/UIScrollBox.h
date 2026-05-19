@@ -1,9 +1,9 @@
 #pragma once
 #include "Event/MouseEvent.h"
-#include "UIElement.h"
+#include "UIContainer.h"
 
 namespace Axiom {
-    class UIScrollBox : public UIElement {
+    class UIScrollBox : public UIContainer {
       public:
         Math::Vec2 getDesiredSize(const UIContext& context) override;
         void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) override;

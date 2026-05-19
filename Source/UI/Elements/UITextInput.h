@@ -25,7 +25,6 @@ namespace Axiom {
       private:
         std::string buffer;
 
-        bool isHovered = false;
         bool isActive = false;
         TextInputState state = TextInputState::Normal;
 

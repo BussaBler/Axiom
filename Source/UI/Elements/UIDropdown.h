@@ -8,7 +8,6 @@ namespace Axiom {
         ~UIDropdown() = default;
 
         Math::Vec2 getDesiredSize(const UIContext& context) override;
-        void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) override;
 
         void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
         bool onEvent(Event& event) override;
@@ -20,9 +19,17 @@ namespace Axiom {
         }
         int getSelectedIndex() const { return selectedIndex; }
 
+        void setOnSelectionChanged(const std::function<void(int, std::string)>& callback) { onSelectionChanged = std::move(callback); }
+
       private:
         std::vector<std::string> options;
         int selectedIndex = -1;
+        bool isActive = false;
         bool isOpen = false;
+
+        int hoveredIndex = -1;
+        int activeIndex = -1;
+
+        std::function<void(int, std::string)> onSelectionChanged;
     };
 } // namespace Axiom

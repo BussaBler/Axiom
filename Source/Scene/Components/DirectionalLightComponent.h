@@ -3,8 +3,8 @@
 #include "Math/Color.h"
 
 namespace Axiom {
-    AX_COMPONENT() struct DirectionalLightComponent {
-        Color color = Color::white();
-        float intensity = 1.0f;
+    struct AX_COMPONENT() DirectionalLightComponent {
+        AX_PROPERTY() Color color = Color::white();
+        AX_PROPERTY() float intensity = 1.0f;
     };
 } // namespace Axiom

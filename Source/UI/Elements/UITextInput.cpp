@@ -67,15 +67,6 @@ namespace Axiom {
             return false;
         });
 
-        dispatcher.dispatch<MouseMovedEvent>([this](const MouseMovedEvent& event) {
-            float mx = event.getMouseX();
-            float my = event.getMouseY();
-
-            isHovered = (mx >= arrangedPosition.x() && mx <= arrangedPosition.x() + arrangedSize.x() && my >= arrangedPosition.y() &&
-                         my <= arrangedPosition.y() + arrangedSize.y());
-            return false;
-        });
-
         dispatcher.dispatch<MouseButtonReleasedEvent>([this](const MouseButtonReleasedEvent& event) {
             if (isActive && event.getMouseButton() == KeyCode::LeftButton) {
                 isActive = false;
@@ -118,7 +109,7 @@ namespace Axiom {
             return false;
         });
 
-        return false;
+        return UIElement::onEvent(event);
     }
 
     void UITextInput::commitTyping() {

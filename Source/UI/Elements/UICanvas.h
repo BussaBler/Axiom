@@ -1,8 +1,8 @@
 #pragma once
-#include "UIElement.h"
+#include "UIContainer.h"
 
 namespace Axiom {
-    class UICanvas : public UIElement {
+    class UICanvas : public UIContainer {
       public:
         UICanvas() = default;
         ~UICanvas() = default;

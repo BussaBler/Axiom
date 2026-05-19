@@ -26,7 +26,6 @@ namespace Axiom {
         std::optional<Color> overrideHoverColor;
         std::optional<Color> overrideActiveColor;
 
-        bool isHovered = false;
         bool isActive = false;
 
         std::function<void()> onClick;

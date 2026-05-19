@@ -36,7 +36,6 @@ namespace Axiom {
         std::optional<Color> overrideHoverColor;
         std::optional<Color> overrideActiveColor;
 
-        bool isHovered = false;
         bool isActive = false;
 
         T minLimit = std::numeric_limits<T>::lowest();
@@ -122,8 +121,6 @@ namespace Axiom {
             float mx = event.getMouseX();
             float my = event.getMouseY();
 
-            isHovered = (mx >= arrangedPosition.x() && mx <= arrangedPosition.x() + arrangedSize.x() && my >= arrangedPosition.y() &&
-                         my <= arrangedPosition.y() + arrangedSize.y());
             if (isActive && state != ScalarFieldState::Typing) {
                 float deltaX = mx - lastMouseX;
                 if (deltaX != 0.0f && getValue && setValue) {
@@ -192,7 +189,7 @@ namespace Axiom {
             return false;
         });
 
-        return false;
+        return UIElement::onEvent(event);
     }
 
     template <typename T> inline void UIScalarField<T>::commitTyping() {

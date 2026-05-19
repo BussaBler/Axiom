@@ -41,6 +41,7 @@ namespace Axiom {
 
     void UIRenderer::addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii, uint8_t layer) {
         if (renderLayers[layer].basicRenderBatches.empty()) {
+            AX_CORE_LOG_WARN("No render batch for layer {}! Cannot add basic quad.", layer);
             return;
         }
         auto& basicVertices = renderLayers[layer].basicVertices;
@@ -57,11 +58,11 @@ namespace Axiom {
         Math::Vec4 params = Math::Vec4(size.x(), size.y(), 0.0f, 0.0f);
         // Top-Left
         basicVertices.push_back(UIVertex(pos, Math::Vec2(0.0f), color, params, radii));
-        // Bottom-Left
+        // Top-Right
         basicVertices.push_back(UIVertex(pos + Math::Vec2(size.x(), 0.0f), Math::Vec2(1.0f, 0.0f), color, params, radii));
         // Bottom-Right
         basicVertices.push_back(UIVertex(pos + size, Math::Vec2(1.0f), color, params, radii));
-        // Top-Right
+        // Bottom-Left
         basicVertices.push_back(UIVertex(pos + Math::Vec2(0.0f, size.y()), Math::Vec2(0.0f, 1.0f), color, params, radii));
         currentBatch.vertexCount += 4;
     }
@@ -77,6 +78,7 @@ namespace Axiom {
     void UIRenderer::addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color,
                                  uint8_t layer) {
         if (renderLayers[layer].fontRenderBatches.empty()) {
+            AX_CORE_LOG_WARN("No render batch for layer {}! Cannot add font quad.", layer);
             return;
         }
         auto& fontVertices = renderLayers[layer].fontVertices;

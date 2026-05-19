@@ -1,8 +1,8 @@
 #pragma once
-#include "UIElement.h"
+#include "UIContainer.h"
 
 namespace Axiom {
-    class UIVerticalBox : public UIElement {
+    class UIVerticalBox : public UIContainer {
       public:
         UIVerticalBox() = default;
         ~UIVerticalBox() = default;

@@ -6,11 +6,11 @@
 
 namespace Axiom {
     Math::Vec2 UICollapsableGroup::getDesiredSize(const UIContext& context) {
-        desiredSize.y() = headerHeight;
+        desiredSize.y() = HEADER_HEIGHT;
 
         std::string displayTitle = (isOpen ? "v " : "> ") + title;
         float textWidth = context.renderer->calculateTextWidth(displayTitle, resolvedTheme->fontSize, context.dpiScale);
-        desiredSize.x() = textWidth + HEADER_TEXT_PADDING_X + 20.0f;
+        desiredSize.x() = textWidth + 20.0f;
 
         if (isOpen) {
             for (const auto& child : children) {
@@ -30,7 +30,7 @@ namespace Axiom {
         arrangedSize = size;
 
         if (isOpen && !children.empty()) {
-            float currentY = arrangedPosition.y() + headerHeight + padding.top;
+            float currentY = arrangedPosition.y() + HEADER_HEIGHT + padding.top;
             float startX = arrangedPosition.x() + padding.left;
             float availableWidth = arrangedSize.x() - padding.left - padding.right;
 
@@ -70,13 +70,17 @@ namespace Axiom {
 
     void UICollapsableGroup::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Math::Vec2 headerPos = arrangedPosition + Math::Vec2(padding.left, padding.top);
-        Math::Vec2 headerSize = Math::Vec2(arrangedSize.x() - padding.left - padding.right, headerHeight);
+        Math::Vec2 headerSize = Math::Vec2(arrangedSize.x() - padding.left - padding.right, HEADER_HEIGHT);
 
-        Color headerColor = isHovered ? resolvedTheme->controlHoverColor : resolvedTheme->controlNormalColor;
+        Color headerColor = isHeaderHovered ? resolvedTheme->controlHoverColor : resolvedTheme->controlNormalColor;
         context.renderer->addBasicQuad(headerPos, headerSize, headerColor, resolvedTheme->borderRadius, context.layer);
 
         std::string displayTitle = (isOpen ? "v " : "> ") + title;
-        Math::Vec2 textPos = headerPos + Math::Vec2(HEADER_TEXT_PADDING_X, HEADER_TEXT_PADDING_Y);
+        float textHeight = context.renderer->calculateTextHeight(resolvedTheme->fontSize, context.dpiScale);
+
+        float textYOffset = (HEADER_HEIGHT - textHeight) * 0.5f;
+        Math::Vec2 textPos = headerPos + Math::Vec2(5.0f, textYOffset);
+
         context.renderer->addText(displayTitle, textPos, resolvedTheme->fontSize, context.dpiScale, resolvedTheme->textColor, context.layer);
 
         if (isOpen) {
@@ -87,30 +91,51 @@ namespace Axiom {
     }
 
     bool UICollapsableGroup::onEvent(Event& event) {
+        if (event.isHandled()) {
+            return true;
+        }
+
         if (isOpen) {
-            if (UIElement::onEvent(event)) {
-                return true;
+            for (auto it = children.rbegin(); it != children.rend(); ++it) {
+                if ((*it)->onEvent(event)) {
+                    return true;
+                }
             }
         }
 
         EventDispatcher dispatcher(event);
 
-        dispatcher.dispatch<MouseMovedEvent>([this](const MouseMovedEvent& event) {
-            float mx = event.getMouseX();
-            float my = event.getMouseY();
-            isHovered = mx >= arrangedPosition.x() + padding.left && mx <= arrangedPosition.x() + arrangedSize.x() - padding.right &&
-                        my >= arrangedPosition.y() + padding.top && my <= arrangedPosition.y() + padding.top + headerHeight;
+        dispatcher.dispatch<MouseMovedEvent>([this](const MouseMovedEvent& e) {
+            float mouseX = e.getMouseX();
+            float mouseY = e.getMouseY();
+
+            isHeaderHovered = false;
+            if (mouseX >= arrangedPosition.x() && mouseX <= arrangedPosition.x() + arrangedSize.x() && mouseY >= arrangedPosition.y() &&
+                mouseY <= arrangedPosition.y() + HEADER_HEIGHT) {
+                isHeaderHovered = true;
+            }
             return false;
         });
 
-        dispatcher.dispatch<MouseButtonReleasedEvent>([this](const MouseButtonReleasedEvent& event) {
-            if (isHovered && event.getMouseButton() == KeyCode::LeftButton) {
-                isOpen = !isOpen;
+        dispatcher.dispatch<MouseButtonPressedEvent>([this](const MouseButtonPressedEvent& event) {
+            if (isHeaderHovered && event.getMouseButton() == KeyCode::LeftButton) {
+                isActive = true;
                 return true;
             }
             return false;
         });
 
-        return false;
+        dispatcher.dispatch<MouseButtonReleasedEvent>([this](const MouseButtonReleasedEvent& event) {
+            if (isActive && event.getMouseButton() == KeyCode::LeftButton) {
+                isActive = false;
+                if (isHeaderHovered) {
+                    isOpen = !isOpen;
+                }
+                return true;
+            }
+            return false;
+        });
+
+        return UIElement::onEvent(event);
     }
 } // namespace Axiom

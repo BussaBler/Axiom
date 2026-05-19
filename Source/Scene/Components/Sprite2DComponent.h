@@ -5,10 +5,10 @@
 #include "Renderer/Sampler.h"
 
 namespace Axiom {
-    AX_COMPONENT() struct Sprite2DComponent {
-        UUID textureId = 0;
-        SamplerAddressMode textureAddressMode = SamplerAddressMode::Repeat;
-        SamplerFilterMode textureFilterMode = SamplerFilterMode::Linear;
-        Color color = Color::white();
+    struct AX_COMPONENT() Sprite2DComponent {
+        AX_PROPERTY() UUID textureId = 0;
+        AX_PROPERTY() SamplerAddressMode addressMode = SamplerAddressMode::Repeat;
+        AX_PROPERTY() SamplerFilterMode filterMode = SamplerFilterMode::Linear;
+        AX_PROPERTY() Color color = Color::white();
     };
 } // namespace Axiom

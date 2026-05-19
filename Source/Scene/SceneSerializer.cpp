@@ -79,6 +79,9 @@ namespace Axiom {
                     case FieldType::AssetHandle:
                         fieldNode.setString(std::to_string(*static_cast<uint64_t*>(fieldAddress)));
                         break;
+                    case FieldType::Enum:
+                        fieldNode.setInt(*static_cast<int*>(fieldAddress));
+                        break;
                     default:
                         break;
                     }
@@ -176,6 +179,9 @@ namespace Axiom {
                         *static_cast<uint64_t*>(fieldAddress) = std::stoull(fieldNode.getString());
                         break;
                     }
+                    case FieldType::Enum:
+                        *static_cast<int*>(fieldAddress) = fieldNode.getInt();
+                        break;
                     default:
                         break;
                     }

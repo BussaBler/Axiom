@@ -2,9 +2,9 @@
 #include "Core/Base.h"
 
 namespace Axiom {
-    AX_ENUM() enum class SamplerAddressMode { Repeat, MirroredRepeat, ClampToEdge, ClampToBorder };
+    enum class SamplerAddressMode { Repeat, MirroredRepeat, ClampToEdge, ClampToBorder };
 
-    AX_ENUM() enum class SamplerFilterMode { Linear, Nearest };
+    enum class SamplerFilterMode { Linear, Nearest };
 
     class Sampler {
       public:

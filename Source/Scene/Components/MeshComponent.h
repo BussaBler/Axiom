@@ -3,7 +3,7 @@
 #include "Core/Base.h"
 
 namespace Axiom {
-    AX_COMPONENT() struct MeshComponent {
-        UUID meshId;
+    struct AX_COMPONENT() MeshComponent {
+        AX_PROPERTY() UUID meshId;
     };
 } // namespace Axiom

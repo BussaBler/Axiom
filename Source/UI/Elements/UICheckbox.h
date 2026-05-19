@@ -16,7 +16,6 @@ namespace Axiom {
         void setValueSetter(std::function<void(bool)> setter) { valueSetter = std::move(setter); }
 
       private:
-        bool isHovered = false;
         bool isActive = false;
 
         std::optional<Color> overrideNormalColor;

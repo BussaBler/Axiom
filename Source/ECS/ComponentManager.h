@@ -2,6 +2,8 @@
 #include "EntityManager.h"
 
 #include <typeindex>
+#include <utility>
+#include <vector>
 
 namespace Axiom {
     class IComponentArray {
