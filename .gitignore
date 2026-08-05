@@ -1,0 +1,58 @@
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.DS_Store
+compile_commands.json
+.zed/
+
+# Visual C++ cache files
+*.VC.db
+*.VC.opendb
+
+.vs/
+
+# C++ generated files
+ipch/
+*.pch
+*.obj
+*.o
+*.ilk
+*.pdb
+*.ipdb
+*.iobj
+.clang-format
+.cache/
+
+# Build folders
+Debug*/
+Release*/
+x64/
+x86/
+[bB]in/
+[bB]in-[iI]nt/
+*.sconsign
+
+# Visual C++ project user settings
+*.vcxproj.user
+*.vcxproj
+*.vcxproj.filters
+*.vcproj
+*.sln
+.vscode/
+
+/Vendor/VulkanSDK
+Build/
+.sconsign.dblite
+
+# Compiled Objects
+*.o
+*.obj
+*.pdb
+*.exe
+*.lib
+*.dll
+*.a
+
+Logs/
