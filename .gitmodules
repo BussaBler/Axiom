@@ -1,0 +1,12 @@
+[submodule "Vendor/Shaderc"]
+	path = Vendor/Shaderc
+	url = https://github.com/google/shaderc.git
+[submodule "Vendor/AxImageLoader"]
+	path = Vendor/AxImageLoader
+	url = https://github.com/BussaBler/AxImageLoader.git
+[submodule "Vendor/AxModelLoader"]
+	path = Vendor/AxModelLoader
+	url = https://github.com/BussaBler/AxModelLoader.git
+[submodule "Vendor/SpirvCross"]
+	path = Vendor/SpirvCross
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git
