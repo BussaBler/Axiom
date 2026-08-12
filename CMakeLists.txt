@@ -95,7 +95,7 @@ endif()
 
 endif()
 target_compile_definitions(Axiom PUBLIC ${PLATFORM_DEFINE})
-target_compile_definitions(Axiom PRIVATE AX_ROOT_DIR=\"${CMAKE_SOURCE_DIR}\")
+target_compile_definitions(Axiom PUBLIC AX_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 target_include_directories(
   Axiom PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>
