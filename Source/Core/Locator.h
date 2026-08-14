@@ -4,6 +4,7 @@ namespace Axiom {
     class Window;
     class Renderer;
     class UIRenderer;
+    class TaskManager;
 
     class Locator {
         friend class Application;
@@ -12,15 +13,18 @@ namespace Axiom {
         inline static Renderer* getRenderer() { return renderer; }
         inline static UIRenderer* getUIRenderer() { return uiRenderer; }
         inline static Window* getWindow() { return window; }
+        inline static TaskManager* getTaskManager() { return taskManager; }
 
       private:
         inline static void provideRenderer(Renderer* r) { renderer = r; }
         inline static void provideUIRenderer(UIRenderer* r) { uiRenderer = r; }
         inline static void provideWindow(Window* w) { window = w; }
+        inline static void provideTaskManager(TaskManager* t) { taskManager = t; }
 
       private:
         inline static Renderer* renderer = nullptr;
         inline static UIRenderer* uiRenderer = nullptr;
         inline static Window* window = nullptr;
+        inline static TaskManager* taskManager = nullptr;
     };
 } // namespace Axiom

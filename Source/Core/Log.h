@@ -24,6 +24,14 @@ namespace Axiom {
 
 #define AX_CORE_LOG_INFO(...) Log::getCoreLogger()->info(__VA_ARGS__)
 #define AX_CORE_LOG_WARN(...) Log::getCoreLogger()->warn(__VA_ARGS__)
+#define AX_CORE_LOG_ERROR_ONCE(...)                                                                                                                            \
+    do {                                                                                                                                                       \
+        static bool wasLogged = false;                                                                                                                         \
+        if (!wasLogged) {                                                                                                                                      \
+            Log::getCoreLogger()->error(__VA_ARGS__);                                                                                                          \
+            wasLogged = true;                                                                                                                                  \
+        }                                                                                                                                                      \
+    } while (0)
 #define AX_CORE_LOG_ERROR(...) Log::getCoreLogger()->error(__VA_ARGS__)
 
 #define AX_LOG_TRACE(...) Log::getClientLogger()->trace(__VA_ARGS__)

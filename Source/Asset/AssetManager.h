@@ -1,6 +1,7 @@
 #pragma once
 #include "Asset.h"
 #include "Asset/MaterialAsset.h"
+#include "Asset/MeshAsset.h"
 #include "Asset/UUID.h"
 #include "Core/Locator.h"
 #include "Core/Log.h"
@@ -33,7 +34,7 @@ namespace Axiom {
             }
 
             if (registry.find(handle) == registry.end()) {
-                AX_CORE_LOG_ERROR("Tried to load an asset that is not registered: {}", handle);
+                AX_CORE_LOG_ERROR_ONCE("Tried to load an asset that is not registered: {}", handle);
                 return nullptr;
             }
 
@@ -94,9 +95,12 @@ namespace Axiom {
             return handles;
         }
 
-        static UUID getDefaultTextureHandle() { return defaultTextureHandle; }
-        static std::shared_ptr<TextureAsset> getDefaultTexture() { return std::static_pointer_cast<TextureAsset>(loadedAssets[defaultTextureHandle]); }
-        static std::shared_ptr<MaterialAsset> getDefaultMaterial() { return std::static_pointer_cast<MaterialAsset>(loadedAssets[defaultMaterialHandle]); }
+        inline static UUID getDefaultTextureHandle() { return defaultTextureHandle; }
+        inline static std::shared_ptr<TextureAsset> getDefaultTexture() { return std::static_pointer_cast<TextureAsset>(loadedAssets[defaultTextureHandle]); }
+        inline static std::shared_ptr<MaterialAsset> getDefaultMaterial() {
+            return std::static_pointer_cast<MaterialAsset>(loadedAssets[defaultMaterialHandle]);
+        }
+        inline static std::shared_ptr<MeshAsset> getDefaultMesh() { return std::static_pointer_cast<MeshAsset>(loadedAssets[defaultMeshHandle]); }
 
       private:
         static void init();
@@ -121,5 +125,6 @@ namespace Axiom {
 
         static const UUID defaultTextureHandle;
         static const UUID defaultMaterialHandle;
+        static const UUID defaultMeshHandle;
     };
 } // namespace Axiom

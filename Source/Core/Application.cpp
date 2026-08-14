@@ -2,8 +2,12 @@
 
 #include "Application.h"
 
+#include "Core/Locator.h"
+#include "Core/TaskManager.h"
 #include "Profiler.h"
 #include "Renderer/RenderGraph.h"
+
+#include <memory>
 
 namespace Axiom {
     Application* Application::instance = nullptr;
@@ -23,6 +27,9 @@ namespace Axiom {
         window = Window::create(windowProps);
         Locator::provideWindow(window.get());
         window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
+
+        taskManager = std::make_unique<TaskManager>();
+        Locator::provideTaskManager(taskManager.get());
 
         renderer = std::make_unique<Renderer>(window.get());
         Locator::provideRenderer(renderer.get());
@@ -151,6 +158,8 @@ namespace Axiom {
             for (const auto& layer : layerStack) {
                 layer->onUpdate();
             }
+
+            taskManager->executeTasks();
 
             uiRenderer->beginFrame();
             for (const auto& layer : layerStack) {

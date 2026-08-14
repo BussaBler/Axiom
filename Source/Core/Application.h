@@ -1,6 +1,7 @@
 #pragma once
 #include "Assert.h"
 #include "Asset/AssetManager.h"
+#include "Core/TaskManager.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
@@ -82,6 +83,7 @@ namespace Axiom {
         std::unique_ptr<Window> window;
         std::unique_ptr<Renderer> renderer;
         std::unique_ptr<UIRenderer> uiRenderer;
+        std::unique_ptr<TaskManager> taskManager;
         bool running = true;
         LayerStack layerStack;
         std::vector<LayerAction> layerActionQueue;

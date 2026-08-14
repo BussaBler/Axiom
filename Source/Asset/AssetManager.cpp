@@ -9,6 +9,7 @@
 #include "AxModelLoader.h"
 #include "Core/Locator.h"
 #include "Core/Log.h"
+#include "Core/TaskManager.h"
 #include "Math/Color.h"
 #include "MeshAsset.h"
 #include "Renderer/Renderer.h"
@@ -21,6 +22,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <thread>
 
 namespace Axiom {
     std::unordered_map<UUID, AssetMetadata> AssetManager::registry;
@@ -34,6 +36,7 @@ namespace Axiom {
 
     const UUID AssetManager::defaultTextureHandle = 1;
     const UUID AssetManager::defaultMaterialHandle = 2;
+    const UUID AssetManager::defaultMeshHandle = 3;
 
     UUID AssetManager::importAsset(const std::string& name, const std::filesystem::path& path, AssetType type) {
         std::string cacheString = path.lexically_normal().generic_string();
@@ -186,6 +189,71 @@ namespace Axiom {
         AssetMetadata defaultMaterialMeta = {.name = "Default Material", .type = AssetType::Material, .filePath = ""};
         registry[defaultMaterialHandle] = defaultMaterialMeta;
         loadedAssets[defaultMaterialHandle] = material;
+
+        // Default Mesh
+        std::vector<MeshVertex> cubeVertices = {// Front face (Z = 0.5)
+                                                {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+                                                {{0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                                                {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                                                {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+                                                // Back face (Z = -0.5)
+                                                {{0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
+                                                {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}},
+                                                {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
+                                                {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}},
+                                                // Left face (X = -0.5)
+                                                {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                                                {{-0.5f, -0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                                                {{-0.5f, 0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+                                                {{-0.5f, 0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                                                // Right face (X = 0.5)
+                                                {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                                                {{0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                                                {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+                                                {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                                                // Top face (Y = 0.5)
+                                                {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+                                                {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                                                {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                                                {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+                                                // Bottom face (Y = -0.5)
+                                                {{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+                                                {{0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+                                                {{0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+                                                {{-0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}}};
+
+        std::vector<uint32_t> cubeIndices = {
+            0,  1,  2,  2,  3,  0,  // Front
+            4,  5,  6,  6,  7,  4,  // Back
+            8,  9,  10, 10, 11, 8,  // Left
+            12, 13, 14, 14, 15, 12, // Right
+            16, 17, 18, 18, 19, 16, // Top
+            20, 21, 22, 22, 23, 20  // Bottom
+        };
+
+        uint32_t vertexBytes = cubeVertices.size() * sizeof(MeshVertex);
+        uint32_t indexBytes = cubeIndices.size() * sizeof(uint32_t);
+
+        Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+        std::unique_ptr<Buffer> vertexStaging = Locator::getRenderer()->createBuffer(vertexStagingInfo);
+        vertexStaging->setData(cubeVertices.data(), vertexBytes);
+
+        Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+        std::unique_ptr<Buffer> indexStaging = Locator::getRenderer()->createBuffer(indexStagingInfo);
+        indexStaging->setData(cubeIndices.data(), indexBytes);
+
+        auto cubeCommandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+        cubeCommandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, 0);
+        cubeCommandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, 0);
+        Locator::getRenderer()->endSingleTimeCommands(cubeCommandBuffer.get());
+
+        currentVertexCount += cubeVertices.size();
+        currentIndexCount += cubeIndices.size();
+
+        AssetMetadata defaultMeshMeta = {.name = "Default Mesh", .type = AssetType::Mesh, .filePath = ""};
+        registry[defaultMeshHandle] = defaultMeshMeta;
+
+        loadedAssets[defaultMeshHandle] = std::make_shared<MeshAsset>(defaultMeshHandle, "Default Mesh", 0, 0, cubeIndices.size());
     }
 
     std::shared_ptr<Asset> AssetManager::loadTexture(const std::filesystem::path& path, UUID uuid) {
@@ -234,9 +302,15 @@ namespace Axiom {
     }
 
     std::shared_ptr<Asset> AssetManager::loadMesh(const std::filesystem::path& path, UUID uuid) {
-        auto modelResult = AxModelLoader::loadModel(path);
+        loadedAssets[uuid] = getDefaultMesh();
 
-        if (modelResult.has_value()) {
+        std::thread([path, uuid]() {
+            auto modelResult = AxModelLoader::loadModel(path);
+            if (!modelResult.has_value()) {
+                AX_CORE_LOG_ERROR_ONCE("Failed to load mesh {}", modelResult.error());
+                return;
+            }
+
             std::vector<MeshVertex> vertices;
             vertices.reserve(modelResult->vertices.size() / 3);
             for (size_t i = 0; i < modelResult->vertices.size() / 3; i++) {
@@ -247,35 +321,36 @@ namespace Axiom {
                 vertices.push_back(vertex);
             }
 
-            uint32_t vertexCount = vertices.size();
-            uint32_t indexCount = modelResult->indices.size();
-            uint32_t vertexBytes = vertexCount * sizeof(MeshVertex);
-            uint32_t indexBytes = indexCount * sizeof(uint32_t);
+            Locator::getTaskManager()->submitToMain([uuid, path, vertices = std::move(vertices), indices = std::move(modelResult->indices)]() {
+                uint32_t vertexCount = vertices.size();
+                uint32_t indexCount = indices.size();
+                uint32_t vertexBytes = vertexCount * sizeof(MeshVertex);
+                uint32_t indexBytes = indexCount * sizeof(uint32_t);
 
-            Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> vertexStaging = Locator::getRenderer()->createBuffer(vertexStagingInfo);
-            vertexStaging->setData(vertices.data(), vertexBytes);
+                Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+                std::unique_ptr<Buffer> vertexStaging = Locator::getRenderer()->createBuffer(vertexStagingInfo);
+                vertexStaging->setData(vertices.data(), vertexBytes);
 
-            Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> indexStaging = Locator::getRenderer()->createBuffer(indexStagingInfo);
-            indexStaging->setData(modelResult->indices.data(), indexBytes);
+                Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+                std::unique_ptr<Buffer> indexStaging = Locator::getRenderer()->createBuffer(indexStagingInfo);
+                indexStaging->setData(indices.data(), indexBytes);
 
-            auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
-            uint32_t vertexByteDstOffset = currentVertexCount * sizeof(MeshVertex);
-            uint32_t indexByteDstOffset = currentIndexCount * sizeof(uint32_t);
-            commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, vertexByteDstOffset);
-            commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, indexByteDstOffset);
-            Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+                auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+                uint32_t vertexByteDstOffset = currentVertexCount * sizeof(MeshVertex);
+                uint32_t indexByteDstOffset = currentIndexCount * sizeof(uint32_t);
+                commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, vertexByteDstOffset);
+                commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, indexByteDstOffset);
+                Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
-            currentVertexCount += vertexCount;
-            currentIndexCount += indexCount;
+                currentVertexCount += vertexCount;
+                currentIndexCount += indexCount;
 
-            return std::make_shared<MeshAsset>(uuid, path.filename().string(), currentVertexCount - vertexCount, currentIndexCount - indexCount,
-                                               modelResult->indices.size());
-        }
+                loadedAssets[uuid] = std::make_shared<MeshAsset>(uuid, path.filename().string(), currentVertexCount - vertexCount,
+                                                                 currentIndexCount - indexCount, indices.size());
+            });
+        }).detach();
 
-        AX_CORE_LOG_ERROR("Failed to load mesh: {}", modelResult.error());
-        return nullptr;
+        return loadedAssets[uuid];
     }
 
     std::shared_ptr<Asset> AssetManager::loadMaterial(const std::filesystem::path& path, UUID uuid) {
