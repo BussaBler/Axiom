@@ -2,12 +2,15 @@
 #include "Device.h"
 #include "Renderer/ForwardRenderPipeline.h"
 #include "Renderer/Pipeline.h"
+#include "Renderer/RenderPipeline.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 
 #include <cstddef>
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace Axiom {
     class Renderer {
@@ -16,6 +19,14 @@ namespace Axiom {
         ~Renderer();
 
         void initPipelines();
+        inline void registerPipeline(const std::string& name, std::unique_ptr<RenderPipeline> pipeline) { registeredPipelines[name] = std::move(pipeline); }
+        template <typename T> T* getPipeline(const std::string& name) {
+            auto it = registeredPipelines.find(name);
+            if (it != registeredPipelines.end()) {
+                return static_cast<T*>(it->second.get());
+            }
+            return nullptr;
+        }
 
         void waitIdle();
 
@@ -44,7 +55,8 @@ namespace Axiom {
         inline Sampler* getNearestSampler() { return nearestSampler.get(); }
         inline uint32_t getFrameCount() const { return swapChain->getFrameCount(); }
         inline uint32_t getCurrentFrameIndex() const { return swapChain->getCurrentFrameIndex(); }
-        inline ForwardRenderPipeline* getForwardRenderPipeline() { return forwardRP.get(); };
+        // Return the Forward Rendering Pipeline
+        ForwardRenderPipeline* getFRP();
 
         void recreateSwapChain();
 
@@ -64,6 +76,8 @@ namespace Axiom {
 
         std::unordered_map<Pipeline::CreateInfo, std::unique_ptr<Pipeline>> pipelineCache;
 
-        std::unique_ptr<ForwardRenderPipeline> forwardRP = nullptr;
+        std::unordered_map<std::string, std::unique_ptr<RenderPipeline>> registeredPipelines;
+
+        inline static constexpr std::string FORWARD_PIPELINE_NAME = "Forward";
     };
 } // namespace Axiom

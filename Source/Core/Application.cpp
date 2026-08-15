@@ -168,12 +168,11 @@ namespace Axiom {
             }
 
             renderGraph.begin();
-            renderer->getForwardRenderPipeline()->beginFrame();
+            CommandBuffer* commandBuffer = renderer->beginFrame();
             for (const auto& layer : layerStack) {
                 layer->onRender(renderGraph);
             }
 
-            CommandBuffer* commandBuffer = renderer->beginFrame();
             renderGraph.execute(commandBuffer);
             uiRenderer->onRender(commandBuffer, renderer->getCurrentRenderTarget());
             renderer->endFrame();

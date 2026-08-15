@@ -16,6 +16,7 @@
 #include "Renderer/Buffer.h"
 #include "Renderer/CommandBuffer.h"
 #include "Renderer/Pipeline.h"
+#include "Renderer/RenderFeature.h"
 #include "Renderer/RenderGraph.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/RenderPipeline.h"
@@ -51,26 +52,27 @@ namespace Axiom {
         totalInstanceCount = 0;
     }
 
-    void ForwardRenderPipeline::render(RenderGraph& renderGraph, const RenderContext& renderView) {
+    void ForwardRenderPipeline::render(RenderGraph& renderGraph, const RenderContext& context) {
         AX_CORE_ASSERT(globalDataAllocations < MAX_VIEWPORTS, "Exceeded maximum viewports per frame");
 
         uint32_t currentViewportIndex = globalDataAllocations++;
-        globalData = {.viewMatrix = renderView.viewMatrix, .projectionMatrix = renderView.projectionMatrix, .cameraPosition = renderView.cameraPosition};
+        globalData = {.viewMatrix = context.viewMatrix, .projectionMatrix = context.projectionMatrix, .cameraPosition = context.cameraPosition};
         globalDataBuffer->setData(&globalData, sizeof(GlobalData), currentViewportIndex * sizeof(GlobalData));
 
-        RGTextureHandle colorBufferHandle = renderGraph.importTexture("ColorBuffer", renderView.renderTarget);
-        RGTextureHandle depthBufferHandle = renderGraph.importTexture("DepthBuffer", renderView.depthTarget);
+        RGTextureHandle colorBufferHandle = renderGraph.importTexture("ColorBuffer", context.renderTarget);
+        RGTextureHandle depthBufferHandle = renderGraph.importTexture("DepthBuffer", context.depthTarget);
 
         renderGraph.getContext().add<GlobalResourceData>(
             {.colorBuffer = colorBufferHandle, .depthBuffer = depthBufferHandle, .viewportIndex = currentViewportIndex});
 
-        renderGraph.addPass<DefaultPassData>("Opaque Pass", [this, &renderGraph, &renderView](PassBuilder& builder, DefaultPassData& passData) {
+        injectRenderFeatures(RenderInjectionPoint::BeforeOpaque, renderGraph, context);
+        renderGraph.addPass<DefaultPassData>("Opaque Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
             const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
             builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
             builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
             passData.renderTarget = resourceData.colorBuffer;
             passData.depthTarget = resourceData.depthBuffer;
-            passData.scene = renderView.targetScene;
+            passData.scene = context.targetScene;
 
             return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
                 const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
@@ -79,13 +81,13 @@ namespace Axiom {
             };
         });
 
-        if (renderView.shouldDrawSkybox) {
+        if (context.shouldDrawSkybox) {
             // skyboxPass(sceneRenderPassData);
         }
-        if (renderView.shouldDrawWorldGrid) {
+        if (context.shouldDrawWorldGrid) {
             // worldGridPass(sceneRenderPassData);
         }
-        if (renderView.shouldDrawGizmos) {
+        if (context.shouldDrawGizmos) {
             // gizmosPass(sceneRenderPassData, renderView.gizmosPosition);
         }
 
@@ -468,5 +470,13 @@ namespace Axiom {
         commandBuffer->drawIndexed(gizmosDefaultMesh->getIndexCount(), 1, gizmosDefaultMesh->getIndexOffset(), gizmosDefaultMesh->getVertexOffset(), 0);
 
         commandBuffer->endRendering();
+    }
+
+    void ForwardRenderPipeline::injectRenderFeatures(RenderInjectionPoint injectionPoint, RenderGraph& renderGraph, const RenderContext& context) {
+        for (const auto& feature : renderFeatures) {
+            if (feature->getInjectionPoint() == injectionPoint) {
+                feature->injectPasses(renderGraph, context);
+            }
+        }
     }
 } // namespace Axiom

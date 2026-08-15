@@ -6,11 +6,16 @@
 #include "Math/Vec.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/Pipeline.h"
+#include "Renderer/RenderFeature.h"
 #include "Renderer/RenderGraph.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/RenderPipeline.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
+
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace Axiom {
     struct GlobalResourceData {
@@ -25,7 +30,9 @@ namespace Axiom {
         ~ForwardRenderPipeline();
 
         void beginFrame() override;
-        void render(RenderGraph& renderGraph, const RenderContext& renderView) override;
+        void render(RenderGraph& renderGraph, const RenderContext& context) override;
+
+        inline void addRenderFeature(std::unique_ptr<RenderFeature> renderFeature) { renderFeatures.push_back(std::move(renderFeature)); }
 
       private:
         void createGlobalData();
@@ -40,6 +47,8 @@ namespace Axiom {
         void shadowPass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer);
         void worldGridPass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer);
         void gizmosPass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer, const Math::Vec3& gizmoPosition);
+
+        void injectRenderFeatures(RenderInjectionPoint injectionPoint, RenderGraph& renderGraph, const RenderContext& context);
 
       private:
         struct GlobalData {
@@ -94,5 +103,7 @@ namespace Axiom {
         RenderPass gizmosRenderPass;
         std::shared_ptr<MeshAsset> gizmosDefaultMesh;
         std::unique_ptr<Pipeline> gizmosPipeline;
+
+        std::vector<std::unique_ptr<RenderFeature>> renderFeatures;
     };
 } // namespace Axiom
