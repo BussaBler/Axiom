@@ -25,7 +25,8 @@
 namespace Axiom {
     struct ApplicationInfo {
         std::string name;
-        std::filesystem::path workingDirectory;
+        std::filesystem::path engineWorkingDirectory;
+        std::filesystem::path applicationWorkingDirectory;
     };
 
     class Application {
@@ -93,5 +94,5 @@ namespace Axiom {
         static Application* instance;
     };
 
-    Application* createApplication(const ApplicationInfo& appInfo);
+    Application* createApplication(const std::filesystem::path& axiomRootDir);
 } // namespace Axiom

@@ -1,10 +1,10 @@
 #pragma once
 #include "Application.h"
 
-extern Axiom::Application* Axiom::createApplication(const Axiom::ApplicationInfo& appInfo);
+extern Axiom::Application* Axiom::createApplication(const std::filesystem::path& axiomRootDir);
 
 int main(int argc, char** argv) {
-    auto app = Axiom::createApplication({"Axiom Application", AX_ROOT_DIR});
+    auto app = Axiom::createApplication(std::filesystem::path(AX_ROOT_DIR));
     app->run();
     delete app;
 #ifdef AX_DEBUG

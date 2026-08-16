@@ -184,7 +184,7 @@ namespace Axiom {
         commandBuffer->copyBuffer(skyboxIndexStagingBuffer.get(), skyboxIndexBuffer.get(), skyboxIndexBufferCreateInfo.size);
         Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
-        UUID skyboxShaderHandle = AssetManager::importAsset("BuiltIn.Skybox", "axiom://Shaders/BuiltIn.Skybox.axs", AssetType::Shader);
+        UUID skyboxShaderHandle = AssetManager::importAsset("BuiltIn.Skybox", "axiom://Packages/Shaders/BuiltIn.Skybox.axs", AssetType::Shader);
         std::shared_ptr<ShaderAsset> skyboxShader = AssetManager::getAsset<ShaderAsset>(skyboxShaderHandle);
 
         std::vector<VertexBindingDescription> skyboxVertexBindings = {{.binding = 0, .stride = sizeof(Math::Vec3), .inputRate = VertexInputRate::Vertex}};
@@ -217,7 +217,7 @@ namespace Axiom {
         worldGridRenderPass.depthAttachment = depthAttachment;
         worldGridRenderPass.hasDepthAttachment = true;
 
-        UUID worldGridShaderHandle = AssetManager::importAsset("BuiltIn.WorldGrid", "axiom://Shaders/BuiltIn.WorldGrid.axs", AssetType::Shader);
+        UUID worldGridShaderHandle = AssetManager::importAsset("BuiltIn.WorldGrid", "axiom://Packages/Shaders/BuiltIn.WorldGrid.axs", AssetType::Shader);
         std::shared_ptr<ShaderAsset> worldGridShader = AssetManager::getAsset<ShaderAsset>(worldGridShaderHandle);
 
         Pipeline::CreateInfo pipelineCreateInfo = {.shader = worldGridShader->getShader(),
@@ -242,8 +242,8 @@ namespace Axiom {
         gizmosRenderPass.colorAttachments[0] = colorAttachment;
         gizmosRenderPass.colorAttachmentCount = 1;
 
-        UUID gizmosShaderHandle = AssetManager::importAsset("BuiltIn.Gizmos", "axiom://Shaders/BuiltIn.Gizmos.axs", AssetType::Shader);
-        UUID gizmosDefaultMeshHandle = AssetManager::importAsset("BuiltIn.Gizmos.Arrow", "axiom://Models/Arrow.obj", AssetType::Mesh);
+        UUID gizmosShaderHandle = AssetManager::importAsset("BuiltIn.Gizmos", "axiom://Packages/Shaders/BuiltIn.Gizmos.axs", AssetType::Shader);
+        UUID gizmosDefaultMeshHandle = AssetManager::importAsset("BuiltIn.Gizmos.Arrow", "axiom://Packages/Models/Arrow.obj", AssetType::Mesh);
         std::shared_ptr<ShaderAsset> gizmosShader = AssetManager::getAsset<ShaderAsset>(gizmosShaderHandle);
         gizmosDefaultMesh = AssetManager::getAsset<MeshAsset>(gizmosDefaultMeshHandle);
 

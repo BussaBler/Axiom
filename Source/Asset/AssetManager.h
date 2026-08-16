@@ -108,6 +108,8 @@ namespace Axiom {
         static void init();
         static void shutdown();
 
+        static void deserializeManifest(const std::filesystem::path& manisfestPath);
+
         static void initDefaultAssets();
 
         static std::shared_ptr<Asset> loadTexture(const std::filesystem::path& path, UUID uuid);

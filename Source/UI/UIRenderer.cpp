@@ -341,7 +341,7 @@ namespace Axiom {
     }
 
     void UIRenderer::createBasicRenderObjects() {
-        UUID basicShaderHandle = AssetManager::importAsset("BuiltIn.UI.Shader", "axiom://Shaders/BuiltIn.UI.axs", AssetType::Shader);
+        UUID basicShaderHandle = AssetManager::importAsset("BuiltIn.UI.Shader", "axiom://Packages/Shaders/BuiltIn.UI.axs", AssetType::Shader);
         basicShader = AssetManager::getAsset<ShaderAsset>(basicShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
@@ -405,7 +405,7 @@ namespace Axiom {
     }
 
     void UIRenderer::createFontRenderObjects() {
-        UUID fontShaderHandle = AssetManager::importAsset("BuiltIn.UIFont.Shader", "axiom://Shaders/BuiltIn.UI.Font.axs", AssetType::Shader);
+        UUID fontShaderHandle = AssetManager::importAsset("BuiltIn.UIFont.Shader", "axiom://Packages/Shaders/BuiltIn.UI.Font.axs", AssetType::Shader);
         fontShader = AssetManager::getAsset<ShaderAsset>(fontShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
@@ -490,7 +490,7 @@ namespace Axiom {
     }
 
     void UIRenderer::createImageRenderObjects() {
-        UUID imageShaderHandle = AssetManager::importAsset("BuiltIn.UIImage.Shader", "axiom://Shaders/BuiltIn.UI.Image.axs", AssetType::Shader);
+        UUID imageShaderHandle = AssetManager::importAsset("BuiltIn.UIImage.Shader", "axiom://Packages/Shaders/BuiltIn.UI.Image.axs", AssetType::Shader);
         imageShader = AssetManager::getAsset<ShaderAsset>(imageShaderHandle);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {.size = sizeof(UIVertex) * 4, .usage = BufferUsage::Vertex, .memoryUsage = MemoryUsage::GPUandCPU};

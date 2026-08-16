@@ -19,12 +19,6 @@
 #include "Utils/FileSystem.h"
 #include "Utils/JSONSerializer.h"
 
-#include <cstddef>
-#include <filesystem>
-#include <memory>
-#include <string>
-#include <thread>
-
 namespace Axiom {
     std::unordered_map<UUID, AssetMetadata> AssetManager::registry;
     std::unordered_map<UUID, std::shared_ptr<Asset>> AssetManager::loadedAssets;
@@ -65,31 +59,9 @@ namespace Axiom {
             .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
         globalIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
 
-        std::string manifestStr = FileSystem::readFileStr("axiom://AssetManifest.json");
-
-        if (!manifestStr.empty()) {
-            JSONValue serializerValue = JSONSerializer::deserialize(manifestStr);
-
-            if (serializerValue.getType() == JSONValueType::Object && serializerValue.hasChild("Assets")) {
-                const JSONValue& assetNode = serializerValue.getChild("Assets");
-                const auto& children = assetNode.getChildren();
-
-                for (const auto& [uuidStr, dataNode] : children) {
-                    uint64_t uuidValue = std::stoull(uuidStr);
-
-                    const auto& assetData = dataNode.getChildren();
-                    std::string name = assetData.at("Name").getString();
-                    std::string rawPath = assetData.at("FilePath").getString();
-                    AssetType type = static_cast<AssetType>(assetData.at("Type").getInt());
-
-                    std::string cacheString = std::filesystem::path(rawPath).generic_string();
-
-                    AssetMetadata meta = {.name = name, .type = type, .filePath = std::filesystem::path(cacheString)};
-
-                    registry[UUID(uuidValue)] = meta;
-                    assetHandles[cacheString] = UUID(uuidValue);
-                }
-            }
+        deserializeManifest("axiom://Packages/Packages.json");
+        if (FileSystem::exists("app://AppManifest.json")) {
+            deserializeManifest("app://AppManifest.json");
         }
 
         initDefaultAssets();
@@ -102,8 +74,9 @@ namespace Axiom {
         globalVertexBuffer.reset();
         globalIndexBuffer.reset();
 
-        JSONValue root;
-        JSONValue assetsNode;
+        JSONValue axiomAssetNode;
+        JSONValue projectAssetNode;
+
         for (const auto& [uuid, meta] : registry) {
             if (!uuid.isValid() || meta.filePath.empty()) {
                 continue;
@@ -123,13 +96,45 @@ namespace Axiom {
             typeValue.setInt(static_cast<int>(meta.type));
             assetNode.setChild("Type", typeValue);
 
-            assetsNode.setChild(std::to_string(uuid), assetNode);
+            if (meta.filePath.generic_string().starts_with("axiom://")) {
+                axiomAssetNode.setChild(std::to_string(uuid), assetNode);
+            } else {
+                projectAssetNode.setChild(std::to_string(uuid), assetNode);
+            }
         }
 
-        root.setChild("Assets", assetsNode);
-        FileSystem::writeFile("axiom://AssetManifest.json", JSONSerializer::serialize(root));
+        JSONValue axiomRoot;
+        axiomRoot.setChild("Assets", axiomAssetNode);
+        FileSystem::writeFile("axiom://Packages/Packages.json", JSONSerializer::serialize(axiomRoot));
+        JSONValue projectRoot;
+        projectRoot.setChild("Assets", projectAssetNode);
+        FileSystem::writeFile("app://AppManifest.json", JSONSerializer::serialize(projectRoot));
 
         registry.clear();
+    }
+
+    void AssetManager::deserializeManifest(const std::filesystem::path& manifestPath) {
+        std::string manifestJsonString = FileSystem::readFileStr(manifestPath);
+        if (!manifestJsonString.empty()) {
+            JSONValue root = JSONSerializer::deserialize(manifestJsonString);
+            if (root.getType() == JSONValueType::Object && root.hasChild("Assets")) {
+                const JSONValue& assetsNode = root.getChild("Assets");
+                const auto& children = assetsNode.getChildren();
+
+                for (const auto& [uuidStr, node] : children) {
+                    uint64_t uuidValue = std::stoull(uuidStr);
+                    const auto& assetData = node.getChildren();
+                    std::string name = assetData.at("Name").getString();
+                    std::string rawPath = assetData.at("FilePath").getString();
+                    AssetType type = static_cast<AssetType>(assetData.at("Type").getInt());
+                    std::string cacheString = std::filesystem::path(rawPath).generic_string();
+
+                    AssetMetadata metaData = {.name = name, .type = type, .filePath = std::filesystem::path(cacheString)};
+                    registry[UUID(uuidValue)] = metaData;
+                    assetHandles[cacheString] = UUID(uuidValue);
+                }
+            }
+        }
     }
 
     void AssetManager::initDefaultAssets() {
@@ -172,18 +177,18 @@ namespace Axiom {
         commandBuffer->copyBufferToTexture(stagingBuffer.get(), defaultTexture.get(), defaultTextureSize, defaultTextureSize);
         Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
-        AssetMetadata defaultTextureMeta = {.name = "Default Texture", .type = AssetType::Texture, .filePath = ""};
+        AssetMetadata defaultTextureMeta = {.name = "BuiltIn.DefaultTexture", .type = AssetType::Texture, .filePath = ""};
         registry[defaultTextureHandle] = defaultTextureMeta;
-        loadedAssets[defaultTextureHandle] = std::make_shared<TextureAsset>(defaultMaterialHandle, "Default Texture", std::move(defaultTexture));
+        loadedAssets[defaultTextureHandle] = std::make_shared<TextureAsset>(defaultMaterialHandle, "BuiltIn.DefaultTexture", std::move(defaultTexture));
 
         // Default material
-        std::filesystem::path defaultShaderPath = "axiom://Shaders/BuiltIn.DefaultPBR.axs";
-        UUID defaultShaderHandle = importAsset("Default PBR Shader", defaultShaderPath, AssetType::Shader);
+        std::filesystem::path defaultShaderPath = "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs";
+        UUID defaultShaderHandle = importAsset("BuiltIn.DefaultPBR", defaultShaderPath, AssetType::Shader);
 
-        auto material = std::make_shared<MaterialAsset>(defaultMaterialHandle, "Default PBR", defaultShaderHandle, nullptr);
+        auto material = std::make_shared<MaterialAsset>(defaultMaterialHandle, "BuiltIn.DefaultPBR", defaultShaderHandle, nullptr);
         material->setAlbedoColor(Color::lightGray());
 
-        AssetMetadata defaultMaterialMeta = {.name = "Default Material", .type = AssetType::Material, .filePath = ""};
+        AssetMetadata defaultMaterialMeta = {.name = "BuiltIn.DefaultMaterial", .type = AssetType::Material, .filePath = ""};
         registry[defaultMaterialHandle] = defaultMaterialMeta;
         loadedAssets[defaultMaterialHandle] = material;
 

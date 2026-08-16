@@ -18,9 +18,9 @@ namespace Axiom {
         instance = this;
         AX_CORE_LOG_INFO("Application started: {0}", appInfo.name);
 
-        FileSystem::setWorkingDirectory(appInfo.workingDirectory);
         AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
-        FileSystem::mount("axiom://", "Packages/");
+        FileSystem::mount("axiom://", appInfo.engineWorkingDirectory);
+        FileSystem::mount("app://", appInfo.applicationWorkingDirectory);
         AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
 
         WindowProps windowProps{appInfo.name, 1280, 720};
