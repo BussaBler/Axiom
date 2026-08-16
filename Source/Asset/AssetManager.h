@@ -2,6 +2,7 @@
 #include "Asset.h"
 #include "Asset/MaterialAsset.h"
 #include "Asset/MeshAsset.h"
+#include "Asset/ShaderAsset.h"
 #include "Asset/UUID.h"
 #include "Core/Locator.h"
 #include "Core/Log.h"
@@ -101,6 +102,7 @@ namespace Axiom {
             return std::static_pointer_cast<MaterialAsset>(loadedAssets[defaultMaterialHandle]);
         }
         inline static std::shared_ptr<MeshAsset> getDefaultMesh() { return std::static_pointer_cast<MeshAsset>(loadedAssets[defaultMeshHandle]); }
+        inline static std::shared_ptr<ShaderAsset> getErrorShader() { return std::static_pointer_cast<ShaderAsset>(loadedAssets[errorShaderHandle]); }
 
       private:
         static void init();
@@ -123,8 +125,9 @@ namespace Axiom {
         static uint32_t currentVertexCount;
         static uint32_t currentIndexCount;
 
-        static const UUID defaultTextureHandle;
-        static const UUID defaultMaterialHandle;
-        static const UUID defaultMeshHandle;
+        inline static const UUID defaultTextureHandle = 0;
+        inline static const UUID defaultMaterialHandle = 1;
+        inline static const UUID defaultMeshHandle = 2;
+        inline static const UUID errorShaderHandle = 3;
     };
 } // namespace Axiom

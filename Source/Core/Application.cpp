@@ -6,22 +6,22 @@
 #include "Core/TaskManager.h"
 #include "Profiler.h"
 #include "Renderer/RenderGraph.h"
-
-#include <memory>
+#include "Utils/FileSystem.h"
 
 namespace Axiom {
     Application* Application::instance = nullptr;
 
     Application::Application(const ApplicationInfo& appInfo) {
         Log::init();
-        FileSystem::setWorkingDirectory(appInfo.workingDirectory);
-        AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
-
-        AX_CORE_LOG_INFO("Application started: {0}", appInfo.name);
-        AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
 
         AX_CORE_ASSERT(!instance, "Application already exists!");
         instance = this;
+        AX_CORE_LOG_INFO("Application started: {0}", appInfo.name);
+
+        FileSystem::setWorkingDirectory(appInfo.workingDirectory);
+        AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
+        FileSystem::mount("axiom://", "Packages/");
+        AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
 
         WindowProps windowProps{appInfo.name, 1280, 720};
         window = Window::create(windowProps);

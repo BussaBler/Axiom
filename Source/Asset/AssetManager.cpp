@@ -13,6 +13,7 @@
 #include "Math/Color.h"
 #include "MeshAsset.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/Shader.h"
 #include "ShaderAsset.h"
 #include "TextureAsset.h"
 #include "Utils/FileSystem.h"
@@ -34,12 +35,8 @@ namespace Axiom {
     uint32_t AssetManager::currentVertexCount = 0;
     uint32_t AssetManager::currentIndexCount = 0;
 
-    const UUID AssetManager::defaultTextureHandle = 1;
-    const UUID AssetManager::defaultMaterialHandle = 2;
-    const UUID AssetManager::defaultMeshHandle = 3;
-
     UUID AssetManager::importAsset(const std::string& name, const std::filesystem::path& path, AssetType type) {
-        std::string cacheString = path.lexically_normal().generic_string();
+        std::string cacheString = path.generic_string();
         if (assetHandles.find(cacheString) != assetHandles.end()) {
             return assetHandles[cacheString];
         }
@@ -68,7 +65,7 @@ namespace Axiom {
             .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
         globalIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
 
-        std::string manifestStr = FileSystem::readFileStr("Assets/AssetManifest.json");
+        std::string manifestStr = FileSystem::readFileStr("axiom://AssetManifest.json");
 
         if (!manifestStr.empty()) {
             JSONValue serializerValue = JSONSerializer::deserialize(manifestStr);
@@ -85,7 +82,7 @@ namespace Axiom {
                     std::string rawPath = assetData.at("FilePath").getString();
                     AssetType type = static_cast<AssetType>(assetData.at("Type").getInt());
 
-                    std::string cacheString = std::filesystem::path(rawPath).lexically_normal().generic_string();
+                    std::string cacheString = std::filesystem::path(rawPath).generic_string();
 
                     AssetMetadata meta = {.name = name, .type = type, .filePath = std::filesystem::path(cacheString)};
 
@@ -130,7 +127,7 @@ namespace Axiom {
         }
 
         root.setChild("Assets", assetsNode);
-        FileSystem::writeFile("Assets/AssetManifest.json", JSONSerializer::serialize(root));
+        FileSystem::writeFile("axiom://AssetManifest.json", JSONSerializer::serialize(root));
 
         registry.clear();
     }
@@ -180,7 +177,7 @@ namespace Axiom {
         loadedAssets[defaultTextureHandle] = std::make_shared<TextureAsset>(defaultMaterialHandle, "Default Texture", std::move(defaultTexture));
 
         // Default material
-        std::filesystem::path defaultShaderPath = "Assets/Shaders/BuiltIn.DefaultPBR.axs";
+        std::filesystem::path defaultShaderPath = "axiom://Shaders/BuiltIn.DefaultPBR.axs";
         UUID defaultShaderHandle = importAsset("Default PBR Shader", defaultShaderPath, AssetType::Shader);
 
         auto material = std::make_shared<MaterialAsset>(defaultMaterialHandle, "Default PBR", defaultShaderHandle, nullptr);
@@ -191,38 +188,38 @@ namespace Axiom {
         loadedAssets[defaultMaterialHandle] = material;
 
         // Default Mesh
-        std::vector<MeshVertex> cubeVertices = {// Front face (Z = 0.5)
-                                                {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-                                                {{0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-                                                {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-                                                {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-                                                // Back face (Z = -0.5)
-                                                {{0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
-                                                {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}},
-                                                {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
-                                                {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}},
-                                                // Left face (X = -0.5)
-                                                {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-                                                {{-0.5f, -0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-                                                {{-0.5f, 0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-                                                {{-0.5f, 0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-                                                // Right face (X = 0.5)
-                                                {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-                                                {{0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-                                                {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-                                                {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-                                                // Top face (Y = 0.5)
-                                                {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-                                                {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-                                                {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-                                                {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-                                                // Bottom face (Y = -0.5)
-                                                {{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
-                                                {{0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
-                                                {{0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
-                                                {{-0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}}};
+        const std::vector<MeshVertex> cubeVertices = {// Front face (Z = 0.5)
+                                                      {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+                                                      {{0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                                                      {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                                                      {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+                                                      // Back face (Z = -0.5)
+                                                      {{0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
+                                                      {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}},
+                                                      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
+                                                      {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}},
+                                                      // Left face (X = -0.5)
+                                                      {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                                                      {{-0.5f, -0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                                                      {{-0.5f, 0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+                                                      {{-0.5f, 0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                                                      // Right face (X = 0.5)
+                                                      {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                                                      {{0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                                                      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+                                                      {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                                                      // Top face (Y = 0.5)
+                                                      {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+                                                      {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                                                      {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                                                      {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+                                                      // Bottom face (Y = -0.5)
+                                                      {{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+                                                      {{0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+                                                      {{0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+                                                      {{-0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}}};
 
-        std::vector<uint32_t> cubeIndices = {
+        const std::vector<uint32_t> cubeIndices = {
             0,  1,  2,  2,  3,  0,  // Front
             4,  5,  6,  6,  7,  4,  // Back
             8,  9,  10, 10, 11, 8,  // Left
@@ -254,6 +251,72 @@ namespace Axiom {
         registry[defaultMeshHandle] = defaultMeshMeta;
 
         loadedAssets[defaultMeshHandle] = std::make_shared<MeshAsset>(defaultMeshHandle, "Default Mesh", 0, 0, cubeIndices.size());
+
+        // Error shader
+        const std::string errorShaderSource = R"glsl(
+        #type vertex
+        #version 460
+        #pragma shader_stage(vertex)
+
+        layout(location = 0) in vec3 aPosition;
+        layout(location = 1) in vec3 aNormal;
+        layout(location = 2) in vec2 aTexCoord;
+
+        layout(push_constant) uniform PushConstants {
+            uint viewportIndex;
+            uint instanceOffset;
+        } pushConstants;
+
+        struct GlobalData {
+            mat4 uView;
+            mat4 uProjection;
+            vec4 uCameraPosition;
+            vec4 uAmbientColor;
+            vec4 uDirectionalLightDir;
+            vec4 uDirectionalLightColor;
+        };
+
+        layout(std140, set = 0, binding = 0) uniform GlobalDataBuffer {
+            GlobalData viewports[10];
+        } globalDataBuffer;
+
+        struct MeshInstance {
+            mat4 model;
+        };
+
+        layout(std430, set = 1, binding = 1) readonly buffer InstanceBuffer {
+            MeshInstance instances[];
+        };
+
+        void main() {
+            MeshInstance instance = instances[gl_InstanceIndex + pushConstants.instanceOffset];
+
+            gl_Position = globalDataBuffer.viewports[pushConstants.viewportIndex].uProjection *
+                          globalDataBuffer.viewports[pushConstants.viewportIndex].uView *
+                          instance.model * vec4(aPosition, 1.0);
+        }
+
+        #type fragment
+        #version 460
+        #pragma shader_stage(fragment)
+
+        layout(location = 0) out vec4 oColor;
+
+        void main() {
+            oColor = vec4(1.0, 0.0, 1.0, 1.0);
+        }
+        )glsl";
+
+        size_t vertexPos = errorShaderSource.find("#type vertex");
+        size_t fragmentPos = errorShaderSource.find("#type fragment");
+
+        std::string vertexSource = errorShaderSource.substr(vertexPos + 13, fragmentPos - (vertexPos + 13));
+        std::string fragmentSource = errorShaderSource.substr(fragmentPos + 15, std::string::npos);
+
+        std::unique_ptr<Shader> errorShader = Locator::getRenderer()->createShader(vertexSource, fragmentSource);
+        AssetMetadata errorShaderMeta = {.name = "Error Shader", .type = AssetType::Shader, .filePath = ""};
+        registry[errorShaderHandle] = errorShaderMeta;
+        loadedAssets[errorShaderHandle] = std::make_shared<ShaderAsset>(errorShaderHandle, "Error Shader", std::move(errorShader));
     }
 
     std::shared_ptr<Asset> AssetManager::loadTexture(const std::filesystem::path& path, UUID uuid) {
@@ -289,16 +352,29 @@ namespace Axiom {
     }
 
     std::shared_ptr<Asset> AssetManager::loadShader(const std::filesystem::path& path, UUID uuid) {
+        loadedAssets[uuid] = getErrorShader();
+
         auto source = FileSystem::readFileStr(path);
+        if (source.empty()) {
+            AX_CORE_LOG_ERROR_ONCE("Failed to read shader file: {}", path.generic_string());
+            return loadedAssets[uuid];
+        }
 
         size_t vertexPos = source.find("#type vertex");
         size_t fragmentPos = source.find("#type fragment");
+        if (vertexPos == std::string::npos || fragmentPos == std::string::npos) {
+            AX_CORE_LOG_ERROR_ONCE("Shader {} is missing #type vertex or #type fragment tags.", path.generic_string());
+            return loadedAssets[uuid];
+        }
 
         std::string vertexSource = source.substr(vertexPos + 13, fragmentPos - (vertexPos + 13));
         std::string fragmentSource = source.substr(fragmentPos + 15, std::string::npos);
 
         std::unique_ptr<Shader> shader = Locator::getRenderer()->createShader(vertexSource, fragmentSource);
-        return std::make_shared<ShaderAsset>(uuid, path.filename().string(), std::move(shader));
+        if (shader->isCompiled()) {
+            loadedAssets[uuid] = std::make_shared<ShaderAsset>(uuid, path.filename().string(), std::move(shader));
+        }
+        return loadedAssets[uuid];
     }
 
     std::shared_ptr<Asset> AssetManager::loadMesh(const std::filesystem::path& path, UUID uuid) {

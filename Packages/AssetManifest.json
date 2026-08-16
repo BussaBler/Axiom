@@ -1,0 +1,39 @@
+{
+    "Assets": {
+        "9250765011157201620": {
+            "FilePath": "axiom://Shaders/BuiltIn.Skybox.axs",
+            "Type": 5,
+            "Name": "BuiltIn.Skybox"
+        },
+        "4213521996548641935": {
+            "FilePath": "axiom://Shaders/BuiltIn.WorldGrid.axs",
+            "Type": 5,
+            "Name": "BuiltIn.WorldGrid"
+        },
+        "7616252571849199842": {
+            "FilePath": "axiom://Shaders/BuiltIn.DefaultPBR.axs",
+            "Type": 5,
+            "Name": "Default PBR Shader"
+        },
+        "14638605947152156404": {
+            "FilePath": "axiom://Shaders/BuiltIn.UI.axs",
+            "Type": 5,
+            "Name": "BuiltIn.UI.Shader"
+        },
+        "1225971091854047086": {
+            "FilePath": "axiom://Shaders/BuiltIn.UI.Image.axs",
+            "Type": 5,
+            "Name": "BuiltIn.UIImage.Shader"
+        },
+        "13276194427675862164": {
+            "FilePath": "axiom://Shaders/BuiltIn.UI.Font.axs",
+            "Type": 5,
+            "Name": "BuiltIn.UIFont.Shader"
+        },
+        "2995053767169068967": {
+            "FilePath": "axiom://Shaders/BuiltIn.Gizmos.axs",
+            "Type": 5,
+            "Name": "BuiltIn.Gizmos"
+        }
+    }
+}

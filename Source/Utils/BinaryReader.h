@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <vector>
 
 namespace Axiom {
     class BinaryReader {
@@ -28,7 +29,11 @@ namespace Axiom {
         inline static bool isFlagBitSet(uint16_t flag, uint16_t index) { return (flag & (1 << index)) != 0; }
 
       private:
-        std::fstream fileStream;
+        inline void checkBounds(size_t bytesToRead) const { AX_CORE_ASSERT(cursor + bytesToRead <= buffer.size(), "Binary Reader out of bounds"); }
+
+      private:
+        std::vector<uint8_t> buffer;
+        size_t cursor = 0;
         bool isBigEndian;
         uint16_t swap16(uint16_t value) const;
         uint32_t swap32(uint32_t value) const;

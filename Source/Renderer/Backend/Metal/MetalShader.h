@@ -2,6 +2,11 @@
 #include "MetalUtils.h"
 #include "Renderer/Shader.h"
 
+#include <cstdint>
+#include <expected>
+#include <string>
+#include <vector>
+
 namespace Axiom {
     class MetalShader : public Shader {
       public:
@@ -12,8 +17,8 @@ namespace Axiom {
         inline MTL::Library* getFragmentLibrary() const { return fragmentLibrary; }
 
       private:
-        std::vector<uint32_t> compileGLSLToSPIRV(const std::string& source);
-        std::string compileSPIRVtoMSL(const std::vector<uint32_t>& spirv);
+        std::expected<std::vector<uint32_t>, std::string> compileGLSLToSPIRV(const std::string& source);
+        std::expected<std::string, std::string> compileSPIRVtoMSL(const std::vector<uint32_t>& spirv);
 
       private:
         MTL::Library* vertexLibrary = nullptr;

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace Axiom {
@@ -14,6 +15,9 @@ namespace Axiom {
 
     class FileSystem {
       public:
+        static void mount(const std::string& virtualPrefix, const std::filesystem::path& physicalPath);
+        static std::filesystem::path resolvePath(const std::filesystem::path& virtualPath);
+
         static bool exists(const std::filesystem::path& filePath);
         static std::vector<uint8_t> readFile(const std::filesystem::path& filePath);
         static std::string readFileStr(const std::filesystem::path& filePath);
@@ -29,5 +33,8 @@ namespace Axiom {
 
       private:
         static std::filesystem::path workingDirectory;
+        static std::unordered_map<std::string, std::filesystem::path> mounts;
+
+        inline static constexpr std::string ENGINE_VIRTUAL_PATH = "axiom://";
     };
 } // namespace Axiom

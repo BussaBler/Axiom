@@ -56,7 +56,7 @@ namespace Axiom {
         std::unique_ptr<Buffer> basicIndexBuffer = nullptr;
 
         static const uint32_t MAX_FONT_QUADS = 1000;
-        Font openSansFont{"Assets/Fonts/OpenSans-SemiBold.ttf"};
+        Font openSansFont{"axiom://Fonts/OpenSans-SemiBold.ttf"};
         std::shared_ptr<Texture> fontAtlasTexture = nullptr;
         std::shared_ptr<ShaderAsset> fontShader = nullptr;
         std::unique_ptr<Pipeline> fontPipeline = nullptr;

@@ -3,8 +3,8 @@
         {
             "Components": {
                 "MeshComponent": {
-                    "meshId": "783200770965254659",
-                    "meterialId": "2"
+                    "meshId": "2",
+                    "meterialId": "1"
                 },
                 "TransformComponent": {
                     "scale": {

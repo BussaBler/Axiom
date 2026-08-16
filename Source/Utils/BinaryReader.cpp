@@ -2,45 +2,53 @@
 
 #include "BinaryReader.h"
 
+#include "Utils/FileSystem.h"
+
+#include <cstring>
+
 namespace Axiom {
     BinaryReader::BinaryReader(const std::filesystem::path& filePath, bool bigEndian) : isBigEndian(bigEndian) {
-        fileStream.open(filePath, std::ios::binary | std::ios::in);
-        AX_CORE_ASSERT(fileStream.is_open(), "Failed to open file: {0}", filePath.string());
+        buffer = FileSystem::readFile(filePath);
     }
 
     void BinaryReader::skip(size_t bytes) {
-        fileStream.seekg(bytes, std::ios::cur);
+        cursor += bytes;
     }
 
     void BinaryReader::seek(size_t position) {
-        fileStream.seekg(position, std::ios::beg);
+        cursor = position;
     }
 
     size_t BinaryReader::tell() {
-        return static_cast<size_t>(fileStream.tellg());
+        return cursor;
     }
 
     uint8_t BinaryReader::readUInt8() {
-        uint8_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
-        return value;
+        checkBounds(1);
+        return buffer[cursor++];
     }
 
     uint16_t BinaryReader::readUInt16() {
+        checkBounds(2);
         uint16_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        std::memcpy(&value, &buffer[cursor], 2);
+        cursor += 2;
         return isBigEndian ? swap16(value) : value;
     }
 
     uint32_t BinaryReader::readUInt32() {
+        checkBounds(4);
         uint32_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        std::memcpy(&value, &buffer[cursor], 4);
+        cursor += 4;
         return isBigEndian ? swap32(value) : value;
     }
 
     uint64_t BinaryReader::readUInt64() {
+        checkBounds(8);
         uint64_t value;
-        fileStream.read(reinterpret_cast<char*>(&value), sizeof(value));
+        std::memcpy(&value, &buffer[cursor], 8);
+        cursor += 8;
         return isBigEndian ? swap64(value) : value;
     }
 
@@ -61,8 +69,9 @@ namespace Axiom {
     }
 
     std::string BinaryReader::readString(size_t length) {
-        std::string str(length, '\0');
-        fileStream.read(&str[0], length);
+        checkBounds(length);
+        std::string str(reinterpret_cast<const char*>(&buffer[cursor]), length);
+        cursor += length;
         return str;
     }
 
