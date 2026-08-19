@@ -9,6 +9,7 @@
 namespace Axiom {
     struct FileInfo {
         std::string name;
+        std::string extension;
         bool isDirectory;
         uint64_t size;
     };

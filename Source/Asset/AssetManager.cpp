@@ -19,6 +19,8 @@
 #include "Utils/FileSystem.h"
 #include "Utils/JSONSerializer.h"
 
+#include <string>
+
 namespace Axiom {
     std::unordered_map<UUID, AssetMetadata> AssetManager::registry;
     std::unordered_map<UUID, std::shared_ptr<Asset>> AssetManager::loadedAssets;
@@ -60,9 +62,6 @@ namespace Axiom {
         globalIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
 
         deserializeManifest("axiom://Packages/Packages.json");
-        if (FileSystem::exists("app://AppManifest.json")) {
-            deserializeManifest("app://AppManifest.json");
-        }
 
         initDefaultAssets();
     }
@@ -74,43 +73,38 @@ namespace Axiom {
         globalVertexBuffer.reset();
         globalIndexBuffer.reset();
 
-        JSONValue axiomAssetNode;
-        JSONValue projectAssetNode;
+        serializeManifest("axiom://Packages/Packages.json", "axiom://");
+
+        registry.clear();
+    }
+
+    void AssetManager::serializeManifest(const std::filesystem::path& manifestPath, const std::string& vfsFilter) {
+        JSONValue manifestRoot;
+        JSONValue manifestAssets;
 
         for (const auto& [uuid, meta] : registry) {
-            if (!uuid.isValid() || meta.filePath.empty()) {
+            if (!meta.filePath.generic_string().starts_with(vfsFilter)) {
                 continue;
             }
 
-            JSONValue assetNode;
+            JSONValue asset;
 
-            JSONValue nameValue;
-            nameValue.setString(meta.name);
-            assetNode.setChild("Name", nameValue);
+            JSONValue nameNode;
+            nameNode.setString(meta.name);
+            JSONValue filePathNode;
+            filePathNode.setString(meta.filePath.generic_string());
+            JSONValue typeNode;
+            typeNode.setInt(static_cast<int>(meta.type));
 
-            JSONValue filePathValue;
-            filePathValue.setString(meta.filePath.generic_string());
-            assetNode.setChild("FilePath", filePathValue);
+            asset.setChild("Name", nameNode);
+            asset.setChild("FilePath", filePathNode);
+            asset.setChild("Type", typeNode);
 
-            JSONValue typeValue;
-            typeValue.setInt(static_cast<int>(meta.type));
-            assetNode.setChild("Type", typeValue);
-
-            if (meta.filePath.generic_string().starts_with("axiom://")) {
-                axiomAssetNode.setChild(std::to_string(uuid), assetNode);
-            } else {
-                projectAssetNode.setChild(std::to_string(uuid), assetNode);
-            }
+            manifestAssets.setChild(std::to_string(uuid), asset);
         }
 
-        JSONValue axiomRoot;
-        axiomRoot.setChild("Assets", axiomAssetNode);
-        FileSystem::writeFile("axiom://Packages/Packages.json", JSONSerializer::serialize(axiomRoot));
-        JSONValue projectRoot;
-        projectRoot.setChild("Assets", projectAssetNode);
-        FileSystem::writeFile("app://AppManifest.json", JSONSerializer::serialize(projectRoot));
-
-        registry.clear();
+        manifestRoot.setChild("Assets", manifestAssets);
+        FileSystem::writeFile(manifestPath, JSONSerializer::serialize(manifestRoot));
     }
 
     void AssetManager::deserializeManifest(const std::filesystem::path& manifestPath) {

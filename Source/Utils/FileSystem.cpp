@@ -81,10 +81,10 @@ namespace Axiom {
         }
 
         for (const auto& entry : std::filesystem::directory_iterator(resolvedPath)) {
-            FileInfo fileInfo;
-            fileInfo.name = entry.path().filename().string();
-            fileInfo.isDirectory = entry.is_directory();
-            fileInfo.size = entry.is_regular_file() ? entry.file_size() : 0;
+            FileInfo fileInfo = {.name = entry.path().filename().string(),
+                                 .extension = entry.path().extension().string(),
+                                 .isDirectory = entry.is_directory(),
+                                 .size = entry.is_directory() ? 0 : entry.file_size()};
             files.push_back(fileInfo);
         }
         return files;

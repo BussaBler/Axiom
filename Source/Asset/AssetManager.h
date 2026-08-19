@@ -104,11 +104,12 @@ namespace Axiom {
         inline static std::shared_ptr<MeshAsset> getDefaultMesh() { return std::static_pointer_cast<MeshAsset>(loadedAssets[defaultMeshHandle]); }
         inline static std::shared_ptr<ShaderAsset> getErrorShader() { return std::static_pointer_cast<ShaderAsset>(loadedAssets[errorShaderHandle]); }
 
+        static void serializeManifest(const std::filesystem::path& manifestPath, const std::string& vfsFilter);
+        static void deserializeManifest(const std::filesystem::path& manisfestPath);
+
       private:
         static void init();
         static void shutdown();
-
-        static void deserializeManifest(const std::filesystem::path& manisfestPath);
 
         static void initDefaultAssets();
 

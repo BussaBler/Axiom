@@ -23,7 +23,7 @@ namespace Axiom {
         FileSystem::mount("app://", appInfo.applicationWorkingDirectory);
         AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
 
-        WindowProps windowProps{appInfo.name, 1280, 720};
+        WindowProps windowProps{appInfo.name, appInfo.width, appInfo.height};
         window = Window::create(windowProps);
         Locator::provideWindow(window.get());
         window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));

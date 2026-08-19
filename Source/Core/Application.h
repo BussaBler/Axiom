@@ -17,6 +17,7 @@
 #include "Utils/FileSystem.h"
 #include "Window.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -27,6 +28,7 @@ namespace Axiom {
         std::string name;
         std::filesystem::path engineWorkingDirectory;
         std::filesystem::path applicationWorkingDirectory;
+        uint32_t width, height;
     };
 
     class Application {
@@ -94,5 +96,5 @@ namespace Axiom {
         static Application* instance;
     };
 
-    Application* createApplication(const std::filesystem::path& axiomRootDir);
+    Application* createApplication(int argc, char** argv, const std::filesystem::path& axiomRootDir);
 } // namespace Axiom
