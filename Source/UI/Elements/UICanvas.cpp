@@ -2,10 +2,17 @@
 
 #include "UICanvas.h"
 
+#include "Event/Event.h"
+#include "Event/MouseEvent.h"
+#include "Math/Vec.h"
+#include "UI/Elements/UIContainer.h"
+#include "UI/Elements/UIElement.h"
+
 namespace Axiom {
     void UICanvas::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
         arrangedPosition = position;
         arrangedSize = size;
+        currentContext = context;
 
         float startX = position.x();
         float startY = position.y();
@@ -62,5 +69,49 @@ namespace Axiom {
 
             child->arrange(context, childPosition, childAllocSize);
         }
+    }
+
+    bool UICanvas::onEvent(Event& event) {
+        if (activePopup) {
+            EventDispatcher dispatcher(event);
+            dispatcher.dispatch<MouseButtonPressedEvent>([this](const MouseButtonPressedEvent& e) {
+                float mx = e.getMouseX();
+                float my = e.getMouseY();
+                Math::Vec2 pos = activePopup->getArrangedPosition();
+                Math::Vec2 size = activePopup->getArrangedSize();
+
+                if (mx < pos.x() || mx > pos.x() + size.x() || my < pos.y() || my > pos.y() + size.y()) {
+                    closePopup();
+                    return true;
+                }
+                return false;
+            });
+
+            if (event.isHandled()) {
+                return true;
+            }
+
+            if (activePopup->onEvent(event)) {
+                return true;
+            }
+        }
+        return UIContainer::onEvent(event);
+    }
+
+    void UICanvas::onRender(const UIContext& context, const Math::Rect& scissorRect) {
+        UIContainer::onRender(context, scissorRect);
+        if (activePopup) {
+            UIContext popupContext = context;
+            popupContext.layer++;
+            context.renderer->pushScissorRect(scissorRect, popupContext.layer);
+            activePopup->onRender(popupContext, scissorRect);
+            context.renderer->popScissorRect(popupContext.layer);
+        }
+    }
+
+    void UICanvas::openPopup(std::shared_ptr<UIElement> popup, Math::Vec2 position) {
+        activePopup = popup;
+        popupPos = position;
+        activePopup->arrange(currentContext, popupPos, activePopup->getDesiredSize(currentContext));
     }
 } // namespace Axiom

@@ -2,6 +2,8 @@
 #include "Event.h"
 #include "KeyCodes.h"
 
+#include <sstream>
+
 namespace Axiom {
     class MouseMovedEvent : public Event {
       public:
@@ -42,18 +44,21 @@ namespace Axiom {
     class MouseButtonEvent : public Event {
       public:
         KeyCode getMouseButton() const { return button; }
+        float getMouseX() const { return mouseX; }
+        float getMouseY() const { return mouseY; }
 
         EVENT_CLASS_CATEGORY(EventCategory::EventCategoryMouse | EventCategory::EventCategoryApplicationInput)
       protected:
-        MouseButtonEvent(KeyCode button) : button(button) {}
+        MouseButtonEvent(KeyCode button, float x, float y) : button(button), mouseX(x), mouseY(y) {}
 
       protected:
         KeyCode button;
+        float mouseX, mouseY;
     };
 
     class MouseButtonPressedEvent : public MouseButtonEvent {
       public:
-        MouseButtonPressedEvent(KeyCode button) : MouseButtonEvent(button) {}
+        MouseButtonPressedEvent(KeyCode button, float x, float y) : MouseButtonEvent(button, x, y) {}
 
         std::string toString() const override {
             std::stringstream ss;
@@ -66,7 +71,7 @@ namespace Axiom {
 
     class MouseButtonReleasedEvent : public MouseButtonEvent {
       public:
-        MouseButtonReleasedEvent(KeyCode button) : MouseButtonEvent(button) {}
+        MouseButtonReleasedEvent(KeyCode button, float x, float y) : MouseButtonEvent(button, x, y) {}
 
         std::string toString() const override {
             std::stringstream ss;

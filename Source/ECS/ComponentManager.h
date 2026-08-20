@@ -1,6 +1,7 @@
 #pragma once
 #include "EntityManager.h"
 
+#include <cstdint>
 #include <typeindex>
 #include <utility>
 #include <vector>
@@ -11,7 +12,7 @@ namespace Axiom {
         virtual ~IComponentArray() = default;
         virtual void entityDestroyed(uint32_t entityId) = 0;
         virtual bool hasEntity(uint32_t entityId) = 0;
-        virtual void* getComponentPtr(uint32_t entityId) = 0;
+        virtual void* getComponentData(uint32_t entityId) = 0;
     };
 
     template <typename T> class ComponentArray : public IComponentArray {
@@ -57,7 +58,7 @@ namespace Axiom {
             }
         }
         bool hasEntity(uint32_t entityId) override { return entityToIndexMap.find(entityId) != entityToIndexMap.end(); }
-        void* getComponentPtr(uint32_t entityId) override {
+        void* getComponentData(uint32_t entityId) override {
             if (entityToIndexMap.find(entityId) != entityToIndexMap.end()) {
                 return &componentArray[entityToIndexMap[entityId]];
             }
@@ -95,6 +96,12 @@ namespace Axiom {
 
             return componentTypes[type];
         }
+        void* getComponentData(std::type_index type, uint32_t entityId) {
+            if (componentArrays.find(type) != componentArrays.end()) {
+                return componentArrays[type]->getComponentData(entityId);
+            }
+            return nullptr;
+        }
 
         template <typename T> void addComponent(uint32_t entityId, T component) { getComponentArray<T>()->insertData(entityId, component); }
         template <typename T> void removeComponent(uint32_t entityId) { getComponentArray<T>()->removeData(entityId); }
@@ -107,7 +114,7 @@ namespace Axiom {
                 const auto& componentArray = pair.second;
 
                 if (componentArray->hasEntity(entityId)) {
-                    components.emplace_back(type, componentArray->getComponentPtr(entityId));
+                    components.emplace_back(type, componentArray->getComponentData(entityId));
                 }
             }
 

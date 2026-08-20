@@ -17,6 +17,7 @@ namespace Axiom {
         template <typename T> const T& getComponent() const { return registry->getComponent<T>(id); }
         std::vector<std::pair<std::type_index, void*>> getComponents() { return registry->getComponents(id); }
         template <typename T> void removeComponent() { registry->removeComponent<T>(id); }
+        void* getComponentData(std::type_index type) const { return registry->getComponentData(id, type); }
 
         inline uint32_t getId() const { return id; }
 

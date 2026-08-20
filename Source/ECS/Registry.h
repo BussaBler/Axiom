@@ -2,6 +2,9 @@
 #include "ComponentManager.h"
 #include "EntityManager.h"
 
+#include <cstdint>
+#include <typeindex>
+
 namespace Axiom {
     class View {
       public:
@@ -81,6 +84,7 @@ namespace Axiom {
         template <typename T> T& getComponent(uint32_t entityId) { return componentManager->getComponent<T>(entityId); }
         std::vector<std::pair<std::type_index, void*>> getComponents(uint32_t entityId) { return componentManager->getComponents(entityId); }
         std::bitset<32>& getComponentSignature(uint32_t entityId) { return entityManager->getComponentSignature(entityId); }
+        void* getComponentData(uint32_t entityId, std::type_index type) { return componentManager->getComponentData(type, entityId); }
 
         template <typename T> void registerComponent() { componentManager->registerComponent<T>(); }
         template <typename T> uint8_t getComponentType() { return componentManager->getComponentType<T>(); }
