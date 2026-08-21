@@ -25,15 +25,15 @@
             "Type": 5,
             "Name": "BuiltIn.UI.Shader"
         },
-        "5563698960615070661": {
-            "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.Image.axs",
-            "Type": 5,
-            "Name": "BuiltIn.UIImage.Shader"
-        },
         "3629371504142647110": {
             "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
             "Type": 5,
             "Name": "Default PBR Shader"
+        },
+        "5563698960615070661": {
+            "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.Image.axs",
+            "Type": 5,
+            "Name": "BuiltIn.UIImage.Shader"
         }
     }
 }
