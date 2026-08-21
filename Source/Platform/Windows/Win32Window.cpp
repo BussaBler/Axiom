@@ -45,12 +45,12 @@ namespace Axiom {
             break;
         }
         case WM_LBUTTONDOWN: {
-            MouseButtonPressedEvent e(KeyCode::LeftButton);
+            MouseButtonPressedEvent e(KeyCode::LeftButton, LOWORD(lParam), HIWORD(lParam));
             wData->eventCallback(e);
             break;
         }
         case WM_LBUTTONUP: {
-            MouseButtonReleasedEvent e(KeyCode::LeftButton);
+            MouseButtonReleasedEvent e(KeyCode::LeftButton, LOWORD(lParam), HIWORD(lParam));
             wData->eventCallback(e);
             break;
         }
