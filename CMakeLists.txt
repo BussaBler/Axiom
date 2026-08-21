@@ -13,7 +13,8 @@ set(SHADERC_ENABLE_SHARED_CRT ON CACHE BOOL "" FORCE)
 
 if (NOT EXISTS Vendor/Shaderc/third_party/spirv-tools/CMakeLists.txt)
   message(STATUS "[VENDOR] Syncing Shaderc dependencies...")
-  execute_process(COMMAND python3
+  find_package(Python3 REQUIRED)
+  execute_process(COMMAND ${_Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/Shaderc/utils/git-sync-deps
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Vendor/Shaderc
     RESULT_VARIABLE SYNC_RESULT
