@@ -44,7 +44,7 @@ list(FILTER ALL_SOURCES EXCLUDE REGEX "Source/Renderer/Backend/.*")
 
 if (WIN32)
   file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/Windows/*.cpp")
-  set(PLATFORM_DEFINE AX_PLATFORM_WINDOWS)
+  set(PLATFORM_DEFINE "AX_PLATFORM_WINDOWS")
 elseif(APPLE)
   file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/MacOS/*.cpp")
   file(GLOB_RECURSE OBJCXX_SOURCES "Source/Platform/MacOS/*.mm")

@@ -9,7 +9,7 @@
 #include <string>
 
 namespace Axiom {
-    static std::wstring uft8ToUtf16(const std::string& str) {
+    static std::wstring utf8ToUtf16(const std::string& str) {
         if (str.empty()) {
             return std::wstring();
         }
@@ -32,7 +32,7 @@ namespace Axiom {
                 pDialog->SetOptions(dwOptions | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_NOCHANGEDIR);
             }
 
-            std::wstring wTitle = Utf8ToUtf16(title);
+            std::wstring wTitle = utf8ToUtf16(title);
             if (!wTitle.empty()) {
                 pDialog->SetTitle(wTitle.c_str());
             }
@@ -72,7 +72,7 @@ namespace Axiom {
                 pDialog->SetOptions(dwOptions | FOS_FILEMUSTEXIST | FOS_FORCEFILESYSTEM | FOS_NOCHANGEDIR);
             }
 
-            std::wstring wTitle = Utf8ToUtf16(title);
+            std::wstring wTitle = utf8ToUtf16(title);
             if (!wTitle.empty()) {
                 pDialog->SetTitle(wTitle.c_str());
             }
@@ -81,7 +81,7 @@ namespace Axiom {
             COMDLG_FILTERSPEC filterSpec[] = {{L"Allowed Files", L"*.*"}};
 
             if (!filter.empty()) {
-                std::wstring wFilter = Utf8ToUtf16(filter);
+                std::wstring wFilter = utf8ToUtf16(filter);
 
                 if (wFilter.find(L'*') == std::wstring::npos) {
                     wFilterExt = L"*." + wFilter;
