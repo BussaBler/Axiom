@@ -4,10 +4,11 @@
 
 #include "CommandRegistry.h"
 #include "Renderer/RenderGraph.h"
-#include "UI/Elements/UIPanel.h"
-#include "UI/Elements/UIText.h"
-#include "UI/Elements/UITextInput.h"
-#include "UI/Elements/UIVerticalBox.h"
+#include "UI/UIPanel.h"
+#include "UI/UISlot.h"
+#include "UI/UIText.h"
+#include "UI/UITextInput.h"
+#include "UI/UIVerticalBox.h"
 #include "Window.h"
 
 namespace Axiom {
@@ -15,7 +16,6 @@ namespace Axiom {
         AX_CORE_LOG_DEBUG("ConsoleLayer attached");
         mainUiContext = {
             .renderer = Locator::getUIRenderer(),
-            .dpiScale = Locator::getWindow()->getWindowDPI() / 96.0f,
             .layer = 0,
         };
         uiRoot = std::make_shared<UICanvas>();
@@ -24,39 +24,29 @@ namespace Axiom {
         Color panelColor = Color::darkGray();
         panelColor.a() = 0.8f;
         consolePanel->setBackgroundColor(panelColor);
-        consolePanel->setPadding({10.0f, 10.0f, 10.0f, 10.0f});
-        consolePanel->setHorizontalAlignment(UIAlignment::Fill);
-        consolePanel->setVerticalAlignment(UIAlignment::Fill);
 
         auto verticalBox = std::make_shared<UIVerticalBox>();
-        verticalBox->setHorizontalAlignment(UIAlignment::Fill);
-        verticalBox->setVerticalAlignment(UIAlignment::Fill);
 
         auto consoleText = std::make_shared<UIText>("Console");
-        consoleText->setHorizontalAlignment(UIAlignment::Start);
-        consoleText->setVerticalAlignment(UIAlignment::Start);
-        consoleText->setMargin({0.0f, 0.0f, 0.0f, 5.0f});
-        verticalBox->addChild(consoleText);
+        verticalBox->addSlot(consoleText)
+            .setMargin({0.0f, 0.0f, 0.0f, 5.0f})
+            .setHorizontalAlignment(UIAlignment::Start)
+            .setVerticalAlignment(UIAlignment::Start);
 
         consoleScrollBox = std::make_shared<UIScrollBox>();
-        consoleScrollBox->setHorizontalAlignment(UIAlignment::Fill);
-        consoleScrollBox->setVerticalAlignment(UIAlignment::Fill);
-        verticalBox->addChild(consoleScrollBox);
+        verticalBox->addSlot(consoleScrollBox).setHorizontalAlignment(UIAlignment::Fill).setVerticalAlignment(UIAlignment::Fill);
 
         auto consoleInput = std::make_shared<UITextInput>();
-        consoleInput->setHorizontalAlignment(UIAlignment::Fill);
-        consoleInput->setVerticalAlignment(UIAlignment::End);
-        consoleInput->setValueGetter([this]() { return ""; });
-        consoleInput->setValueSetter([this](const std::string& input) {
+        consoleInput->setValueGetter([this]() { return ""; }).setValueSetter([this](const std::string& input) {
             consoleInputBuffer = input;
             CommandRegistry::executeCommand(input);
             consoleInputBuffer.clear();
             shouldRefreshHistory = true;
         });
-        verticalBox->addChild(consoleInput);
+        verticalBox->addSlot(consoleInput).setHorizontalAlignment(UIAlignment::Fill).setVerticalAlignment(UIAlignment::Start);
 
-        consolePanel->addChild(verticalBox);
-        uiRoot->addChild(consolePanel);
+        consolePanel->addSlot(verticalBox).setHorizontalAlignment(UIAlignment::Fill).setVerticalAlignment(UIAlignment::Fill);
+        uiRoot->addSlot(consolePanel).setHorizontalAlignment(UIAlignment::Fill).setVerticalAlignment(UIAlignment::Fill);
     }
 
     void ConsoleLayer::onDetach() {
@@ -65,8 +55,10 @@ namespace Axiom {
     void ConsoleLayer::onUpdate() {
         if (isOpen) {
             Math::Vec2 winSize = Math::Vec2(Locator::getWindow()->getWidth(), Locator::getWindow()->getHeight());
-            uiRoot->arrange(mainUiContext, Math::Vec2(0, winSize.y() * (1.0f - CONSOLE_HEIGHT_RATIO)),
-                            Math::Vec2(winSize.x(), winSize.y() * CONSOLE_HEIGHT_RATIO));
+            Math::Vec2 consolePos = Math::Vec2(0.0f, winSize.y() * (1.0f - CONSOLE_HEIGHT_RATIO));
+            Math::Vec2 consoleSize = Math::Vec2(winSize.x(), winSize.y() * CONSOLE_HEIGHT_RATIO);
+
+            uiRoot->updateLayout(mainUiContext, consolePos, consoleSize);
         }
         if (shouldRefreshHistory) {
             refreshConsoleHistory();
@@ -100,13 +92,13 @@ namespace Axiom {
     }
 
     void ConsoleLayer::refreshConsoleHistory() {
-        consoleScrollBox->clearChildren();
+        consoleScrollBox->clearSlots();
         for (const auto& entry : CommandRegistry::getCommandHistory()) {
             auto text = std::make_shared<UIText>(entry);
-            text->setHorizontalAlignment(UIAlignment::Fill);
-            text->setVerticalAlignment(UIAlignment::Start);
-            text->setMargin({0.0f, 0.0f, 0.0f, 2.0f});
-            consoleScrollBox->addChild(text);
+            consoleScrollBox->addSlot(text)
+                .setHorizontalAlignment(UIAlignment::Fill)
+                .setVerticalAlignment(UIAlignment::Start)
+                .setMargin({0.0f, 0.0f, 0.0f, 2.0f});
         }
     }
 

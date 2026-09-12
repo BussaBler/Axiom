@@ -4,6 +4,8 @@
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
+
+#include <cstdint>
 #define UNICODE
 #define _UNICODE
 #define NOMINMAX
@@ -19,6 +21,8 @@ namespace Axiom {
         void onUpdate() override;
         uint32_t getWidth() const override { return data.width; }
         uint32_t getHeight() const override { return data.height; }
+        uint32_t getFramebufferWidth() const override { return data.framebufferWidth; }
+        uint32_t getFramebufferHeight() const override { return data.framebufferHeight; }
 
         void setEventCallback(const EventCallback& callback) override { data.eventCallback = callback; }
         void setVSync(bool enabled) override;

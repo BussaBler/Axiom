@@ -1,8 +1,11 @@
+#include "Event/ApplicationEvent.h"
 #include "axpch.h"
 #include "MacOSWindow.h"
 #include <Cocoa/Cocoa.h>
+#include <Foundation/Foundation.h>
 #include <QuartzCore/QuartzCore.h>
 #include <Carbon/Carbon.h>
+#include <cstdint>
 
 namespace Axiom {
     static KeyCode macOSKeyCodeToAxiomKeyCode(unsigned short macKeyCode) {
@@ -358,7 +361,15 @@ namespace Axiom {
         data.width = properties.width;
         data.height = properties.height;
 
-        AX_CORE_LOG_INFO("Creating MacOS window {0} ({1}, {2})", data.title, data.width, data.height);
+        NSScreen* mainScreen = [NSScreen mainScreen];
+        CGFloat scaleFactor = mainScreen ? [mainScreen backingScaleFactor] : 1.0;
+        uint32_t systemDpi = static_cast<uint32_t>(scaleFactor * 96.0);
+        data.framebufferWidth = static_cast<uint32_t>(data.width * scaleFactor);
+        data.framebufferHeight = static_cast<uint32_t>(data.height * scaleFactor);
+
+        AX_CORE_LOG_INFO("Creating MacOS window {0} (Logical: {1}x{2} | Physical: {3}x{4} | DPI: {5})",
+                             data.title, data.width, data.height,
+                             data.framebufferWidth, data.framebufferHeight, systemDpi);
 
         NSApplication* app = [NSApplication sharedApplication];
         [app setActivationPolicy:NSApplicationActivationPolicyRegular];
@@ -381,13 +392,10 @@ namespace Axiom {
         view = [[MacOSWindowView alloc] initWithFrame:frame];
         view.wData = &data;
 
-        CGFloat scaleFactor = [window backingScaleFactor];
 
         [view setWantsLayer:YES];
 
         view.layer.contentsScale = scaleFactor;
-        data.framebufferWidth = static_cast<uint32_t>(data.width * scaleFactor);
-        data.framebufferHeight = static_cast<uint32_t>(data.height * scaleFactor);
 
         [window setContentView:view];
         [window setAcceptsMouseMovedEvents:YES];
@@ -418,6 +426,13 @@ namespace Axiom {
 
     void MacOSWindow::setVSync(bool enabled) {
 
+    }
+
+    void MacOSWindow::setSize(uint32_t width, uint32_t height) {
+        [window setContentSize:NSMakeSize(width, height)];
+        [window center];
+        WindowResizeEvent event(width, height);
+        data.eventCallback(event);
     }
 
     uint32_t MacOSWindow::getWindowDPI() const {

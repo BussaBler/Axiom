@@ -2,8 +2,8 @@
 #include "Event/KeyEvent.h"
 #include "Layer.h"
 #include "Renderer/RenderGraph.h"
-#include "UI/Elements/UICanvas.h"
-#include "UI/Elements/UIScrollBox.h"
+#include "UI/UICanvas.h"
+#include "UI/UIScrollBox.h"
 
 #include <memory>
 #include <string>

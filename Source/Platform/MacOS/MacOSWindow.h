@@ -5,6 +5,8 @@
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 
+#include <cstdint>
+
 #if defined(__OBJC__)
 @class NSWindow;
 @class MacOSWindowDelegate;
@@ -34,6 +36,7 @@ namespace Axiom {
 
         void setVSync(bool enabled) override;
         bool isVSync() const override { return data.vSync; }
+        void setSize(uint32_t width, uint32_t height) override;
 
         void* getNativeWindow() override { return window; }
         void* getNativeDisplay() const override { return nullptr; }

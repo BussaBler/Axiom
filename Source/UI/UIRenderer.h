@@ -22,9 +22,9 @@ namespace Axiom {
         void addBasicQuad(const Math::Vec2& pos, const Math::Vec2& size, const Color& color, const Math::Vec4& radii = Math::Vec4::zero(), uint8_t layer = 0);
         void addDebugRect(const Math::Vec2& pos, const Math::Vec2& size, const Color& color);
         void addFontQuad(const Math::Vec2& pos, const Math::Vec2& size, const Math::Vec2& uv0, const Math::Vec2& uv1, const Color& color, uint8_t layer = 0);
-        void addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color, uint8_t layer = 0);
-        float calculateTextWidth(const std::string& text, float fontSize, float dpiScale);
-        float calculateTextHeight(float fontSize, float dpiScale);
+        void addText(const std::string& text, const Math::Vec2& pos, float fontSize, const Color& color, uint8_t layer = 0);
+        float calculateTextWidth(const std::string& text, float fontSize);
+        float calculateTextHeight(float fontSize);
         void addImageQuad(const Math::Vec2& pos, const Math::Vec2& size, Texture* texture, uint8_t layer = 0);
 
         void pushScissorRect(const Math::Rect& rect, uint8_t layer = 0);

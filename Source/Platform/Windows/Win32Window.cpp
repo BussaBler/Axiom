@@ -2,9 +2,20 @@
 
 #include "Win32Window.h"
 
+#include "Event/ApplicationEvent.h"
+
+#include <cstdint>
+
 namespace Axiom {
     LRESULT CALLBACK Win32Window::windowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         WindowData* wData = reinterpret_cast<WindowData*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+        float dpiScale = 1.0f;
+        if (wData) {
+            dpiScale = GetDpiForWindow(hWnd) / 96.0f;
+            if (dpiScale <= 0.0f) {
+                dpiScale = 1.0f;
+            }
+        }
 
         switch (uMsg) {
         case WM_CLOSE: {
@@ -14,11 +25,16 @@ namespace Axiom {
             break;
         }
         case WM_SIZE: {
-            WindowResizeEvent e(LOWORD(lParam), HIWORD(lParam));
-            wData->width = LOWORD(lParam);
-            wData->height = HIWORD(lParam);
-            wData->framebufferWidth = LOWORD(lParam);
-            wData->framebufferHeight = HIWORD(lParam);
+            uint32_t fbWidth = LOWORD(lParam);
+            uint32_t fbHeight = HIWORD(lParam);
+
+            wData->framebufferWidth = fbWidth;
+            wData->framebufferHeight = fbHeight;
+
+            wData->width = static_cast<uint32_t>(fbWidth / dpiScale);
+            wData->height = static_cast<uint32_t>(fbHeight / dpiScale);
+
+            WindowResizeEvent e(fbWidth, fbHeight);
             if (wData->eventCallback)
                 wData->eventCallback(e);
             break;
@@ -45,17 +61,23 @@ namespace Axiom {
             break;
         }
         case WM_LBUTTONDOWN: {
-            MouseButtonPressedEvent e(KeyCode::LeftButton, LOWORD(lParam), HIWORD(lParam));
+            float logicalX = static_cast<float>(LOWORD(lParam)) / dpiScale;
+            float logicalY = static_cast<float>(HIWORD(lParam)) / dpiScale;
+            MouseButtonPressedEvent e(KeyCode::LeftButton, logicalX, logicalY);
             wData->eventCallback(e);
             break;
         }
         case WM_LBUTTONUP: {
-            MouseButtonReleasedEvent e(KeyCode::LeftButton, LOWORD(lParam), HIWORD(lParam));
+            float logicalX = static_cast<float>(LOWORD(lParam)) / dpiScale;
+            float logicalY = static_cast<float>(HIWORD(lParam)) / dpiScale;
+            MouseButtonReleasedEvent e(KeyCode::LeftButton, logicalX, logicalY);
             wData->eventCallback(e);
             break;
         }
         case WM_MOUSEMOVE: {
-            MouseMovedEvent e(LOWORD(lParam), HIWORD(lParam));
+            float logicalX = static_cast<float>(LOWORD(lParam)) / dpiScale;
+            float logicalY = static_cast<float>(HIWORD(lParam)) / dpiScale;
+            MouseMovedEvent e(logicalX, logicalY);
             wData->eventCallback(e);
             break;
         }
@@ -82,13 +104,23 @@ namespace Axiom {
     }
 
     void Win32Window::init(const WindowProps& props) {
+        UINT systemDpi = GetDpiForSystem();
+        float dpiScale = systemDpi / 96.0f;
+        if (dpiScale < 0.0f) {
+            dpiScale = 1.0f;
+        }
+
+        uint32_t physicalWidth = static_cast<uint32_t>(props.width * dpiScale);
+        uint32_t physicalHeight = static_cast<uint32_t>(props.height * dpiScale);
+
         data.title = props.title;
         data.width = props.width;
         data.height = props.height;
-        data.framebufferWidth = props.width;
-        data.framebufferHeight = props.height;
+        data.framebufferWidth = physicalWidth;
+        data.framebufferHeight = physicalHeight;
 
-        AX_CORE_LOG_INFO("Creating a Win32 window {0} ({1}, {2})", data.title, data.width, data.height);
+        AX_CORE_LOG_INFO("Creating Win32 window {0} (Logical: {1}x{2} | Physical: {3}x{4} | DPI: {5})", data.title, data.width, data.height,
+                         data.framebufferWidth, data.framebufferHeight, systemDpi);
 
         hInstance = GetModuleHandle(nullptr);
         const wchar_t* className = L"AxiomWindowClass";
@@ -102,8 +134,8 @@ namespace Axiom {
         RegisterClass(&wndClass);
 
         DWORD style = WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU | WS_OVERLAPPEDWINDOW;
-        RECT windowRect = {0, 0, static_cast<LONG>(data.width), static_cast<LONG>(data.height)};
-        AdjustWindowRect(&windowRect, style, FALSE);
+        RECT windowRect = {0, 0, static_cast<LONG>(data.framebufferWidth), static_cast<LONG>(data.framebufferHeight)};
+        AdjustWindowRectExForDpi(&windowRect, style, FALSE, 0, systemDpi);
 
         window = CreateWindowEx(0, className, std::wstring(data.title.begin(), data.title.end()).c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT,
                                 windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, nullptr, nullptr, hInstance, nullptr);

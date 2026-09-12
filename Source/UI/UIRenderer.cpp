@@ -105,10 +105,11 @@ namespace Axiom {
         currentBatch.vertexCount += 4;
     }
 
-    void UIRenderer::addText(const std::string& text, const Math::Vec2& pos, float fontSize, float dpiScale, const Color& color, uint8_t layer) {
+    void UIRenderer::addText(const std::string& text, const Math::Vec2& pos, float fontSize, const Color& color, uint8_t layer) {
         const auto& asciiAtlas = openSansFont.getAsciiAtlas();
 
-        float pixelSize = fontSize * dpiScale;
+        float pixelSize = fontSize * (96.0f / 72.0f);
+
         float fontScale = pixelSize / asciiAtlas.unitsPerEm;
         float lineSpacing = pixelSize * 1.2f;
 
@@ -175,8 +176,8 @@ namespace Axiom {
         renderLayers[layer].fontRenderBatches.push_back({0, 0, scissorRectStack.empty() ? Math::Rect() : scissorRectStack.top()});
     }
 
-    float UIRenderer::calculateTextWidth(const std::string& text, float fontSize, float dpiScale) {
-        float pixelSize = fontSize * dpiScale;
+    float UIRenderer::calculateTextWidth(const std::string& text, float fontSize) {
+        float pixelSize = fontSize * (96.0f / 72.0f);
         float fontScale = pixelSize / openSansFont.getAsciiAtlas().unitsPerEm;
 
         float maxWidth = 0.0f;
@@ -203,9 +204,9 @@ namespace Axiom {
         return maxWidth;
     }
 
-    float UIRenderer::calculateTextHeight(float fontSize, float dpiScale) {
+    float UIRenderer::calculateTextHeight(float fontSize) {
         const auto& asciiAtlas = openSansFont.getAsciiAtlas();
-        float pixelSize = fontSize * dpiScale;
+        float pixelSize = fontSize * (96.0f / 72.0f);
         float fontScale = pixelSize / asciiAtlas.unitsPerEm;
 
         float ascender = asciiAtlas.ascender != 0 ? asciiAtlas.ascender : asciiAtlas.unitsPerEm * 0.8f;

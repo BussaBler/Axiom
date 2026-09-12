@@ -1,12 +1,12 @@
 #include "axpch.h"
 
-#include "UICanvas.h"
+#include "UI/UICanvas.h"
 
+#include "Event/ApplicationEvent.h"
 #include "Event/Event.h"
 #include "Event/MouseEvent.h"
 #include "Math/Vec.h"
-#include "UI/Elements/UIContainer.h"
-#include "UI/Elements/UIElement.h"
+#include "UI/UIContainer.h"
 
 namespace Axiom {
     void UICanvas::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
@@ -14,69 +14,82 @@ namespace Axiom {
         arrangedSize = size;
         currentContext = context;
 
-        float startX = position.x();
-        float startY = position.y();
-        float availableWidth = size.x();
-        float availableHeight = size.y();
+        float startX = position.x() + padding.left;
+        float startY = position.y() + padding.top;
+        float availableWidth = size.x() - padding.left - padding.right;
+        float availableHeight = size.y() - padding.top - padding.bottom;
 
-        for (const auto& child : children) {
-            float childX = startX;
-            float childY = startY;
-            float childWidth = availableWidth;
-            float childHeight = availableHeight;
+        for (const auto& slot : slots) {
+            float slotX = startX;
+            float slotY = startY;
+            float finalWidth = availableWidth;
+            float finalHeight = availableHeight;
 
-            float finalWidth = childWidth;
-            float finalHeight = childHeight;
+            Math::Vec2 slotDesiredSize = slot.content->getDesiredSize(context);
 
-            switch (child->getHorizontalAlignment()) {
+            if (slot.fixedSize.x() > 0) {
+                slotDesiredSize.x() = slot.fixedSize.x();
+            }
+            if (slot.fixedSize.y() > 0) {
+                slotDesiredSize.y() = slot.fixedSize.y();
+            }
+
+            switch (slot.horizontalAlignment) {
             case UIAlignment::Fill:
                 break;
             case UIAlignment::Start:
-                finalWidth = child->getDesiredSize(context).x();
+                finalWidth = slotDesiredSize.x();
                 break;
             case UIAlignment::Center:
-                finalWidth = child->getDesiredSize(context).x();
-                childX = startX + (availableWidth / 2.0f) - (finalWidth / 2.0f);
+                finalWidth = slotDesiredSize.x();
+                slotX = startX + (availableWidth / 2.0f) - (finalWidth / 2.0f);
                 break;
             case UIAlignment::End:
-                finalWidth = child->getDesiredSize(context).x();
-                childX = startX + availableWidth - finalWidth;
-                break;
-            default:
+                finalWidth = slotDesiredSize.x();
+                slotX = startX + availableWidth - finalWidth;
                 break;
             }
 
-            switch (child->getVerticalAlignment()) {
+            switch (slot.verticalAlignment) {
             case UIAlignment::Fill:
                 break;
             case UIAlignment::Start:
-                finalHeight = child->getDesiredSize(context).y();
+                finalHeight = slotDesiredSize.y();
                 break;
             case UIAlignment::Center:
-                finalHeight = child->getDesiredSize(context).y();
-                childY = startY + (availableHeight / 2.0f) - (finalHeight / 2.0f);
+                finalHeight = slotDesiredSize.y();
+                slotY = startY + (availableHeight / 2.0f) - (finalHeight / 2.0f);
                 break;
             case UIAlignment::End:
-                finalHeight = child->getDesiredSize(context).y();
-                childY = startY + availableHeight - finalHeight;
-                break;
-            default:
+                finalHeight = slotDesiredSize.y();
+                slotY = startY + availableHeight - finalHeight;
                 break;
             }
 
-            Math::Vec2 childPosition(childX, childY);
-            Math::Vec2 childAllocSize(finalWidth, finalHeight);
-
-            child->arrange(context, childPosition, childAllocSize);
+            slot.content->arrange(context, Math::Vec2(slotX, slotY), Math::Vec2(finalWidth, finalHeight));
         }
     }
 
     bool UICanvas::onEvent(Event& event) {
+        if (event.isHandled()) {
+            return true;
+        }
+
+        EventDispatcher dispatcher(event);
+        dispatcher.dispatch<WindowResizeEvent>([this](const WindowResizeEvent& e) {
+            invalidateLayout();
+            return false;
+        });
+
         if (activePopup) {
-            EventDispatcher dispatcher(event);
+            if (activePopup->onEvent(event)) {
+                return true;
+            }
+
             dispatcher.dispatch<MouseButtonPressedEvent>([this](const MouseButtonPressedEvent& e) {
                 float mx = e.getMouseX();
                 float my = e.getMouseY();
+
                 Math::Vec2 pos = activePopup->getArrangedPosition();
                 Math::Vec2 size = activePopup->getArrangedSize();
 
@@ -86,15 +99,8 @@ namespace Axiom {
                 }
                 return false;
             });
-
-            if (event.isHandled()) {
-                return true;
-            }
-
-            if (activePopup->onEvent(event)) {
-                return true;
-            }
         }
+
         return UIContainer::onEvent(event);
     }
 
@@ -109,7 +115,7 @@ namespace Axiom {
         }
     }
 
-    void UICanvas::openPopup(std::shared_ptr<UIElement> popup, Math::Vec2 position) {
+    void UICanvas::openPopup(std::shared_ptr<UIElement> popup, const Math::Vec2& position) {
         activePopup = popup;
         popupPos = position;
         activePopup->arrange(currentContext, popupPos, activePopup->getDesiredSize(currentContext));

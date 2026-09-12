@@ -2,6 +2,8 @@
 #include "Event/Event.h"
 #include "Log.h"
 
+#include <cstdint>
+
 namespace Axiom {
     struct WindowProps {
         std::string title;
@@ -29,6 +31,7 @@ namespace Axiom {
         // TODO: probably remove the v sync functions and just have it as a setting in the renderer or something, not sure yet
         virtual void setVSync(bool enabled) = 0;
         virtual bool isVSync() const = 0;
+        virtual void setSize(uint32_t width, uint32_t height) = 0;
 
         virtual void* getNativeWindow() = 0;
         virtual void* getNativeDisplay() const = 0;

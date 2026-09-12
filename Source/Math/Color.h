@@ -4,7 +4,8 @@
 namespace Axiom {
     class Color {
       public:
-        Color(float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f) : rgba(r, g, b, a) {}
+        Color(float value, float a = 1.0f) : rgba(value, value, value, a) {}
+        Color(float r, float g, float b, float a = 1.0f) : rgba(r, g, b, a) {}
         Color(const Math::Vec4& vec) : rgba(vec) {}
         ~Color() = default;
 
@@ -17,7 +18,7 @@ namespace Axiom {
         inline float b() const { return rgba.b(); }
         inline float a() const { return rgba.a(); }
 
-        static Color white() { return Color(); }
+        static Color white() { return Color(1.0f); }
         static Color black() { return Color(0.0f, 0.0f, 0.0f); }
         static Color red() { return Color(1.0f, 0.0f, 0.0f); }
         static Color green() { return Color(0.0f, 1.0f, 0.0f); }
