@@ -80,15 +80,56 @@ namespace Axiom {
                            resourceData.viewportIndex);
             };
         });
+        injectRenderFeatures(RenderInjectionPoint::AfterOpaque, renderGraph, context);
 
+        injectRenderFeatures(RenderInjectionPoint::BeforeSkybox, renderGraph, context);
         if (context.shouldDrawSkybox) {
-            // skyboxPass(sceneRenderPassData);
+            renderGraph.addPass<DefaultPassData>("Skybox Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
+                const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
+                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                passData.renderTarget = resourceData.colorBuffer;
+                passData.depthTarget = resourceData.depthBuffer;
+                passData.scene = context.targetScene;
+
+                return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
+                    const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
+                    skyboxPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
+                };
+            });
         }
+        injectRenderFeatures(RenderInjectionPoint::AfterSkybox, renderGraph, context);
+
         if (context.shouldDrawWorldGrid) {
-            // worldGridPass(sceneRenderPassData);
+            renderGraph.addPass<DefaultPassData>("World Grid Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
+                const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
+                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                passData.renderTarget = resourceData.colorBuffer;
+                passData.depthTarget = resourceData.depthBuffer;
+                passData.scene = context.targetScene;
+
+                return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
+                    const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
+                    worldGridPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
+                };
+            });
         }
         if (context.shouldDrawGizmos) {
-            // gizmosPass(sceneRenderPassData, renderView.gizmosPosition);
+            renderGraph.addPass<DefaultPassData>("Gizmos Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
+                const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
+                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                passData.renderTarget = resourceData.colorBuffer;
+                passData.depthTarget = resourceData.depthBuffer;
+                passData.scene = context.targetScene;
+
+                return [this, &renderGraph, &context](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
+                    const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
+                    gizmosPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
+                               context.gizmosPosition);
+                };
+            });
         }
 
         renderGraph.addPass<DefaultPassData>("Prepare Present Pass", [&renderGraph](PassBuilder& builder, DefaultPassData& passData) {

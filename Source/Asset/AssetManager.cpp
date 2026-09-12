@@ -19,7 +19,10 @@
 #include "Utils/FileSystem.h"
 #include "Utils/JSONSerializer.h"
 
+#include <fstream>
+#include <iostream>
 #include <string>
+#include <system_error>
 
 namespace Axiom {
     std::unordered_map<UUID, AssetMetadata> AssetManager::registry;
@@ -380,7 +383,9 @@ namespace Axiom {
         loadedAssets[uuid] = getDefaultMesh();
 
         std::thread([path, uuid]() {
-            auto modelResult = AxModelLoader::loadModel(path);
+            std::fstream test(path);
+
+            auto modelResult = AxModelLoader::loadModel(FileSystem::resolvePath(path));
             if (!modelResult.has_value()) {
                 AX_CORE_LOG_ERROR_ONCE("Failed to load mesh {}", modelResult.error());
                 return;
