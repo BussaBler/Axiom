@@ -284,9 +284,8 @@ namespace Axiom {
         gizmosRenderPass.colorAttachmentCount = 1;
 
         UUID gizmosShaderHandle = AssetManager::importAsset("BuiltIn.Gizmos", "axiom://Packages/Shaders/BuiltIn.Gizmos.axs", AssetType::Shader);
-        UUID gizmosDefaultMeshHandle = AssetManager::importAsset("BuiltIn.Gizmos.Arrow", "axiom://Packages/Models/Arrow.obj", AssetType::Mesh);
+        gizmosMeshHandle = AssetManager::importAsset("BuiltIn.Gizmos.Arrow", "axiom://Packages/Models/Arrow.obj", AssetType::Mesh);
         std::shared_ptr<ShaderAsset> gizmosShader = AssetManager::getAsset<ShaderAsset>(gizmosShaderHandle);
-        gizmosDefaultMesh = AssetManager::getAsset<MeshAsset>(gizmosDefaultMeshHandle);
 
         std::vector<VertexBindingDescription> vertexBindings = {{.binding = 0, .stride = sizeof(MeshVertex), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> vertexAttributes = {
@@ -486,6 +485,8 @@ namespace Axiom {
         gizmosRenderPass.width = renderTargetSize.x();
         gizmosRenderPass.height = renderTargetSize.y();
 
+        std::shared_ptr<MeshAsset> gizmosMesh = AssetManager::getAsset<MeshAsset>(gizmosMeshHandle);
+
         commandBuffer->beginRendering(gizmosRenderPass);
         commandBuffer->bindPipeline(gizmosPipeline.get());
         commandBuffer->bindVertexBuffers({AssetManager::getGlobalVertexBuffer()});
@@ -498,17 +499,17 @@ namespace Axiom {
         pushConstants.model = Math::Mat4::model(gizmoPosition, Math::Vec3::zero(), Math::Vec3(scale));
         pushConstants.color = Color::green();
         commandBuffer->bindPushConstants(&pushConstants, sizeof(PushConstants));
-        commandBuffer->drawIndexed(gizmosDefaultMesh->getIndexCount(), 1, gizmosDefaultMesh->getIndexOffset(), gizmosDefaultMesh->getVertexOffset(), 0);
+        commandBuffer->drawIndexed(gizmosMesh->getIndexCount(), 1, gizmosMesh->getIndexOffset(), gizmosMesh->getVertexOffset(), 0);
         // X axis
         pushConstants.model = Math::Mat4::model(gizmoPosition, Math::Vec3(0.0f, 0.0f, Math::PI * -0.5f), Math::Vec3(scale));
         pushConstants.color = Color::red();
         commandBuffer->bindPushConstants(&pushConstants, sizeof(PushConstants));
-        commandBuffer->drawIndexed(gizmosDefaultMesh->getIndexCount(), 1, gizmosDefaultMesh->getIndexOffset(), gizmosDefaultMesh->getVertexOffset(), 0);
+        commandBuffer->drawIndexed(gizmosMesh->getIndexCount(), 1, gizmosMesh->getIndexOffset(), gizmosMesh->getVertexOffset(), 0);
         // Z axis
         pushConstants.model = Math::Mat4::model(gizmoPosition, Math::Vec3(Math::PI * 0.5f, 0.0f, 0.0f), Math::Vec3(scale));
         pushConstants.color = Color::blue();
         commandBuffer->bindPushConstants(&pushConstants, sizeof(PushConstants));
-        commandBuffer->drawIndexed(gizmosDefaultMesh->getIndexCount(), 1, gizmosDefaultMesh->getIndexOffset(), gizmosDefaultMesh->getVertexOffset(), 0);
+        commandBuffer->drawIndexed(gizmosMesh->getIndexCount(), 1, gizmosMesh->getIndexOffset(), gizmosMesh->getVertexOffset(), 0);
 
         commandBuffer->endRendering();
     }

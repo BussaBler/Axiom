@@ -101,7 +101,7 @@ namespace Axiom {
         std::unique_ptr<Pipeline> worldGridPipeline;
 
         RenderPass gizmosRenderPass;
-        std::shared_ptr<MeshAsset> gizmosDefaultMesh;
+        UUID gizmosMeshHandle;
         std::unique_ptr<Pipeline> gizmosPipeline;
 
         std::vector<std::unique_ptr<RenderFeature>> renderFeatures;

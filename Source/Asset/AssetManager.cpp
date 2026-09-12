@@ -19,11 +19,6 @@
 #include "Utils/FileSystem.h"
 #include "Utils/JSONSerializer.h"
 
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <system_error>
-
 namespace Axiom {
     std::unordered_map<UUID, AssetMetadata> AssetManager::registry;
     std::unordered_map<UUID, std::shared_ptr<Asset>> AssetManager::loadedAssets;
@@ -418,8 +413,8 @@ namespace Axiom {
                 auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
                 uint32_t vertexByteDstOffset = currentVertexCount * sizeof(MeshVertex);
                 uint32_t indexByteDstOffset = currentIndexCount * sizeof(uint32_t);
-                commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, vertexByteDstOffset);
-                commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, indexByteDstOffset);
+                commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, 0, vertexByteDstOffset);
+                commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, 0, indexByteDstOffset);
                 Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
 
                 currentVertexCount += vertexCount;
