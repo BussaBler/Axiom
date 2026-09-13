@@ -10,6 +10,8 @@
 #include "Asset/UUID.h"
 #include "Core/Assert.h"
 #include "Core/Locator.h"
+#include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/TransformComponent.h"
 #include "Math/Color.h"
 #include "Math/Mat.h"
 #include "Math/Vec.h"
@@ -24,8 +26,6 @@
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 #include "Renderer/Texture.h"
-#include "Scene/Components/MeshComponent.h"
-#include "Scene/Components/TransformComponent.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>

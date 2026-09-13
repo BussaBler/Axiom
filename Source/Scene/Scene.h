@@ -1,14 +1,7 @@
 #pragma once
-#include "Components/CameraComponent.h"
-#include "Components/DirectionalLightComponent.h"
-#include "Components/MeshComponent.h"
-#include "Components/Sprite2DComponent.h"
-#include "Components/TagComponent.h"
-#include "Components/TransformComponent.h"
+#include "ECS/ECS.h"
 #include "ECS/Entity.h"
-#include "ECS/Registry.h"
-#include "PhysicsSystem.h"
-#include "SystemManager.h"
+#include "ECS/PhysicsSystem.h"
 
 namespace Axiom {
     class Scene {
@@ -18,13 +11,12 @@ namespace Axiom {
         Scene();
         ~Scene() = default;
 
-        Entity createEntity(const std::string& name = "Entity");
-        void destroyEntity(Entity entity);
+        Entity newEntity(const std::string& name = "Entity");
+        void deleteEntity(Entity entity);
         Entity getEntity(uint32_t entityId);
         Entity getEntity(const std::string& name);
 
-        template <typename... Components> View view() { return registry->view<Components...>(); }
-        View view() { return registry->view(); }
+        template <typename First, typename... Rest> View<First, Rest...> view() { return ecs->view<First, Rest...>(); }
 
         void onUpdate(float deltaTime);
 
@@ -35,13 +27,14 @@ namespace Axiom {
         template <typename S, typename... RequiredComponents> [[nodiscard]] std::shared_ptr<S> registerSystem() {
             std::shared_ptr<S> system = systemManager->registerSystem<S>();
             std::bitset<32> signature;
-            ((signature.set(registry->getComponentType<RequiredComponents>())), ...);
+            ((signature.set(ECS::getComponentId<RequiredComponents>())), ...);
+
             systemManager->setSignature<S>(signature);
             return system;
         }
 
       private:
-        std::unique_ptr<Registry> registry;
+        std::unique_ptr<ECS> ecs;
         std::unique_ptr<SystemManager> systemManager;
         std::shared_ptr<PhysicsSystem> physicsSystem;
     };

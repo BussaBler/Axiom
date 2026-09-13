@@ -31,7 +31,7 @@ namespace Axiom {
     }
 
     void Renderer::initPipelines() {
-        registerPipeline(FORWARD_PIPELINE_NAME, std::make_unique<ForwardRenderPipeline>());
+        forwardRP = registerPipeline<ForwardRenderPipeline>(FORWARD_PIPELINE_NAME);
     }
 
     void Renderer::waitIdle() {
@@ -117,10 +117,6 @@ namespace Axiom {
         pipelineCache[pipelineCreateInfo] = std::move(newPipeline);
 
         return pNewPipeline;
-    }
-
-    ForwardRenderPipeline* Renderer::getFRP() {
-        return getPipeline<ForwardRenderPipeline>(FORWARD_PIPELINE_NAME);
     }
 
     void Renderer::recreateSwapChain() {

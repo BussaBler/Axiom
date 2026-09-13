@@ -4,6 +4,7 @@
 
 #include "Core/Locator.h"
 #include "Core/TaskManager.h"
+#include "ECS/ComponentRegistry.h"
 #include "Profiler.h"
 #include "Renderer/RenderGraph.h"
 #include "Utils/FileSystem.h"
@@ -39,7 +40,9 @@ namespace Axiom {
         uiRenderer = std::make_unique<UIRenderer>();
         Locator::provideUIRenderer(uiRenderer.get());
 
+        ComponentRegistry::registerDefaultComponents();
         ComponentReflection::init();
+
         renderer->initPipelines();
     }
 

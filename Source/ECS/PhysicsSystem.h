@@ -1,6 +1,5 @@
 #pragma once
-#include "Components/PhysicsComponent.h"
-#include "Components/TransformComponent.h"
+#include "ECS/ECS.h"
 #include "SystemManager.h"
 
 namespace Axiom {
@@ -11,6 +10,6 @@ namespace Axiom {
         PhysicsSystem() = default;
         ~PhysicsSystem() = default;
 
-        void onUpdate(Registry* registry, float deltaTime) override;
+        void onUpdate(ECS* registry, float deltaTime) override;
     };
 } // namespace Axiom

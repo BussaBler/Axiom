@@ -2,17 +2,21 @@
 
 #include "SceneSerializer.h"
 
+#include "ECS/Components/ComponentReflection.h"
+#include "ECS/Components/TagComponent.h"
+#include "Math/Color.h"
+#include "Math/Vec.h"
+#include "Utils/FileSystem.h"
+#include "Utils/JSONSerializer.h"
+
 namespace Axiom {
     void SceneSerializer::serialize(const std::string& filePath) {
         JSONValue root = JSONValue();
         JSONValue entitiesArray = JSONValue();
 
-        View entities = scene->registry->view();
+        auto entities = scene->ecs->view<TagComponent>();
         for (auto entityId : entities) {
-            Entity entity = Entity(entityId, scene->registry.get());
-            if (!entity.hasComponent<TagComponent>()) {
-                continue;
-            }
+            Entity entity = Entity(entityId, scene->ecs.get());
 
             JSONValue entityNode;
             JSONValue idValue;
@@ -21,12 +25,12 @@ namespace Axiom {
 
             JSONValue componentsNode;
 
-            auto components = scene->registry->getComponents(entityId);
+            auto components = scene->ecs->getComponents(entityId);
 
-            for (const auto& [typeIndex, dataPtr] : components) {
-                const ComponentInfo* componentInfo = ComponentReflection::getComponentInfo(typeIndex);
+            for (const auto& [componentId, dataPtr] : components) {
+                const ComponentInfo* componentInfo = ComponentReflection::getComponentInfo(componentId);
                 if (!componentInfo) {
-                    AX_CORE_LOG_ERROR("No reflection info found for component with type index {}", typeIndex.name());
+                    AX_CORE_LOG_ERROR("No reflection info found for component with component index: {}", componentId);
                     continue;
                 }
                 JSONValue componentNode;
@@ -115,7 +119,7 @@ namespace Axiom {
         const JSONValue& entitiesArray = deserializedData.getChild("Entities");
         for (const JSONValue& entityNode : entitiesArray.getArrayElements()) {
 
-            Entity entity = scene->createEntity("Unnamed");
+            Entity entity = scene->newEntity("Unnamed");
 
             if (!entityNode.hasChild("Components")) {
                 continue;

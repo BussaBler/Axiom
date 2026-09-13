@@ -1,31 +1,32 @@
 #pragma once
-#include "Registry.h"
 
-#include <typeindex>
+#include "ECS/ECS.h"
+
+#include <cstdint>
 
 namespace Axiom {
     class Entity {
       public:
-        Entity() : id(0), registry(nullptr) {}
-        Entity(uint32_t id, Registry* registry) : id(id), registry(registry) {}
+        Entity() : id(0), ecs(nullptr) {}
+        Entity(uint32_t id, ECS* ecs) : id(id), ecs(ecs) {}
         ~Entity() = default;
 
-        template <typename T> bool hasComponent() { return registry->getComponentSignature(id).test(registry->getComponentType<T>()); }
-        bool hasComponent(std::type_index type) { return registry->getComponentSignature(id).test(registry->getComponentType(type)); }
-        template <typename T> void addComponent(T component) { registry->addComponent<T>(id, component); }
-        template <typename T> T& getComponent() { return registry->getComponent<T>(id); }
-        template <typename T> const T& getComponent() const { return registry->getComponent<T>(id); }
-        std::vector<std::pair<std::type_index, void*>> getComponents() { return registry->getComponents(id); }
-        template <typename T> void removeComponent() { registry->removeComponent<T>(id); }
-        void* getComponentData(std::type_index type) const { return registry->getComponentData(id, type); }
+        template <typename T> bool hasComponent() { return ecs->hasComponent<T>(id); }
+        bool hasComponent(uint8_t componentId) { return ecs->hasComponent(id, componentId); }
+        template <typename T> void addComponent(T component) { ecs->addComponent<T>(id, component); }
+        template <typename T> T& getComponent() { return ecs->getComponent<T>(id); }
+        template <typename T> const T& getComponent() const { return ecs->getComponent<T>(id); }
+        std::vector<std::pair<uint8_t, void*>> getComponents() { return ecs->getComponents(id); }
+        template <typename T> void removeComponent() { ecs->removeComponent<T>(id); }
+        void* getComponentData(uint8_t componentId) const { return ecs->getComponentData(id, componentId); }
 
         inline uint32_t getId() const { return id; }
 
-        operator bool() const { return registry != nullptr; }
+        operator bool() const { return ecs != nullptr; }
         bool operator==(const Entity& other) const { return id == other.id; }
 
       private:
         uint32_t id;
-        Registry* registry;
+        ECS* ecs;
     };
 } // namespace Axiom

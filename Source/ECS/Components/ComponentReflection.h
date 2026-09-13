@@ -4,7 +4,6 @@
 #include "ECS/Entity.h"
 
 #include <string>
-#include <typeindex>
 #include <unordered_map>
 #include <vector>
 
@@ -40,12 +39,12 @@ namespace Axiom {
     class ComponentReflection {
       public:
         static void init();
-        inline static const ComponentInfo* getComponentInfo(const std::type_index& componentType) {
-            auto it = componentRegistry.find(componentType);
+        inline static const ComponentInfo* getComponentInfo(uint8_t componentId) {
+            auto it = componentRegistry.find(componentId);
             if (it != componentRegistry.end()) {
                 return &it->second;
             } else {
-                AX_LOG_ERROR("Component '{}' not found in reflection registry", componentType.name());
+                AX_LOG_ERROR("Component ID '{}' not found in reflection registry", componentId);
                 return nullptr;
             }
         }
@@ -59,9 +58,9 @@ namespace Axiom {
         }
         static void addComponent(Entity entity, const std::string& componentName, void* componentData);
 
-        inline static const std::unordered_map<std::type_index, ComponentInfo>& getRegistry() { return componentRegistry; }
+        inline static const std::unordered_map<uint8_t, ComponentInfo>& getRegistry() { return componentRegistry; }
 
       private:
-        static std::unordered_map<std::type_index, ComponentInfo> componentRegistry;
+        static std::unordered_map<uint8_t, ComponentInfo> componentRegistry;
     };
 } // namespace Axiom

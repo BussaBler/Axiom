@@ -1,5 +1,5 @@
 #pragma once
-#include "ECS/Registry.h"
+#include "ECS/ECS.h"
 
 #include <unordered_map>
 
@@ -8,7 +8,7 @@ namespace Axiom {
       public:
         virtual ~System() = default;
 
-        virtual void onUpdate(Registry* registry, float deltaTime) = 0;
+        virtual void onUpdate(ECS* registry, float deltaTime) = 0;
     };
 
     class SystemManager {
