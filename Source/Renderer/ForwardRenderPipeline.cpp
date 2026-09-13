@@ -328,10 +328,6 @@ namespace Axiom {
             }
         }
 
-        if (drawList.empty()) {
-            return;
-        }
-
         // TODO: add sprite component rendering
 
         std::sort(drawList.begin(), drawList.end());
@@ -357,6 +353,10 @@ namespace Axiom {
         commandBuffer->beginRendering(opaqueRenderPass);
         commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
         commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+        if (drawList.empty()) {
+            commandBuffer->endRendering();
+            return;
+        }
         commandBuffer->bindVertexBuffers({AssetManager::getGlobalVertexBuffer()});
         commandBuffer->bindIndexBuffer(AssetManager::getGlobalIndexBuffer());
 

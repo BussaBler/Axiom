@@ -43,6 +43,10 @@ namespace Axiom {
         }
 
         void insertData(uint32_t entityId, T component) {
+            if (sparseEntityToIndex[entityId] != std::numeric_limits<size_t>::max()) {
+                componentArray[sparseEntityToIndex[entityId]] = component;
+                return;
+            }
             uint32_t newIndex = size;
             sparseEntityToIndex[entityId] = newIndex;
             indexToEntity[newIndex] = entityId;
@@ -75,7 +79,7 @@ namespace Axiom {
         std::array<T, MAX_ENTITIES> componentArray;
         std::array<uint32_t, MAX_ENTITIES> indexToEntity;
         std::array<size_t, MAX_ENTITIES> sparseEntityToIndex;
-        size_t size;
+        size_t size = 0;
     };
 
     class ECS {

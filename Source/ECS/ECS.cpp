@@ -25,7 +25,7 @@ namespace Axiom {
     void ECS::deleteEntity(Entity entity) {
         for (uint32_t i = 0; i < MAX_COMPONENTS; i++) {
             if (entitiesComponentSignature[entity.getId()].test(i)) {
-                componentsArray[i]->onEntityDelete(entity);
+                componentsArray[i]->onEntityDelete(entity.getId());
             }
         }
 
