@@ -34,7 +34,7 @@ namespace Axiom {
         availableEntitiesId.push_back(entity.getId());
     }
 
-    std::vector<std::pair<uint8_t, void*>> ECS::getComponents(uint32_t entityId) {
+    std::vector<std::pair<uint8_t, void*>> ECS::getAllComponents(uint32_t entityId) {
         std::vector<std::pair<uint8_t, void*>> components;
         for (uint32_t i = 0; i < MAX_COMPONENTS; i++) {
             if (entitiesComponentSignature[entityId].test(i)) {

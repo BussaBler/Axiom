@@ -14,7 +14,7 @@ namespace Axiom {
             arrayLayers = 6;
         }
 
-        Vk::ImageCreateInfo imageCreateInfo(flags, Vk::ImageType::e2D, axToVkFormat(createInfo.format), {createInfo.width, createInfo.height, 1},
+        Vk::ImageCreateInfo imageCreateInfo(flags, Vk::ImageType::e2D, axToVkFormat(createInfo.format), {createInfo.width, createInfo.height, createInfo.depth},
                                             createInfo.mipLevels, arrayLayers, Vk::SampleCountFlagBits::e1, Vk::ImageTiling::eOptimal,
                                             axToVkImageUsage(createInfo.usage));
 

@@ -3,6 +3,7 @@
 #include "ECS/ECS.h"
 
 #include <cstdint>
+#include <tuple>
 
 namespace Axiom {
     class Entity {
@@ -16,7 +17,9 @@ namespace Axiom {
         template <typename T> void addComponent(T component) { ecs->addComponent<T>(id, component); }
         template <typename T> T& getComponent() { return ecs->getComponent<T>(id); }
         template <typename T> const T& getComponent() const { return ecs->getComponent<T>(id); }
-        std::vector<std::pair<uint8_t, void*>> getComponents() { return ecs->getComponents(id); }
+        template <typename... Components> std::tuple<Components&...> getComponents() { return ecs->getComponents<Components...>(id); }
+        template <typename... Components> std::tuple<const Components&...> getComponents() const { return ecs->getComponents<Components...>(id); }
+        std::vector<std::pair<uint8_t, void*>> getAllComponents() { return ecs->getAllComponents(id); }
         template <typename T> void removeComponent() { ecs->removeComponent<T>(id); }
         void* getComponentData(uint8_t componentId) const { return ecs->getComponentData(id, componentId); }
 

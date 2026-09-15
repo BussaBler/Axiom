@@ -14,6 +14,7 @@ namespace Axiom {
         descriptor->setPixelFormat(axToMetalPixelFormat(createInfo.format));
         descriptor->setWidth(createInfo.width);
         descriptor->setHeight(createInfo.height);
+        descriptor->setDepth(createInfo.depth);
         descriptor->setUsage(axToMetalTextureUsage(createInfo.usage));
         descriptor->setStorageMode(axToMetalStorageMode(createInfo.memoryUsage));
         descriptor->setMipmapLevelCount(createInfo.mipLevels);

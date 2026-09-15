@@ -25,7 +25,7 @@ namespace Axiom {
 
             JSONValue componentsNode;
 
-            auto components = scene->ecs->getComponents(entityId);
+            auto components = scene->ecs->getAllComponents(entityId);
 
             for (const auto& [componentId, dataPtr] : components) {
                 const ComponentInfo* componentInfo = ComponentReflection::getComponentInfo(componentId);

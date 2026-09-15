@@ -236,7 +236,7 @@ namespace Axiom {
         commandBuffer.copyBuffer(vkSrcBuffer, vkDstBuffer, copyRegion);
     }
 
-    void VulkanCommandBuffer::copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel,
+    void VulkanCommandBuffer::copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel,
                                                   uint32_t arrayLayer) {
         Texture::Barrier transferBarrier = {.texture = dstTexture,
                                             .oldState = TextureState::Undefined,
@@ -256,7 +256,7 @@ namespace Axiom {
         copyRegion.setImageSubresource({axToVkImageAspectFlags(transferBarrier.aspect), mipLevel, arrayLayer, 1});
 
         copyRegion.setImageOffset({0, 0, 0});
-        copyRegion.setImageExtent({width, height, 1});
+        copyRegion.setImageExtent({width, height, depth});
 
         commandBuffer.copyBufferToImage(static_cast<VulkanBuffer*>(srcBuffer)->getHandle(), static_cast<VulkanTexture*>(dstTexture)->getImage(),
                                         Vk::ImageLayout::eTransferDstOptimal, copyRegion);

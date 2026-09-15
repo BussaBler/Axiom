@@ -138,7 +138,7 @@ namespace Axiom {
         blitEncoder->endEncoding();
     }
 
-    void MetalCommandBuffer::copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel,
+    void MetalCommandBuffer::copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel,
                                                  uint32_t arrayLayer) {
         MetalBuffer* source = static_cast<MetalBuffer*>(srcBuffer);
         MetalTexture* dst = static_cast<MetalTexture*>(dstTexture);
@@ -146,7 +146,7 @@ namespace Axiom {
         MTL::BlitCommandEncoder* blitEncoder = commandBuffer->blitCommandEncoder();
 
         MTL::Origin origin = {0, 0, 0};
-        MTL::Size sourceSize = {width, height, 1};
+        MTL::Size sourceSize = {width, height, depth};
 
         uint32_t bytesPerPixel = getStride(dst->getFormat());
         NS::UInteger bytesPerRow = width * bytesPerPixel;

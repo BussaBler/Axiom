@@ -454,7 +454,7 @@ namespace Axiom {
 
         std::vector<ResourceLayout::BindingCreateInfo> resourceLayoutBindings(2);
         resourceLayoutBindings[0].binding = 0;
-        resourceLayoutBindings[0].type = ResourceType::Texture;
+        resourceLayoutBindings[0].type = ResourceType::Texture2D;
         resourceLayoutBindings[0].stages = ShaderStage::Fragment;
         resourceLayoutBindings[0].count = 1;
         resourceLayoutBindings[1].binding = 1;
@@ -464,7 +464,7 @@ namespace Axiom {
 
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
-        resourceSetBindings[0].type = ResourceType::Texture;
+        resourceSetBindings[0].type = ResourceType::Texture2D;
         resourceSetBindings[0].textures = {fontAtlasTexture.get()};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
@@ -527,7 +527,7 @@ namespace Axiom {
 
         std::vector<ResourceLayout::BindingCreateInfo> resourceLayoutBindings(2);
         resourceLayoutBindings[0].binding = 0;
-        resourceLayoutBindings[0].type = ResourceType::Texture;
+        resourceLayoutBindings[0].type = ResourceType::Texture2D;
         resourceLayoutBindings[0].stages = ShaderStage::Fragment;
         resourceLayoutBindings[0].count = 1;
         resourceLayoutBindings[1].binding = 1;
@@ -536,7 +536,7 @@ namespace Axiom {
         resourceLayoutBindings[1].count = 1;
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
-        resourceSetBindings[0].type = ResourceType::Texture;
+        resourceSetBindings[0].type = ResourceType::Texture2D;
         resourceSetBindings[0].textures = {nullptr}; // will be set dynamically during rendering
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
@@ -568,7 +568,7 @@ namespace Axiom {
 
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
-        resourceSetBindings[0].type = ResourceType::Texture;
+        resourceSetBindings[0].type = ResourceType::Texture2D;
         resourceSetBindings[0].textures = {texture};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;

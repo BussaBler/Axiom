@@ -24,6 +24,10 @@
 #include <vector>
 
 namespace Axiom {
+    struct RendererConfig {
+        // TODO: think this through
+    };
+
     struct ApplicationInfo {
         std::string name;
         std::filesystem::path engineWorkingDirectory;

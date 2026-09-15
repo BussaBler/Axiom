@@ -1,11 +1,13 @@
 #pragma once
+
 #include "Utils/BitMaskEnum.h"
 
 namespace Axiom {
     enum class ResourceType {
         UniformBuffer,
         StorageBuffer,
-        Texture,
+        Texture2D,
+        Texture3D,
         Sampler,
         CombinedTextureSampler,
     };

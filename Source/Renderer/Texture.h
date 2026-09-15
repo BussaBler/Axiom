@@ -3,6 +3,8 @@
 #include "Math/AxMath.h"
 #include "Utils/BitMaskEnum.h"
 
+#include <cstdint>
+
 namespace Axiom {
     enum class Format {
         Undefined,
@@ -54,6 +56,7 @@ namespace Axiom {
         struct CreateInfo {
             uint32_t width = 0;
             uint32_t height = 0;
+            uint32_t depth = 1;
             uint32_t mipLevels = 1;
             uint32_t arrayLayers = 1;
             Format format = Format::Undefined;
@@ -64,8 +67,9 @@ namespace Axiom {
             TextureType type = TextureType::Texture2D;
 
             bool operator==(const CreateInfo& other) {
-                return width == other.width && height == other.height && mipLevels == other.mipLevels && arrayLayers == other.arrayLayers &&
-                       format == other.format && usage == other.usage && aspect == other.aspect && memoryUsage == other.memoryUsage && type == other.type;
+                return width == other.width && height == other.height && depth == other.depth && mipLevels == other.mipLevels &&
+                       arrayLayers == other.arrayLayers && format == other.format && usage == other.usage && aspect == other.aspect &&
+                       memoryUsage == other.memoryUsage && type == other.type;
             }
         };
 

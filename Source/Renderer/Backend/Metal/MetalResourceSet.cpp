@@ -2,6 +2,7 @@
 
 #include "MetalResourceSet.h"
 
+#include "Core/Log.h"
 #include "Metal/Metal.hpp"
 #include "MetalBuffer.h"
 #include "MetalSampler.h"
@@ -30,16 +31,22 @@ namespace Axiom {
                 argDescriptor->setDataType(MTL::DataTypePointer);
                 argDescriptor->setAccess(MTL::BindingAccessReadWrite);
                 break;
-            case ResourceType::Texture:
+            case ResourceType::Texture2D:
                 argDescriptor->setDataType(MTL::DataTypeTexture);
                 argDescriptor->setAccess(MTL::BindingAccessReadOnly);
                 argDescriptor->setTextureType(MTL::TextureType2D);
+                break;
+            case Axiom::ResourceType::Texture3D:
+                argDescriptor->setDataType(MTL::DataTypeTexture);
+                argDescriptor->setAccess(MTL::BindingAccessReadOnly);
+                argDescriptor->setTextureType(MTL::TextureType3D);
                 break;
             case ResourceType::Sampler:
                 argDescriptor->setDataType(MTL::DataTypeSampler);
                 argDescriptor->setAccess(MTL::BindingAccessReadOnly);
                 break;
             case ResourceType::CombinedTextureSampler:
+                AX_CORE_LOG_ERROR("Combine Texture Sampler is not supported in Metal backend");
                 break;
             }
             descriptors.push_back(argDescriptor);
@@ -85,7 +92,8 @@ namespace Axiom {
                 bindingOffset += binding.maxNumberOfResources - 1;
                 break;
             }
-            case ResourceType::Texture: {
+            case ResourceType::Texture2D:
+            case ResourceType::Texture3D: {
                 std::vector<MTL::Texture*> texturesToSet;
                 for (Texture* texture : binding.textures) {
                     MetalTexture* metalTexture = static_cast<MetalTexture*>(texture);

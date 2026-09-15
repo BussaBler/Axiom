@@ -7,6 +7,8 @@
 #include "VulkanTexture.h"
 #include "VulkanUtils.h"
 
+#include <cstdint>
+
 namespace Axiom {
     class VulkanCommandBuffer : public CommandBuffer {
       public:
@@ -27,7 +29,7 @@ namespace Axiom {
         void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex = 0, int32_t vertexOffset = 0, uint32_t firstInstance = 0) override;
         void pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) override;
         void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, uint64_t size, uint64_t srcOffset = 0, uint64_t dstOffset = 0) override;
-        void copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel = 0,
+        void copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t depth = 1, uint32_t mipLevel = 0,
                                  uint32_t arrayLayer = 0) override;
 
         inline Vk::CommandBuffer getHandle() const { return commandBuffer; }

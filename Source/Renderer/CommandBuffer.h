@@ -29,7 +29,7 @@ namespace Axiom {
                                  uint32_t firstInstance = 0) = 0;
         virtual void pipelineBarrier(const std::vector<Texture::Barrier>& textureBarries) = 0;
         virtual void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, uint64_t size, uint64_t srcOffset = 0, uint64_t dstOffset = 0) = 0;
-        virtual void copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t mipLevel = 0,
+        virtual void copyBufferToTexture(Buffer* srcBuffer, Texture* dstTexture, uint32_t width, uint32_t height, uint32_t depth = 1, uint32_t mipLevel = 0,
                                          uint32_t arrayLayer = 0) = 0;
     };
 } // namespace Axiom

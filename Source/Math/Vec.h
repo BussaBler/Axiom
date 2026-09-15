@@ -98,11 +98,26 @@ namespace Math {
             return result;
         }
 
+        Vec<T, N> operator*(const Vec<T, N>& other) const {
+            Vec<T, N> result;
+            for (size_t i = 0; i < N; i++) {
+                result[i] = data[i] * other[i];
+            }
+            return result;
+        }
+
         Vec<T, N> operator/(const T& scalar) const {
-            AX_CORE_ASSERT(scalar != static_cast<T>(0), "Division by zero");
             Vec<T, N> result;
             for (size_t i = 0; i < N; ++i) {
                 result.data[i] = data[i] / scalar;
+            }
+            return result;
+        }
+
+        Vec<T, N> operator/(const Vec<T, N>& other) const {
+            Vec<T, N> result;
+            for (size_t i = 0; i < N; ++i) {
+                result.data[i] = data[i] / other[i];
             }
             return result;
         }
@@ -129,9 +144,22 @@ namespace Math {
         }
 
         Vec<T, N>& operator/=(const T& scalar) {
-            AX_CORE_ASSERT(scalar != static_cast<T>(0), "Division by zero");
             for (size_t i = 0; i < N; ++i) {
                 data[i] /= scalar;
+            }
+            return *this;
+        }
+
+        Vec<T, N>& operator*=(const Vec<T, N>& other) {
+            for (size_t i = 0; i < N; ++i) {
+                data[i] *= other[i];
+            }
+            return *this;
+        }
+
+        Vec<T, N>& operator/=(const Vec<T, N>& other) {
+            for (size_t i = 0; i < N; ++i) {
+                data[i] /= other[i];
             }
             return *this;
         }

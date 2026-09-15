@@ -9,6 +9,7 @@
 #include <deque>
 #include <limits>
 #include <memory>
+#include <tuple>
 
 namespace Axiom {
     constexpr uint32_t MAX_ENTITIES = 5000;
@@ -145,6 +146,12 @@ namespace Axiom {
             ComponentArray<T>* pComponentArray = static_cast<ComponentArray<T>*>(componentsArray[componentId].get());
             return pComponentArray->getData(entityId);
         }
+        template <typename... Components> std::tuple<Components&...> getComponents(uint32_t entityId) {
+            return std::tie(getComponent<Components>(entityId)...);
+        }
+        template <typename... Components> std::tuple<const Components&...> getComponents(uint32_t entityId) const {
+            return std::tie(getComponent<Components>(entityId)...);
+        }
         template <typename T> void* getComponentData(uint32_t entityId) {
             uint8_t componentId = getComponentId<T>();
             AX_CORE_ASSERT(componentId < componentsArray.size(), "Component out of bounds for this ECS");
@@ -171,7 +178,7 @@ namespace Axiom {
         }
         const std::bitset<32>& getComponentSignature(uint32_t entityId) const { return entitiesComponentSignature[entityId]; }
 
-        std::vector<std::pair<uint8_t, void*>> getComponents(uint32_t entityId);
+        std::vector<std::pair<uint8_t, void*>> getAllComponents(uint32_t entityId);
         template <typename First, typename... Rest> View<First, Rest...> view();
 
       private:
@@ -232,6 +239,7 @@ namespace Axiom {
             }
         };
 
+        size_t size() const { return leadArray->getSize(); }
         Iterator begin() const { return Iterator(ecs, signature, 0, leadArray); }
         Iterator end() const { return Iterator(ecs, signature, leadArray->getSize(), leadArray); }
 
