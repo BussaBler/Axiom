@@ -11,12 +11,10 @@
 @class NSWindow;
 @class MacOSWindowDelegate;
 @class MacOSWindowView;
-@class NSAutoreleasePool;
 #else
 typedef struct objc_object NSWindow;
 typedef struct objc_object MacOSWindowDelegate;
 typedef struct objc_object MacOSWindowView;
-typedef struct objc_object NSAutoreleasePool;
 #endif
 
 namespace Axiom {
@@ -38,11 +36,11 @@ namespace Axiom {
         bool isVSync() const override { return data.vSync; }
         void setSize(uint32_t width, uint32_t height) override;
 
-        void* getNativeWindow() override { return window; }
-        void* getNativeDisplay() const override { return nullptr; }
+        void* getNativeWindow() override;
+        void* getNativeDisplay() const override { return nullptr; };
         uint32_t getWindowDPI() const override;
 
-        void attachMetalLayer(void* metalLayer);
+        void* getMetalLayer() const;
 
       private:
         void init(const WindowProps& props);
@@ -50,9 +48,10 @@ namespace Axiom {
 
       private:
         NSWindow* window = nullptr;
+        void* metalLayer = nullptr;
         MacOSWindowDelegate* delegate = nullptr;
         MacOSWindowView* view = nullptr;
         WindowData data;
-        NSAutoreleasePool* autoreleasePool = nullptr;
+        void* autoreleasePool = nullptr;
     };
 } // namespace Axiom

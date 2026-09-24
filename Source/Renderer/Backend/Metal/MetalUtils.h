@@ -36,6 +36,8 @@ namespace Axiom {
             return MTL::VertexFormatInvalid; // Depth-stencil formats are not used for vertex attributes
         case Format::D32sFloat:
             return MTL::VertexFormatInvalid; // Depth formats are not used for vertex attributes
+        case Format::R32UInt:
+            return MTL::VertexFormatUInt;
         case Format::R32G32Sfloat:
             return MTL::VertexFormatFloat2;
         case Format::R32G32B32Sfloat:
@@ -75,6 +77,8 @@ namespace Axiom {
             return MTL::PixelFormatDepth24Unorm_Stencil8;
         case Format::D32sFloat:
             return MTL::PixelFormatDepth32Float;
+        case Format::R32UInt:
+            return MTL::PixelFormatR32Uint;
         case Format::R32G32Sfloat:
             return MTL::PixelFormatRG32Float;
         case Format::R32G32B32Sfloat:
@@ -110,6 +114,8 @@ namespace Axiom {
             return Format::D24UnormS8Uint;
         case MTL::PixelFormatDepth32Float:
             return Format::D32sFloat;
+        case MTL::PixelFormatR32Uint:
+            return Format::R32UInt;
         case MTL::PixelFormatRG32Float:
             return Format::R32G32Sfloat;
         case MTL::PixelFormatRGBA32Float:
@@ -137,6 +143,8 @@ namespace Axiom {
         case Format::D24UnormS8Uint:
             return 4;
         case Format::D32sFloat:
+            return 4;
+        case Format::R32UInt:
             return 4;
         case Format::R32G32Sfloat:
             return 8;

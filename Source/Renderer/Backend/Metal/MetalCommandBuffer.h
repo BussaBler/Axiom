@@ -31,10 +31,17 @@ namespace Axiom {
         MTL::CommandBuffer* getHandle() const { return commandBuffer; }
 
       private:
+        void flushState();
+
+      private:
         MTL::CommandQueue* commandQueue = nullptr;
         MTL::CommandBuffer* commandBuffer = nullptr;
         MTL::RenderCommandEncoder* renderEncoder = nullptr;
         Buffer* currentIndexBuffer = nullptr;
+
+        uint8_t pushConstantCache[128] = {0};
+        uint32_t pushConstantSize = 128;
+        bool pushConstantsDirty = false;
 
         MTL::PrimitiveType currentPipelinePrimitiveType = MTL::PrimitiveTypeTriangle;
     };

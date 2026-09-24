@@ -10,8 +10,6 @@ namespace Axiom {
         VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice, Vk::DescriptorPool descriptorPool);
         ~VulkanPipeline() override;
 
-        std::unique_ptr<ResourceSet> createResourceSet(ResourceLayout* resourceLayout) override;
-
         inline Vk::Pipeline getHandle() const { return pipeline; }
         inline Vk::PipelineLayout getPipelineLayout() const { return pipelineLayout; }
 

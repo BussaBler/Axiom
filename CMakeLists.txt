@@ -4,7 +4,8 @@ project(Axiom VERSION 1.0 LANGUAGES CXX)
 set(SPIRV_CROSS_STATIC ON CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_SHARED OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Vendor/SpirvCross ${CMAKE_BINARY_DIR}/Vendor/SpirvCross)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Vendor/SpirvCross
+${CMAKE_BINARY_DIR}/Vendor/SpirvCross)
 
 set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
 set(SHADERC_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
@@ -48,9 +49,23 @@ if (WIN32)
 elseif(APPLE)
   file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/MacOS/*.cpp")
   file(GLOB_RECURSE OBJCXX_SOURCES "Source/Platform/MacOS/*.mm")
-  set_source_files_properties(${OBJCXX_SOURCES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+  set_source_files_properties(${OBJCXX_SOURCES} PROPERTIES
+    SKIP_PRECOMPILE_HEADERS ON
+    COMPILE_FLAGS "-fobjc-arc"
+  )
   list(APPEND PLATFORM_SOURCES ${OBJCXX_SOURCES})
   set(PLATFORM_DEFINE "AX_PLATFORM_MACOS")
+
+  find_library(METAL_FRAMEWORK Metal)
+  find_library(FOUNDATION_FRAMEWORK Foundation)
+  find_library(QUARTZ_FRAMEWORK QuartzCore)
+  find_library(APPKIT_FRAMEWORK AppKit)
+  set(MAC_FRAMEWORKS
+    ${METAL_FRAMEWORK}
+    ${FOUNDATION_FRAMEWORK}
+    ${QUARTZ_FRAMEWORK}
+    ${APPKIT_FRAMEWORK}
+  )
 elseif(UNIX AND NOT APPLE)
   file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/Linux/*.cpp")
   set(PLATFORM_DEFINE "AX_PLATFORM_LINUX")
@@ -72,18 +87,12 @@ add_library(Axiom STATIC ${ALL_SOURCES} ${ALL_HEADERS})
 if (AX_RENDERER STREQUAL "vulkan")
   find_package(Vulkan REQUIRED)
   target_link_libraries(Axiom PUBLIC Vulkan::Vulkan)
+  if (APPLE)
+    target_link_libraries(Axiom PUBLIC ${MAC_FRAMEWORKS})
+  endif()
 elseif (AX_RENDERER STREQUAL "metal")
   if (APPLE)
-    find_library(METAL_FRAMEWORK Metal)
-    find_library(FOUNDATION_FRAMEWORK Foundation)
-    find_library(QUARTZ_FRAMEWORK QuartzCore)
-    find_library(APPKIT_FRAMEWORK AppKit)
-    target_link_libraries(Axiom PUBLIC
-      ${METAL_FRAMEWORK}
-      ${FOUNDATION_FRAMEWORK}
-      ${QUARTZ_FRAMEWORK}
-      ${APPKIT_FRAMEWORK}
-    )
+    target_link_libraries(Axiom PUBLIC ${MAC_FRAMEWORKS})
   else()
     message(FATAL_ERROR "Metal renderer is only supported on Apple platforms")
   endif()
@@ -91,15 +100,18 @@ elseif (AX_RENDERER STREQUAL "dx12")
   if (WIN32)
     target_link_libraries(Axiom PUBLIC d3d12.lib dxgi.lib dxguid.lib)
   else()
-    message(FATAL_ERROR "DirectX 12 renderer is only supported on Windows platforms")
+    message(FATAL_ERROR
+    "DirectX 12 renderer is only supported on Windows platforms")
 endif()
 
 endif()
 target_compile_definitions(Axiom PUBLIC ${PLATFORM_DEFINE})
-target_compile_definitions(Axiom PUBLIC AX_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
+target_compile_definitions(Axiom PUBLIC
+AX_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 target_compile_definitions(Axiom PUBLIC
   $<$<CONFIG:Debug>:AX_DEBUG>
-  $<$<CONFIG:Release>:AX_RELEASE>
+  $<$<CONFIG:Debug>:AX_ENABLE_ASSERTS>
+  $<$<NOT:$<CONFIG:Debug>>:AX_RELEASE>
 )
 target_include_directories(
   Axiom PUBLIC

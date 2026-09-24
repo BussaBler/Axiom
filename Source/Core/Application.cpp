@@ -22,7 +22,8 @@ namespace Axiom {
         AX_CORE_LOG_INFO("Current working directory: {0}", FileSystem::getWorkingDirectory().string());
         FileSystem::mount("axiom://", appInfo.engineWorkingDirectory);
         FileSystem::mount("app://", appInfo.applicationWorkingDirectory);
-        AX_CORE_ASSERT(Log::getCoreLogger()->outputToFile(), "Failed to create log file!");
+        bool logFileOutput = Log::getCoreLogger()->outputToFile();
+        AX_CORE_ASSERT(logFileOutput, "Failed to create log file!");
 
         WindowProps windowProps{appInfo.name, appInfo.width, appInfo.height};
         window = Window::create(windowProps);
@@ -175,8 +176,8 @@ namespace Axiom {
             for (const auto& layer : layerStack) {
                 layer->onRender(renderGraph);
             }
-
-            renderGraph.execute(commandBuffer);
+            // TODO: add the delta time
+            renderGraph.execute(commandBuffer, FrameContext{.frameIndex = renderer->getCurrentFrameIndex()});
             uiRenderer->onRender(commandBuffer, renderer->getCurrentRenderTarget());
             renderer->endFrame();
 

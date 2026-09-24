@@ -3,7 +3,9 @@
 #define NS_PRIVATE_IMPLEMENTATION
 #define CA_PRIVATE_IMPLEMENTATION
 #define MTL_PRIVATE_IMPLEMENTATION
+
 #include "Core/Assert.h"
+#include "Metal/Metal.hpp"
 #include "MetalDevice.h"
 #include "Platform/MacOS/MacOSWindow.h"
 
@@ -14,13 +16,12 @@ namespace Axiom {
 
     MetalDevice::MetalDevice(const CreateInfo& createInfo) : Device() {
         metalDevice = MTL::CreateSystemDefaultDevice();
-        metalLayer = CA::MetalLayer::layer();
+        metalLayer = static_cast<CA::MetalLayer*>(reinterpret_cast<MacOSWindow*>(createInfo.windowObjPtr)->getMetalLayer());
         AX_CORE_ASSERT(metalDevice, "Failed to create Metal device");
-        AX_CORE_ASSERT(metalLayer, "Failed to create Metal layer");
+        AX_CORE_ASSERT(metalLayer, "Failed to get Metal layer");
 
         metalLayer->setDevice(metalDevice);
         metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
-        reinterpret_cast<MacOSWindow*>(createInfo.windowObjPtr)->attachMetalLayer(metalLayer);
 
         commandQueue = metalDevice->newCommandQueue();
         AX_CORE_ASSERT(commandQueue, "Failed to create Metal command queue");

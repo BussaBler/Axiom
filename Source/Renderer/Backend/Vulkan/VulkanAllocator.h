@@ -1,4 +1,5 @@
 #pragma once
+#include "Math/AxMath.h"
 #include "VulkanInclude.h"
 #include "VulkanMemoryPool.h"
 
@@ -20,7 +21,7 @@ namespace Axiom {
         uint32_t findMemoryType(uint32_t typeFilter, Vk::MemoryPropertyFlags properties);
 
       private:
-        const size_t DEFAULT_POOL_SIZE = 256 * 1e6;
+        const size_t DEFAULT_POOL_SIZE = Math::gigabytes(1);
 
         static VulkanAllocator* instance;
         Vk::Device device = nullptr;

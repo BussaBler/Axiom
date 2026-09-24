@@ -30,7 +30,7 @@ namespace Axiom {
         ~ForwardRenderPipeline();
 
         void beginFrame() override;
-        void render(RenderGraph& renderGraph, const RenderContext& context) override;
+        void buildRenderGraph(RenderGraph& renderGraph, const RenderContext& context) override;
 
         inline void addRenderFeature(std::unique_ptr<RenderFeature> renderFeature) { renderFeatures.push_back(std::move(renderFeature)); }
 

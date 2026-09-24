@@ -6,6 +6,7 @@
 #include "MetalPipeline.h"
 #include "MetalResourceSet.h"
 #include "MetalTexture.h"
+#include "Renderer/Backend/Metal/MetalBindingLayout.h"
 
 #include <cstdint>
 
@@ -63,6 +64,7 @@ namespace Axiom {
         renderEncoder->setDepthStencilState(metalPipeline->getDepthStencilState());
         renderEncoder->setTriangleFillMode(metalPipeline->getFillMode());
         currentPipelinePrimitiveType = metalPipeline->getPrimitiveType();
+        pushConstantsDirty = true;
     }
 
     void MetalCommandBuffer::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth) {
@@ -76,11 +78,10 @@ namespace Axiom {
     void MetalCommandBuffer::bindResources(const std::vector<ResourceSet*>& resourceSets, uint32_t firstSet) {
         for (size_t i = 0; i < resourceSets.size(); i++) {
             MetalResourceSet* metalResourceSet = static_cast<MetalResourceSet*>(resourceSets[i]);
-            uint32_t pushConstantOffset = 8;
 
             MTL::Buffer* argBuffer = metalResourceSet->getArgumentBuffer();
-            renderEncoder->setVertexBuffer(argBuffer, 0, firstSet + i + pushConstantOffset);
-            renderEncoder->setFragmentBuffer(argBuffer, 0, firstSet + i + pushConstantOffset);
+            renderEncoder->setVertexBuffer(argBuffer, 0, firstSet + i + AX_METAL_DESC_SET_START_INDEX);
+            renderEncoder->setFragmentBuffer(argBuffer, metalResourceSet->getFragmentArgumentBufferOffset(), firstSet + i + AX_METAL_DESC_SET_START_INDEX);
 
             const auto& textures = metalResourceSet->getResidentTextures();
             if (!textures.empty()) {
@@ -97,12 +98,11 @@ namespace Axiom {
     }
 
     void MetalCommandBuffer::bindPushConstants(const void* data, uint32_t size, uint32_t offset) {
-        // push constanst should be in the buffer 4 position
-        uint32_t pushConstantIndex = 4;
-        const uint8_t* pushConstantData = static_cast<const uint8_t*>(data) + offset;
+        AX_CORE_ASSERT(offset + size <= sizeof(pushConstantCache), "Push Constant size exceeds 128 bytes");
+        std::memcpy(pushConstantCache + offset, data, size);
 
-        renderEncoder->setVertexBytes(pushConstantData, size, pushConstantIndex);
-        renderEncoder->setFragmentBytes(pushConstantData, size, pushConstantIndex);
+        pushConstantSize = std::max(pushConstantSize, offset + size);
+        pushConstantsDirty = true;
     }
 
     void MetalCommandBuffer::bindVertexBuffers(const std::vector<Buffer*>& vertexBuffers) {
@@ -118,10 +118,12 @@ namespace Axiom {
     }
 
     void MetalCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
+        flushState();
         renderEncoder->drawPrimitives(currentPipelinePrimitiveType, firstVertex, vertexCount, instanceCount, firstInstance);
     }
 
     void MetalCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
+        flushState();
         renderEncoder->drawIndexedPrimitives(currentPipelinePrimitiveType, indexCount, MTL::IndexTypeUInt32,
                                              static_cast<MetalBuffer*>(currentIndexBuffer)->getHandle(), firstIndex * sizeof(uint32_t), instanceCount,
                                              vertexOffset, firstInstance);
@@ -155,5 +157,13 @@ namespace Axiom {
         blitEncoder->copyFromBuffer(source->getHandle(), 0, bytesPerRow, bytesPerImage, sourceSize, dst->getHandle(), arrayLayer, mipLevel, origin);
 
         blitEncoder->endEncoding();
+    }
+
+    void MetalCommandBuffer::flushState() {
+        if (pushConstantsDirty) {
+            renderEncoder->setVertexBytes(pushConstantCache, pushConstantSize, AX_METAL_PUSH_CONST_BUFFER_INDEX);
+            renderEncoder->setFragmentBytes(pushConstantCache, pushConstantSize, AX_METAL_PUSH_CONST_BUFFER_INDEX);
+            pushConstantsDirty = false;
+        }
     }
 } // namespace Axiom

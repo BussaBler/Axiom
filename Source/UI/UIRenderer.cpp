@@ -4,7 +4,9 @@
 
 #include "Asset/AssetManager.h"
 #include "Core/Locator.h"
+#include "Core/Log.h"
 #include "Renderer/Renderer.h"
+#include "Renderer/ResourceLayout.h"
 
 namespace Axiom {
     UIRenderer::UIRenderer() {
@@ -16,7 +18,6 @@ namespace Axiom {
                                                    .format = Format::R8G8B8A8Unorm,
                                                    .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
                                                    .aspect = TextureAspect::Color,
-                                                   .initialState = TextureState::Undefined,
                                                    .memoryUsage = MemoryUsage::GPUOnly};
         fontAtlasTexture = Locator::getRenderer()->createTexture(fontAtlasCreateInfo);
 
@@ -27,7 +28,6 @@ namespace Axiom {
         auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
         commandBuffer->copyBufferToTexture(stagingBuffer.get(), fontAtlasTexture.get(), asciiAtlas.width, asciiAtlas.height);
         Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
-
         createBasicRenderObjects();
         createFontRenderObjects();
         createImageRenderObjects();
@@ -465,9 +465,11 @@ namespace Axiom {
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture2D;
+        resourceSetBindings[0].stages = ShaderStage::Fragment;
         resourceSetBindings[0].textures = {fontAtlasTexture.get()};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
+        resourceSetBindings[1].stages = ShaderStage::Fragment;
         resourceSetBindings[1].samplers = {Locator::getRenderer()->getNearestSampler()};
 
         fontResourceLayout = Locator::getRenderer()->createResourceLayout(resourceLayoutBindings);
@@ -538,8 +540,10 @@ namespace Axiom {
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture2D;
         resourceSetBindings[0].textures = {nullptr}; // will be set dynamically during rendering
+        resourceSetBindings[0].stages = ShaderStage::Fragment;
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
+        resourceSetBindings[1].stages = ShaderStage::Fragment;
         resourceSetBindings[1].samplers = {Locator::getRenderer()->getNearestSampler()};
 
         imageResourceLayout = Locator::getRenderer()->createResourceLayout(resourceLayoutBindings);
@@ -569,9 +573,11 @@ namespace Axiom {
         std::vector<ResourceSet::Binding> resourceSetBindings(2);
         resourceSetBindings[0].binding = 0;
         resourceSetBindings[0].type = ResourceType::Texture2D;
+        resourceSetBindings[0].stages = ShaderStage::Fragment;
         resourceSetBindings[0].textures = {texture};
         resourceSetBindings[1].binding = 1;
         resourceSetBindings[1].type = ResourceType::Sampler;
+        resourceSetBindings[1].stages = ShaderStage::Fragment;
         resourceSetBindings[1].samplers = {Locator::getRenderer()->getNearestSampler()};
         std::unique_ptr<ResourceSet> resourceSet = Locator::getRenderer()->createResourceSet(imageResourceLayout.get());
         resourceSet->update(resourceSetBindings);

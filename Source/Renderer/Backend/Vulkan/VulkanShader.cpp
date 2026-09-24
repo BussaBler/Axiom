@@ -2,12 +2,15 @@
 
 #include "VulkanShader.h"
 
+#include "shaderc/status.h"
+
 #include <shaderc/shaderc.hpp>
 
 namespace Axiom {
     VulkanShader::VulkanShader(Vk::Device logicalDevice, const std::string& vertexSource, const std::string& fragmentSource) : device(logicalDevice) {
         vertexShaderModule = createShaderModule(logicalDevice, vertexSource);
         fragmentShaderModule = createShaderModule(logicalDevice, fragmentSource);
+        m_isCompiled = true;
     }
 
     VulkanShader::~VulkanShader() {
@@ -25,7 +28,8 @@ namespace Axiom {
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
         shaderc::CompilationResult compResult =
             compiler.CompileGlslToSpv(source.c_str(), source.size(), shaderc_shader_kind::shaderc_glsl_infer_from_source, "shader", "main", options);
-        AX_CORE_ASSERT(compResult.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader: {0}", compResult.GetErrorMessage());
+        shaderc_compilation_status compilationStatus = compResult.GetCompilationStatus();
+        AX_CORE_ASSERT(compilationStatus == shaderc_compilation_status_success, "Failed to compile shader: {0}", compResult.GetErrorMessage());
 
         size_t codeSize = std::distance(compResult.cbegin(), compResult.cend()) * sizeof(uint32_t);
         const uint32_t* shaderCode = compResult.cbegin();

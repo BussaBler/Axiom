@@ -3,6 +3,7 @@
 #include "VulkanSwapChain.h"
 
 #include "Math/AxMath.h"
+#include "vulkan/vulkan.hpp"
 
 namespace Axiom {
     VulkanSwapChain::VulkanSwapChain(const CreateInfo& createInfo)
@@ -46,7 +47,7 @@ namespace Axiom {
         for (size_t i = 0; i < swapChainImagesResult.value.size(); i++) {
             swapChainTextures.push_back(
                 std::make_unique<VulkanTexture>(device, swapChainImagesResult.value[i], swapChainImageFormat, Math::iVec2(extent.width, extent.height)));
-            swapChainTextures[i]->createImageView(swapChainImageFormat, Vk::ImageAspectFlagBits::eColor);
+            swapChainTextures[i]->createImageView(swapChainImageFormat, Vk::ImageAspectFlagBits::eColor, Vk::ImageViewType::e2D);
         }
 
         imageAvailableSemaphores.resize(createInfo.maxFramesInFlight);
@@ -71,16 +72,20 @@ namespace Axiom {
                                                .format = vkToAxFormat(createInfo.depthFormat),
                                                .usage = TextureUsage::DepthStencilAttachment,
                                                .aspect = TextureAspect::Depth,
-                                               .initialState = TextureState::Undefined,
                                                .memoryUsage = MemoryUsage::GPUOnly};
 
         for (size_t i = 0; i < depthTextures.size(); i++) {
             depthTextures[i] = std::make_unique<VulkanTexture>(device, depthCreateInfo);
-            depthTextures[i]->createImageView(createInfo.depthFormat, Vk::ImageAspectFlagBits::eDepth);
         }
     }
 
     VulkanSwapChain::~VulkanSwapChain() {
+        for (auto& semaphore : imageAvailableSemaphores) {
+            device.destroySemaphore(semaphore);
+        }
+        for (auto& sempahore : renderFinishedSemaphores) {
+            device.destroySemaphore(sempahore);
+        }
         device.destroySwapchainKHR(swapChain);
     }
 

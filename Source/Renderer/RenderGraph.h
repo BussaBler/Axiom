@@ -5,6 +5,7 @@
 #include "Renderer/Texture.h"
 
 #include <any>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -28,6 +29,11 @@ namespace Axiom {
         TextureState state;
     };
 
+    struct FrameContext {
+        uint32_t frameIndex = 0;
+        float deltaTime = 0.0f;
+    };
+
     class PassBuilder {
       public:
         PassBuilder() = default;
@@ -37,6 +43,7 @@ namespace Axiom {
 
         void readTexture(RGTextureHandle handle, TextureState textureState);
         void writeTexture(RGTextureHandle handle, TextureState textureState);
+        RGTextureHandle importTexture(const std::string& name, Texture* texture);
 
       private:
         friend class RenderGraph;
@@ -59,18 +66,9 @@ namespace Axiom {
         std::unordered_map<uint32_t, Texture*> textures;
     };
 
-    struct RenderPassNode {
-        std::string name;
-        std::function<void(const PassResources&, CommandBuffer*)> execute;
-
-        std::vector<TextureAccess> textureReads;
-        std::vector<TextureAccess> textureWrites;
-    };
-
-    class RenderGraphContext {
+    class Blackboard {
       public:
         template <typename T> void add(const T& data) { internalData[typeid(T)] = data; }
-
         template <typename T> const T& get() const {
             if (internalData.find(typeid(T)) == internalData.end()) {
                 AX_CORE_LOG_ERROR("Current Render Graph Context has no data of type:", typeid(T).name());
@@ -82,15 +80,29 @@ namespace Axiom {
         std::unordered_map<std::type_index, std::any> internalData;
     };
 
+    struct RenderPassNode {
+        std::string name;
+        std::function<void(const PassResources&, CommandBuffer*, const Blackboard&, const FrameContext&)> execute;
+
+        std::vector<TextureAccess> textureReads;
+        std::vector<TextureAccess> textureWrites;
+    };
+
+    template <typename ExecuteFn, typename PassData>
+    concept ValidExecuteFn = std::invocable<ExecuteFn, const PassData&, const PassResources&, CommandBuffer*, const Blackboard&, const FrameContext&>;
+    template <typename SetupFn, typename PassData>
+    concept ValidSetupFn = std::invocable<SetupFn, PassBuilder&, PassData&, Blackboard&> &&
+                           ValidExecuteFn<std::invoke_result_t<SetupFn, PassBuilder&, PassData&, Blackboard&>, PassData>;
+
     class RenderGraph {
       public:
         RenderGraph() = default;
         ~RenderGraph() = default;
 
         void begin();
-        template <typename PassData>
-        void addPass(const std::string& name,
-                     std::function<std::function<void(const PassData&, const PassResources&, CommandBuffer*)>(PassBuilder&, PassData&)> setupFn) {
+        template <typename PassData, typename SetupFn>
+            requires ValidSetupFn<SetupFn, PassData>
+        void addPass(const std::string& name, SetupFn setupFn) {
             PassData passData{};
             RenderPassNode passNode = {.name = name};
 
@@ -98,23 +110,22 @@ namespace Axiom {
             builder.renderGraph = this;
             builder.currentPassIndex = static_cast<uint32_t>(passes.size());
 
-            auto executeFn = setupFn(builder, passData);
+            auto executeFn = setupFn(builder, passData, blackboard);
 
-            if (executeFn) {
-                passNode.execute = [passData, executeFn](const PassResources& resources, CommandBuffer* cmd) { executeFn(passData, resources, cmd); };
-            }
+            passNode.execute = [passData, executeFn](const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
+                                                     const FrameContext& frameCtx) { executeFn(passData, resources, cmd, blackboard, frameCtx); };
 
             passNode.textureReads = std::move(builder.currentReads);
             passNode.textureWrites = std::move(builder.currentWrites);
-
             passes.push_back(std::move(passNode));
         }
-        void execute(CommandBuffer* commandBuffer);
+
+        void execute(CommandBuffer* commandBuffer, const FrameContext& frameContext);
 
         RGTextureHandle importTexture(const std::string& name, Texture* texture);
 
-        RenderGraphContext& getContext() { return context; }
-        const RenderGraphContext& getContext() const { return context; }
+        template <typename T> void addBlackboardData(const T& data) { blackboard.add(data); }
+        template <typename T> const T& getBlackboardData() const { return blackboard.get<T>(); }
 
       private:
         struct VirtualResource {
@@ -130,7 +141,7 @@ namespace Axiom {
 
       private:
         friend class PassBuilder;
-        RenderGraphContext context;
+        Blackboard blackboard;
         std::vector<RenderPassNode> passes;
         std::vector<VirtualResource> virtualResources;
         std::vector<std::unique_ptr<Texture>> texturesCache;

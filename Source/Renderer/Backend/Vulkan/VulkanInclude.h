@@ -9,6 +9,8 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #elif defined(AX_PLATFORM_LINUX)
 #define VK_USE_PLATFORM_XLIB_KHR
+#elif defined(AX_PLATFORM_MACOS)
+#define VK_USE_PLATFORM_METAL_EXT
 #endif
 
 #include <vulkan/vulkan.hpp>

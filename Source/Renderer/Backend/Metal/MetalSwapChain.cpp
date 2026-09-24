@@ -6,9 +6,12 @@ namespace Axiom {
     MetalSwapChain::MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height)
         : SwapChain(), device(metalDevice), metalLayer(metalLayer) {
         metalLayer->setDrawableSize({static_cast<CGFloat>(width), static_cast<CGFloat>(height)});
-        metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
+        metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm_sRGB);
         metalLayer->setFramebufferOnly(true);
-        textureFormat = Format::B8G8R8A8Unorm;
+        CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+        metalLayer->setColorspace(colorSpace);
+        CGColorSpaceRelease(colorSpace);
+        textureFormat = Format::B8G8R8A8Srgb;
         depthTextureFormat = Format::D32sFloat;
 
         depthTextures.resize(metalLayer->maximumDrawableCount());
@@ -20,7 +23,6 @@ namespace Axiom {
             .format = depthTextureFormat,
             .usage = TextureUsage::DepthStencilAttachment,
             .aspect = TextureAspect::Depth,
-            .initialState = TextureState::Undefined,
             .memoryUsage = MemoryUsage::GPUOnly,
         };
 

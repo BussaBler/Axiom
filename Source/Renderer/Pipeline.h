@@ -1,11 +1,11 @@
 #pragma once
+#include "Renderer/Texture.h"
 #include "ResourceLayout.h"
-#include "ResourceSet.h"
 #include "Shader.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
-#include <memory>
 
 namespace Axiom {
     enum class VertexInputRate { Vertex, Instance };

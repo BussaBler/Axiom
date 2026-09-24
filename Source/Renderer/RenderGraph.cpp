@@ -52,6 +52,10 @@ namespace Axiom {
         currentWrites.push_back({handle.id, textureState});
     }
 
+    RGTextureHandle PassBuilder::importTexture(const std::string& name, Texture* texture) {
+        return renderGraph->importTexture(name, texture);
+    }
+
     const Texture* PassResources::getTexture(RGTextureHandle handle) const {
         if (!handle.isValid()) {
             AX_CORE_LOG_ERROR("Pass requested an invalid texture");
@@ -80,7 +84,7 @@ namespace Axiom {
         return hash;
     }
 
-    void RenderGraph::execute(CommandBuffer* commandBuffer) {
+    void RenderGraph::execute(CommandBuffer* commandBuffer, const FrameContext& frameCtx) {
         std::unordered_map<uint64_t, std::vector<Texture*>> freeList;
 
         for (const auto& uniqueTex : texturesCache) {
@@ -108,8 +112,8 @@ namespace Axiom {
                     } else {
                         std::unique_ptr<Texture> newTexture = Locator::getRenderer()->createTexture(vResource.createInfo);
                         vResource.texture = newTexture.get();
-                        vResource.currentState = vResource.createInfo.initialState;
-                        vResource.texture->setCurrentState(vResource.createInfo.initialState);
+                        vResource.currentState = vResource.currentState;
+                        vResource.texture->setCurrentState(vResource.currentState);
                         texturesCache.push_back(std::move(newTexture));
                     }
                 }
@@ -143,7 +147,7 @@ namespace Axiom {
             }
 
             if (pass.execute) {
-                pass.execute(passResources, commandBuffer);
+                pass.execute(passResources, commandBuffer, blackboard, frameCtx);
             }
 
             for (auto& vResource : virtualResources) {

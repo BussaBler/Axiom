@@ -2,10 +2,16 @@
 #include "axpch.h"
 #include "MacOSWindow.h"
 #include <Cocoa/Cocoa.h>
+#include <CoreFoundation/CFBase.h>
 #include <Foundation/Foundation.h>
 #include <QuartzCore/QuartzCore.h>
 #include <Carbon/Carbon.h>
 #include <cstdint>
+
+extern "C" {
+    void* objc_autoreleasePoolPush(void);
+    void objc_autoreleasePoolPop(void* pool);
+}
 
 namespace Axiom {
     static KeyCode macOSKeyCodeToAxiomKeyCode(unsigned short macKeyCode) {
@@ -331,7 +337,6 @@ namespace Axiom {
 
     if (trackingArea != nil) {
         [self removeTrackingArea:trackingArea];
-        [trackingArea release];
         trackingArea = nil;
     }
 
@@ -392,28 +397,36 @@ namespace Axiom {
         view = [[MacOSWindowView alloc] initWithFrame:frame];
         view.wData = &data;
 
+        CAMetalLayer* layer = [CAMetalLayer layer];
+        layer.contentsScale = scaleFactor;
 
         [view setWantsLayer:YES];
-
-        view.layer.contentsScale = scaleFactor;
+        [view setLayer:layer];
 
         [window setContentView:view];
         [window setAcceptsMouseMovedEvents:YES];
         [window makeFirstResponder:view];
+
+        metalLayer = (__bridge_retained void*)layer;
     }
 
     void MacOSWindow::shutdown() {
+        if (metalLayer != nullptr) {
+            CFRelease(metalLayer);
+            metalLayer = nullptr;
+        }
+
         [window close];
         [NSApp terminate:nil];
     }
 
     void MacOSWindow::beginFrame() {
-        autoreleasePool = [[NSAutoreleasePool alloc] init];
+        autoreleasePool = objc_autoreleasePoolPush();
     }
 
     void MacOSWindow::endFrame() {
-        [autoreleasePool release];
-        autoreleasePool = nil;
+        objc_autoreleasePoolPop(autoreleasePool);
+        autoreleasePool = nullptr;
     }
 
     void MacOSWindow::onUpdate() {
@@ -424,8 +437,16 @@ namespace Axiom {
         [NSApp updateWindows];
     }
 
+    void* MacOSWindow::getNativeWindow() {
+        return (__bridge void*) window;
+    }
+
     void MacOSWindow::setVSync(bool enabled) {
 
+    }
+
+    void* MacOSWindow::getMetalLayer() const {
+        return metalLayer;
     }
 
     void MacOSWindow::setSize(uint32_t width, uint32_t height) {
@@ -439,12 +460,5 @@ namespace Axiom {
         NSScreen* mainScreen = [NSScreen mainScreen];
         CGFloat scaleFactor = [mainScreen backingScaleFactor];
         return static_cast<uint32_t>(scaleFactor * 96);
-    }
-
-    void MacOSWindow::attachMetalLayer(void* metalLayer) {
-        CAMetalLayer* layer = (__bridge CAMetalLayer*)metalLayer;
-        layer.contentsScale = [window backingScaleFactor];
-        [view setWantsLayer:YES];
-        [view setLayer:layer];
     }
 }

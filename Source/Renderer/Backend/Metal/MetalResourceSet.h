@@ -11,12 +11,15 @@ namespace Axiom {
         void update(const std::vector<Binding>& bindings) override;
 
         MTL::Buffer* getArgumentBuffer() const { return argumentBuffer; }
+        NS::UInteger getFragmentArgumentBufferOffset() const { return fragmentArgumentBufferOffset; }
         std::vector<MTL::Buffer*>& getResidentBuffers() { return residentBuffers; }
         std::vector<MTL::Texture*>& getResidentTextures() { return residentTextures; }
 
       private:
+        MTL::ArgumentEncoder* vertexArgumentEncoder = nullptr;
+        MTL::ArgumentEncoder* fragmentArgumentEncoder = nullptr;
         MTL::Buffer* argumentBuffer = nullptr;
-        MTL::ArgumentEncoder* argumentEncoder = nullptr;
+        NS::UInteger fragmentArgumentBufferOffset = 0;
 
         std::vector<MTL::Buffer*> residentBuffers;
         std::vector<MTL::Texture*> residentTextures;

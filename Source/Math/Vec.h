@@ -286,6 +286,18 @@ namespace Math {
             return data[3];
         }
 
+        Vec<T, 2> xy()
+            requires(N >= 3)
+        {
+            return Vec<T, 2>(x(), y());
+        }
+
+        Vec<T, 3> xyz()
+            requires(N >= 4)
+        {
+            return Vec<T, 3>(x(), y(), z());
+        }
+
       protected:
         std::array<T, N> data{};
     };

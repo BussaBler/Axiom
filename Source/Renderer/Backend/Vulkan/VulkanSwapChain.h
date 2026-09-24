@@ -49,11 +49,11 @@ namespace Axiom {
         uint32_t currentImageIndex = 0;
         uint32_t currentFrameIndex = 0;
         std::vector<std::unique_ptr<VulkanTexture>> swapChainTextures;
+        std::vector<std::unique_ptr<VulkanTexture>> depthTextures;
         std::vector<Vk::Semaphore> imageAvailableSemaphores;
         std::vector<Vk::Semaphore> renderFinishedSemaphores;
         Vk::Extent2D swapChainExtent = {0, 0};
         Vk::Format swapChainImageFormat = Vk::Format::eUndefined;
-        std::vector<std::unique_ptr<VulkanTexture>> depthTextures;
         Vk::Format depthFormat = Vk::Format::eUndefined;
     };
 } // namespace Axiom

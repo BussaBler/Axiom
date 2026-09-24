@@ -1,6 +1,6 @@
 #pragma once
 #include "Buffer.h"
-#include "Math/AxMath.h"
+#include "Math/Vec.h"
 #include "Utils/BitMaskEnum.h"
 
 #include <cstdint>
@@ -20,6 +20,7 @@ namespace Axiom {
         R8G8B8A8Srgb,
         D24UnormS8Uint,
         D32sFloat,
+        R32UInt,
         R32G32Sfloat,
         R32G32B32Sfloat,
         R32G32B32A32Sfloat
@@ -62,7 +63,6 @@ namespace Axiom {
             Format format = Format::Undefined;
             TextureUsage usage = TextureUsage::None;
             TextureAspect aspect = TextureAspect::Color;
-            TextureState initialState = TextureState::Undefined;
             MemoryUsage memoryUsage = MemoryUsage::GPUOnly;
             TextureType type = TextureType::Texture2D;
 

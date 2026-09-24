@@ -50,7 +50,7 @@ namespace Axiom {
     }
 
     void AssetManager::init() {
-        uint64_t globalBufferSize = Math::megabytes(512);
+        uint64_t globalBufferSize = Math::megabytes(256);
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
             .size = globalBufferSize, .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
@@ -140,7 +140,6 @@ namespace Axiom {
                                                  .format = Format::R8G8B8A8Unorm,
                                                  .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
                                                  .aspect = TextureAspect::Color,
-                                                 .initialState = TextureState::Undefined,
                                                  .memoryUsage = MemoryUsage::GPUOnly};
         std::unique_ptr<Texture> defaultTexture = Locator::getRenderer()->createTexture(textureCreateInfo);
 
@@ -327,7 +326,6 @@ namespace Axiom {
                                               .format = Format::R8G8B8A8Unorm,
                                               .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
                                               .aspect = TextureAspect::Color,
-                                              .initialState = TextureState::Undefined,
                                               .memoryUsage = MemoryUsage::GPUOnly};
 
             std::unique_ptr<Texture> texture = Locator::getRenderer()->createTexture(createInfo);
@@ -368,9 +366,12 @@ namespace Axiom {
         std::string fragmentSource = source.substr(fragmentPos + 15, std::string::npos);
 
         std::unique_ptr<Shader> shader = Locator::getRenderer()->createShader(vertexSource, fragmentSource);
-        if (shader->isCompiled()) {
-            loadedAssets[uuid] = std::make_shared<ShaderAsset>(uuid, path.filename().string(), std::move(shader));
+        if (!shader->isCompiled()) {
+            AX_CORE_LOG_ERROR_ONCE("Shader {} was not compiled properly.", path.generic_string());
+            return loadedAssets[uuid];
         }
+
+        loadedAssets[uuid] = std::make_shared<ShaderAsset>(uuid, path.filename().string(), std::move(shader));
         return loadedAssets[uuid];
     }
 

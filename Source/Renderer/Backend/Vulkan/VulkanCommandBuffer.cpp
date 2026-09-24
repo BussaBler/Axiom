@@ -2,6 +2,8 @@
 
 #include "VulkanCommandBuffer.h"
 
+#include "vulkan/vulkan.hpp"
+
 namespace Axiom {
     VulkanCommandBuffer::VulkanCommandBuffer(Vk::Device logicDevice, Vk::CommandPool commandPool) : device(logicDevice), commandPool(commandPool) {
         Vk::CommandBufferAllocateInfo allocInfo(commandPool, Vk::CommandBufferLevel::ePrimary, 1);
@@ -20,11 +22,13 @@ namespace Axiom {
 
     void VulkanCommandBuffer::begin() {
         Vk::CommandBufferBeginInfo beginInfo(Vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-        AX_CORE_ASSERT(commandBuffer.begin(beginInfo) == Vk::Result::eSuccess, "Failed to begin recording Vulkan command buffer");
+        Vk::Result beginResult = commandBuffer.begin(beginInfo);
+        AX_CORE_ASSERT(beginResult == Vk::Result::eSuccess, "Failed to begin recording Vulkan command buffer");
     }
 
     void VulkanCommandBuffer::end() {
-        AX_CORE_ASSERT(commandBuffer.end() == Vk::Result::eSuccess, "Failed to end recording Vulkan command buffer");
+        Vk::Result endResult = commandBuffer.end();
+        AX_CORE_ASSERT(endResult == Vk::Result::eSuccess, "Failed to end recording Vulkan command buffer");
     }
 
     void VulkanCommandBuffer::beginRendering(const RenderPass& renderPass) {
@@ -33,7 +37,7 @@ namespace Axiom {
 
         for (size_t i = 0; i < renderPass.colorAttachmentCount; i++) {
             const auto& attachment = renderPass.colorAttachments[i];
-            VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(attachment.texture);
+            const VulkanTexture* vulkanTexture = static_cast<const VulkanTexture*>(attachment.texture);
             Vk::ClearValue clearValue{};
             clearValue.setColor(Vk::ClearColorValue(
                 std::array<float, 4>{attachment.clearColor.x(), attachment.clearColor.y(), attachment.clearColor.z(), attachment.clearColor.w()}));
@@ -49,7 +53,7 @@ namespace Axiom {
 
         Vk::RenderingAttachmentInfo depthAttachmentInfo{};
         if (renderPass.hasDepthAttachment) {
-            VulkanTexture* vulkanTexture = static_cast<VulkanTexture*>(renderPass.depthAttachment.texture);
+            const VulkanTexture* vulkanTexture = static_cast<const VulkanTexture*>(renderPass.depthAttachment.texture);
             Vk::ClearValue clearValue{};
             clearValue.setDepthStencil(Vk::ClearDepthStencilValue{renderPass.depthAttachment.clearDepth, renderPass.depthAttachment.clearStencil});
             depthAttachmentInfo.setImageView(vulkanTexture->getImageView());
@@ -241,6 +245,7 @@ namespace Axiom {
         Texture::Barrier transferBarrier = {.texture = dstTexture,
                                             .oldState = TextureState::Undefined,
                                             .newState = TextureState::TransferDst,
+                                            .aspect = dstTexture->getCreateInfo().aspect,
                                             .baseMipLevel = mipLevel,
                                             .mipLevelCount = 1,
                                             .baseArrayLayer = arrayLayer,

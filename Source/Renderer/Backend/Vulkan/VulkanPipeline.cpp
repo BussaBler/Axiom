@@ -2,14 +2,11 @@
 
 #include "VulkanPipeline.h"
 
-#include "Utils/FileSystem.h"
-#include "VulkanResourceSet.h"
 #include "VulkanShader.h"
 
 namespace Axiom {
     VulkanPipeline::VulkanPipeline(const CreateInfo& createInfo, Vk::Device logicDevice, Vk::DescriptorPool descriptorPool)
         : device(logicDevice), descriptorPool(descriptorPool) {
-
         VulkanShader* vkShader = static_cast<VulkanShader*>(createInfo.shader);
         Vk::PipelineShaderStageCreateInfo vertShaderStageInfo({}, Vk::ShaderStageFlagBits::eVertex, vkShader->getVertexShaderModule(), "main");
         Vk::PipelineShaderStageCreateInfo fragShaderStageInfo({}, Vk::ShaderStageFlagBits::eFragment, vkShader->getFragmentShaderModule(), "main");
@@ -69,7 +66,7 @@ namespace Axiom {
             vkDescriptorSetLayouts.push_back(vulkanLayout->getHandle());
         }
         std::array<Vk::PushConstantRange, 1> pushConstantRanges = {
-            Vk::PushConstantRange(Vk::ShaderStageFlagBits::eVertex | Vk::ShaderStageFlagBits::eFragment, 0, sizeof(Math::Mat4))};
+            Vk::PushConstantRange(Vk::ShaderStageFlagBits::eVertex | Vk::ShaderStageFlagBits::eFragment, 0, 128)};
 
         Vk::PipelineLayoutCreateInfo pipelineLayoutInfo({}, vkDescriptorSetLayouts, pushConstantRanges);
         Vk::ResultValue<Vk::PipelineLayout> pipelineLayoutResult = device.createPipelineLayout(pipelineLayoutInfo);
@@ -101,10 +98,6 @@ namespace Axiom {
         if (pipeline) {
             device.destroyPipeline(pipeline);
         }
-    }
-
-    std::unique_ptr<ResourceSet> VulkanPipeline::createResourceSet(ResourceLayout* resourceLayout) {
-        return std::make_unique<VulkanResourceSet>(device, descriptorPool, static_cast<VulkanResourceLayout*>(resourceLayout)->getHandle());
     }
 
     Vk::PolygonMode VulkanPipeline::axPolygonToVkPolygon(PolygonMode mode) {

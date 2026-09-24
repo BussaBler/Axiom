@@ -52,7 +52,7 @@ namespace Axiom {
         totalInstanceCount = 0;
     }
 
-    void ForwardRenderPipeline::render(RenderGraph& renderGraph, const RenderContext& context) {
+    void ForwardRenderPipeline::buildRenderGraph(RenderGraph& renderGraph, const RenderContext& context) {
         AX_CORE_ASSERT(globalDataAllocations < MAX_VIEWPORTS, "Exceeded maximum viewports per frame");
 
         uint32_t currentViewportIndex = globalDataAllocations++;
@@ -62,80 +62,88 @@ namespace Axiom {
         RGTextureHandle colorBufferHandle = renderGraph.importTexture("ColorBuffer", context.renderTarget);
         RGTextureHandle depthBufferHandle = renderGraph.importTexture("DepthBuffer", context.depthTarget);
 
-        renderGraph.getContext().add<GlobalResourceData>(
+        renderGraph.addBlackboardData<GlobalResourceData>(
             {.colorBuffer = colorBufferHandle, .depthBuffer = depthBufferHandle, .viewportIndex = currentViewportIndex});
 
         injectRenderFeatures(RenderInjectionPoint::BeforeOpaque, renderGraph, context);
-        renderGraph.addPass<DefaultPassData>("Opaque Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
-            const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-            builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-            builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-            passData.renderTarget = resourceData.colorBuffer;
-            passData.depthTarget = resourceData.depthBuffer;
-            passData.scene = context.targetScene;
+        renderGraph.addPass<DefaultPassData>("Opaque Pass",
+                                             [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+                                                 const auto& resourceData = blackboard.get<GlobalResourceData>();
+                                                 builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                                                 builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                                                 passData.renderTarget = resourceData.colorBuffer;
+                                                 passData.depthTarget = resourceData.depthBuffer;
+                                                 passData.scene = context.targetScene;
 
-            return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
-                const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-                opaquePass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
-                           resourceData.viewportIndex);
-            };
-        });
+                                                 return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources,
+                                                                             CommandBuffer* cmd, const Blackboard& blackboard, const FrameContext& frameCtx) {
+                                                     const auto& resourceData = blackboard.get<GlobalResourceData>();
+                                                     opaquePass(passData.scene, resources.getTexture(passData.renderTarget),
+                                                                resources.getTexture(passData.depthTarget), cmd, resourceData.viewportIndex);
+                                                 };
+                                             });
         injectRenderFeatures(RenderInjectionPoint::AfterOpaque, renderGraph, context);
 
         injectRenderFeatures(RenderInjectionPoint::BeforeSkybox, renderGraph, context);
         if (context.shouldDrawSkybox) {
-            renderGraph.addPass<DefaultPassData>("Skybox Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
-                const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-                passData.renderTarget = resourceData.colorBuffer;
-                passData.depthTarget = resourceData.depthBuffer;
-                passData.scene = context.targetScene;
+            renderGraph.addPass<DefaultPassData>(
+                "Skybox Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+                    const auto& resourceData = blackboard.get<GlobalResourceData>();
+                    builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                    builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                    passData.renderTarget = resourceData.colorBuffer;
+                    passData.depthTarget = resourceData.depthBuffer;
+                    passData.scene = context.targetScene;
 
-                return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
-                    const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-                    skyboxPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
-                };
-            });
+                    return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd,
+                                                const Blackboard& blackboard, const FrameContext& frameCtx) {
+                        const auto& resourceData = blackboard.get<GlobalResourceData>();
+                        skyboxPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
+                    };
+                });
         }
         injectRenderFeatures(RenderInjectionPoint::AfterSkybox, renderGraph, context);
 
         if (context.shouldDrawWorldGrid) {
-            renderGraph.addPass<DefaultPassData>("World Grid Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
-                const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-                passData.renderTarget = resourceData.colorBuffer;
-                passData.depthTarget = resourceData.depthBuffer;
-                passData.scene = context.targetScene;
+            renderGraph.addPass<DefaultPassData>(
+                "World Grid Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+                    const auto& resourceData = blackboard.get<GlobalResourceData>();
+                    builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                    builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                    passData.renderTarget = resourceData.colorBuffer;
+                    passData.depthTarget = resourceData.depthBuffer;
+                    passData.scene = context.targetScene;
 
-                return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
-                    const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-                    worldGridPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
-                };
-            });
+                    return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd,
+                                                const Blackboard& blackboard, const FrameContext& frameCtx) {
+                        const auto& resourceData = blackboard.get<GlobalResourceData>();
+                        worldGridPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
+                    };
+                });
         }
         if (context.shouldDrawGizmos) {
-            renderGraph.addPass<DefaultPassData>("Gizmos Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData) {
-                const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-                passData.renderTarget = resourceData.colorBuffer;
-                passData.depthTarget = resourceData.depthBuffer;
-                passData.scene = context.targetScene;
+            renderGraph.addPass<DefaultPassData>(
+                "Gizmos Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+                    const auto& resourceData = blackboard.get<GlobalResourceData>();
+                    builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                    builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                    passData.renderTarget = resourceData.colorBuffer;
+                    passData.depthTarget = resourceData.depthBuffer;
+                    passData.scene = context.targetScene;
 
-                return [this, &renderGraph, &context](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd) {
-                    const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
-                    gizmosPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
-                               context.gizmosPosition);
-                };
-            });
+                    return [this, &renderGraph, &context](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd,
+                                                          const Blackboard& blackboard, const FrameContext& frameCtx) {
+                        const auto& resourceData = blackboard.get<GlobalResourceData>();
+                        gizmosPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
+                                   context.gizmosPosition);
+                    };
+                });
         }
 
-        renderGraph.addPass<DefaultPassData>("Prepare Present Pass", [&renderGraph](PassBuilder& builder, DefaultPassData& passData) {
-            const auto& resourceData = renderGraph.getContext().get<GlobalResourceData>();
+        renderGraph.addPass<DefaultPassData>("Prepare Present Pass", [&renderGraph](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+            const auto& resourceData = blackboard.get<GlobalResourceData>();
             builder.readTexture(resourceData.colorBuffer, TextureState::Present);
-            return nullptr;
+            return [](const auto&...) {};
         });
     }
 
@@ -157,6 +165,7 @@ namespace Axiom {
         std::vector<ResourceSet::Binding> bindingUpdateInfo(1);
         bindingUpdateInfo[0].binding = 0;
         bindingUpdateInfo[0].type = ResourceType::UniformBuffer;
+        bindingUpdateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
         bindingUpdateInfo[0].buffers = {globalDataBuffer.get()};
         bindingUpdateInfo[0].maxNumberOfResources = 1;
         globalDataResourceSet->update(bindingUpdateInfo);
@@ -186,6 +195,7 @@ namespace Axiom {
         std::vector<ResourceSet::Binding> bindingsUpdateInfo(1);
         bindingsUpdateInfo[0].binding = 1;
         bindingsUpdateInfo[0].type = ResourceType::StorageBuffer;
+        bindingsUpdateInfo[0].stages = ShaderStage::Vertex;
         bindingsUpdateInfo[0].buffers = {instanceSBBO.get()};
         bindingsUpdateInfo[0].maxNumberOfResources = 1;
         instanceResourceSet->update(bindingsUpdateInfo);

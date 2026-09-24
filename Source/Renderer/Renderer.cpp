@@ -52,6 +52,7 @@ namespace Axiom {
         commandBuffer->begin();
 
         renderTargetBarrier.texture = swapChain->getCurrentTexture();
+        // barriers are now handled by the render graph
         // commandBuffer->pipelineBarrier({renderTargetBarrier});
         depthBarrier.texture = swapChain->getCurrentDepthTexture();
         // commandBuffer->pipelineBarrier({depthBarrier});

@@ -10,6 +10,7 @@ namespace Axiom {
         struct Binding {
             uint32_t binding = 0;
             ResourceType type = ResourceType::UniformBuffer;
+            ShaderStage stages = ShaderStage::None;
             std::vector<Buffer*> buffers;
             std::vector<Texture*> textures;
             std::vector<Sampler*> samplers;

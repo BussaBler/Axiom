@@ -1,6 +1,7 @@
 #pragma once
 #include "axpch.h"
 
+#include "Core/Log.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
@@ -8,6 +9,7 @@
 #include "Renderer/Sampler.h"
 #include "Renderer/Texture.h"
 #include "VulkanInclude.h"
+#include "vulkan/vulkan.hpp"
 
 namespace Axiom {
     struct QueueFamilyIndices {
@@ -50,6 +52,8 @@ namespace Axiom {
             return Vk::Format::eD24UnormS8Uint;
         case Format::D32sFloat:
             return Vk::Format::eD32Sfloat;
+        case Format::R32UInt:
+            return Vk::Format::eR32Uint;
         case Format::R32G32Sfloat:
             return Vk::Format::eR32G32Sfloat;
         case Format::R32G32B32Sfloat:
@@ -77,6 +81,8 @@ namespace Axiom {
             return Format::D24UnormS8Uint;
         case Vk::Format::eD32Sfloat:
             return Format::D32sFloat;
+        case Vk::Format::eR32Uint:
+            return Format::R32UInt;
         default:
             return Format::Undefined;
         }
@@ -172,7 +178,9 @@ namespace Axiom {
             return Vk::DescriptorType::eUniformBuffer;
         case ResourceType::StorageBuffer:
             return Vk::DescriptorType::eStorageBuffer;
-        case ResourceType::Texture:
+        case ResourceType::Texture2D:
+            return Vk::DescriptorType::eSampledImage;
+        case ResourceType::Texture3D:
             return Vk::DescriptorType::eSampledImage;
         case ResourceType::Sampler:
             return Vk::DescriptorType::eSampler;

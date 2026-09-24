@@ -21,6 +21,8 @@
 #include "Platform/Windows/Win32Window.h"
 #elif defined(AX_PLATFORM_LINUX)
 #include "Platform/Linux/XLibWindow.h"
+#elif defined(AX_PLATFORM_MACOS)
+#include "Platform/MacOS/MacOSWindow.h"
 #endif
 
 namespace Axiom {
@@ -37,6 +39,7 @@ namespace Axiom {
         std::unique_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo) override;
         std::unique_ptr<Sampler> createSampler(const Sampler::CreateInfo& samplerCreateInfo) override;
         std::unique_ptr<ResourceLayout> createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) override;
+        std::unique_ptr<ResourceSet> createResourceSet(const ResourceLayout* resourceLayout) override;
         bool beginFrame(SwapChain* swapChain) override;
         CommandBuffer* getCurrentCommandBuffer() override;
         std::unique_ptr<CommandBuffer> beginSingleTimeCommands() override;

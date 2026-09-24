@@ -35,6 +35,6 @@ namespace Axiom {
         virtual ~RenderPipeline() = default;
 
         virtual void beginFrame() = 0;
-        virtual void render(RenderGraph& renderGraph, const RenderContext& context) = 0;
+        virtual void buildRenderGraph(RenderGraph& renderGraph, const RenderContext& context) = 0;
     };
 } // namespace Axiom

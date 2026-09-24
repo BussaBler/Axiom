@@ -1,7 +1,5 @@
 #include "VulkanTexture.h"
 
-#include "Renderer/Texture.h"
-
 namespace Axiom {
     VulkanTexture::VulkanTexture(Vk::Device logicalDevice, const CreateInfo& createInfo)
         : Texture(createInfo), device(logicalDevice), ownsImage(true), size(createInfo.width, createInfo.height) {
@@ -18,7 +16,7 @@ namespace Axiom {
                                             createInfo.mipLevels, arrayLayers, Vk::SampleCountFlagBits::e1, Vk::ImageTiling::eOptimal,
                                             axToVkImageUsage(createInfo.usage));
 
-        imageCreateInfo.setInitialLayout(axToVkImageLayout(createInfo.initialState));
+        imageCreateInfo.setInitialLayout(Vk::ImageLayout::eUndefined);
         imageCreateInfo.setImageType(axToVkImageType(createInfo.type));
 
         Vk::ResultValue<Vk::Image> imageResult = device.createImage(imageCreateInfo);
@@ -33,19 +31,22 @@ namespace Axiom {
         createImageView(imageCreateInfo.format, axToVkImageAspectFlags(createInfo.aspect), axToVkImageViewType(createInfo.type));
     }
 
+    // TODO: reverse the data to get a proper create info
     VulkanTexture::VulkanTexture(Vk::Device logicalDevice, Vk::Image existingImage, Vk::Format format, Math::iVec2 size)
-        : device(logicalDevice), image(existingImage), ownsImage(false), imageFormat(format), size(size) {
+        : Texture({}), device(logicalDevice), image(existingImage), ownsImage(false), imageFormat(format), size(size) {
     }
 
     VulkanTexture::~VulkanTexture() {
         if (ownsImage) {
             VulkanAllocator::free(imageAllocation);
-            if (image)
+            if (image) {
                 device.destroyImage(image);
+            }
         }
 
-        if (imageView)
+        if (imageView) {
             device.destroyImageView(imageView);
+        }
     }
 
     Format VulkanTexture::getFormat() const {

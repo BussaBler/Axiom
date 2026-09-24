@@ -2,6 +2,10 @@
 
 #include "VulkanDevice.h"
 
+#include "Core/Assert.h"
+#include "Core/Log.h"
+#include "Renderer/Backend/Vulkan/VulkanSwapChain.h"
+
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace Axiom {
@@ -27,9 +31,14 @@ namespace Axiom {
         return Vk::False;
     }
 
+    std::unique_ptr<Device> Device::create(const CreateInfo& createInfo) {
+        return std::make_unique<VulkanDevice>(createInfo);
+    }
+
     VulkanDevice::VulkanDevice(const Device::CreateInfo& createInfo) {
         AX_CORE_LOG_INFO("Initializing Vulkan Device...");
-        AX_CORE_ASSERT(linkVulkanLib(), "Failed to link Vulkan library!");
+        bool linkingResult = linkVulkanLib();
+        AX_CORE_ASSERT(linkingResult, "Failed to link Vulkan library!");
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkInstanceProcAddr);
 
         Vk::ApplicationInfo appInfo(
@@ -41,6 +50,9 @@ namespace Axiom {
         std::vector<const char*> layers = getValidationLayers();
 
         Vk::InstanceCreateInfo instanceCreateInfo({}, &appInfo, layers, extensions);
+#if defined(AX_PLATFORM_MACOS)
+        instanceCreateInfo.flags |= Vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+#endif
         Vk::ResultValue<Vk::Instance> instanceResult = Vk::createInstance(instanceCreateInfo, nullptr, VULKAN_HPP_DEFAULT_DISPATCHER);
 
         AX_CORE_ASSERT(instanceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan instance: {}", Vk::to_string(instanceResult.result));
@@ -60,7 +72,7 @@ namespace Axiom {
         inFlightFences.reserve(maxFramesInFlight);
         for (size_t i = 0; i < maxFramesInFlight; i++) {
             commandBuffers.push_back(std::make_unique<VulkanCommandBuffer>(logicalDevice, commandPool));
-            Vk::FenceCreateInfo fenceCreateInfo({}, 0);
+            Vk::FenceCreateInfo fenceCreateInfo(Vk::FenceCreateFlagBits::eSignaled, 0);
             Vk::ResultValue<Vk::Fence> fenceResult = logicalDevice.createFence(fenceCreateInfo, nullptr);
             AX_CORE_ASSERT(fenceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan fence: {}", Vk::to_string(fenceResult.result));
             inFlightFences.push_back(fenceResult.value);
@@ -75,6 +87,12 @@ namespace Axiom {
         if (descriptorPool) {
             logicalDevice.destroyDescriptorPool(descriptorPool);
         }
+        for (uint32_t i = 0; i < maxFramesInFlight; i++) {
+            if (inFlightFences[i]) {
+                logicalDevice.destroyFence(inFlightFences[i]);
+            }
+        }
+        commandBuffers.clear();
         if (commandPool) {
             logicalDevice.destroyCommandPool(commandPool);
         }
@@ -128,14 +146,18 @@ namespace Axiom {
         return std::make_unique<VulkanResourceLayout>(logicalDevice, bindings);
     }
 
-    bool VulkanDevice::beginFrame(SwapChain* swapChain) {
-        logicalDevice.waitForFences(1, &inFlightFences[currentFrameIndex], Vk::True, std::numeric_limits<uint64_t>::max());
+    std::unique_ptr<ResourceSet> VulkanDevice::createResourceSet(const ResourceLayout* resourceLayout) {
+        return std::make_unique<VulkanResourceSet>(logicalDevice, descriptorPool, static_cast<const VulkanResourceLayout*>(resourceLayout)->getHandle());
+    }
 
+    bool VulkanDevice::beginFrame(SwapChain* swapChain) {
+        Vk::Result waitResult = logicalDevice.waitForFences(1, &inFlightFences[currentFrameIndex], Vk::True, std::numeric_limits<uint64_t>::max());
+        static_cast<VulkanSwapChain*>(swapChain)->setCurrentFrameIndex(currentFrameIndex);
         if (!swapChain->acquireNextImage()) {
             return false;
         }
 
-        logicalDevice.resetFences(1, &inFlightFences[currentFrameIndex]);
+        Vk::Result resetResult = logicalDevice.resetFences(1, &inFlightFences[currentFrameIndex]);
         return true;
     }
 
@@ -146,7 +168,6 @@ namespace Axiom {
     std::unique_ptr<CommandBuffer> VulkanDevice::beginSingleTimeCommands() {
         VulkanCommandBuffer* commandBuffer = new VulkanCommandBuffer(logicalDevice, commandPool);
         commandBuffer->begin();
-
         return std::make_unique<VulkanCommandBuffer>(*commandBuffer);
     }
 
@@ -156,11 +177,12 @@ namespace Axiom {
         std::array<Vk::CommandBuffer, 1> vkCommandBuffers = {static_cast<VulkanCommandBuffer*>(commandBuffer)->getHandle()};
 
         Vk::SubmitInfo submitInfo({}, {}, vkCommandBuffers, {});
-        AX_CORE_ASSERT(graphicsQueue.submit(submitInfo, nullptr) == Vk::Result::eSuccess,
-                       "Failed to submit single time command buffer to Vulkan graphics queue: {}", Vk::to_string(graphicsQueue.submit(submitInfo, nullptr)));
-        AX_CORE_ASSERT(graphicsQueue.waitIdle() == Vk::Result::eSuccess,
-                       "Failed to wait for Vulkan graphics queue idle after submitting single time command buffer: {}",
-                       Vk::to_string(graphicsQueue.waitIdle()));
+        Vk::Result submitResult = graphicsQueue.submit(submitInfo, nullptr);
+        AX_CORE_ASSERT(submitResult == Vk::Result::eSuccess, "Failed to submit single time command buffer to Vulkan graphics queue: {}",
+                       Vk::to_string(submitResult));
+        Vk::Result waitResult = graphicsQueue.waitIdle();
+        AX_CORE_ASSERT(waitResult == Vk::Result::eSuccess, "Failed to wait for Vulkan graphics queue idle after submitting single time command buffer: {}",
+                       Vk::to_string(waitResult));
     }
 
     void VulkanDevice::submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, SwapChain* swapChain) {
@@ -169,22 +191,24 @@ namespace Axiom {
             vkCommandBuffers[i] = static_cast<VulkanCommandBuffer*>(commandBuffers[i])->getHandle();
         }
 
-        std::array<Vk::Semaphore, 1> vkWaitSemaphores = {static_cast<VulkanSwapChain*>(swapChain)->getImageAvailableSemaphore(currentFrameIndex)};
-        std::array<Vk::Semaphore, 1> vkSignalSemaphores = {static_cast<VulkanSwapChain*>(swapChain)->getRenderFinishedSemaphore()};
+        VulkanSwapChain* vkSwapChain = static_cast<VulkanSwapChain*>(swapChain);
+        std::array<Vk::Semaphore, 1> vkWaitSemaphores = {vkSwapChain->getImageAvailableSemaphore(currentFrameIndex)};
+        std::array<Vk::Semaphore, 1> vkSignalSemaphores = {vkSwapChain->getRenderFinishedSemaphore()};
         Vk::Fence vkSignalFence = inFlightFences[currentFrameIndex];
 
         std::array<Vk::PipelineStageFlags, 1> waitStages = {Vk::PipelineStageFlagBits::eColorAttachmentOutput};
 
         Vk::SubmitInfo submitInfo(vkWaitSemaphores, waitStages, vkCommandBuffers, vkSignalSemaphores);
+        Vk::Result submitResult = graphicsQueue.submit(submitInfo, vkSignalFence);
 
-        AX_CORE_ASSERT(graphicsQueue.submit(submitInfo, vkSignalFence) == Vk::Result::eSuccess, "Failed to submit command buffers to Vulkan graphics queue: {}",
-                       Vk::to_string(graphicsQueue.submit(submitInfo, vkSignalFence)));
+        AX_CORE_ASSERT(submitResult == Vk::Result::eSuccess, "Failed to submit command buffers to Vulkan graphics queue: {}", Vk::to_string(submitResult));
 
         currentFrameIndex = (currentFrameIndex + 1) % maxFramesInFlight;
     }
 
     void VulkanDevice::waitIdle() {
-        AX_CORE_ASSERT(logicalDevice.waitIdle() == Vk::Result::eSuccess, "Failed to wait for Vulkan device idle: {}", Vk::to_string(logicalDevice.waitIdle()));
+        Vk::Result waitResult = logicalDevice.waitIdle();
+        AX_CORE_ASSERT(waitResult == Vk::Result::eSuccess, "Failed to wait for Vulkan device idle: {}", Vk::to_string(waitResult));
     }
 
     bool VulkanDevice::linkVulkanLib() {
@@ -198,6 +222,16 @@ namespace Axiom {
 #elif defined(AX_PLATFORM_LINUX)
         void* vulkanLib = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
         if (vulkanLib == nullptr) {
+            AX_CORE_LOG_ERROR("Failed to load Vulkan library: {}", dlerror());
+            return false;
+        }
+        vkInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(vulkanLib, "vkGetInstanceProcAddr"));
+#elif defined(AX_PLATFORM_MACOS)
+        void* vulkanLib = dlopen("libvulkan.1.dylib", RTLD_NOW | RTLD_LOCAL);
+        if (!vulkanLib) {
+            vulkanLib = dlopen("libvulkan.dylib", RTLD_NOW | RTLD_LOCAL);
+        }
+        if (!vulkanLib) {
             AX_CORE_LOG_ERROR("Failed to load Vulkan library: {}", dlerror());
             return false;
         }
@@ -216,6 +250,9 @@ namespace Axiom {
         extensions.push_back(Vk::KHRWin32SurfaceExtensionName);
 #elif defined(AX_PLATFORM_LINUX)
         extensions.push_back(Vk::KHRXlibSurfaceExtensionName);
+#elif defined(AX_PLATFORM_MACOS)
+        extensions.push_back(Vk::EXTMetalSurfaceExtensionName);
+        extensions.push_back(Vk::KHRPortabilityEnumerationExtensionName);
 #endif
         for (const char* ext : extensions) {
             AX_CORE_LOG_DEBUG("Required Vulkan Device Extension: {}", ext);
@@ -271,16 +308,24 @@ namespace Axiom {
                                                         reinterpret_cast<HWND>(win32Window->getNativeWindow()));
         Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createWin32SurfaceKHR(surfaceCreateInfo);
 
-        AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan Win32 surface: {}", Vk::to_string(surfaceResult.result));
+        AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Falied to create window surface: {}", Vk::to_string(surfaceResult.result));
         surface = surfaceResult.value;
 #elif defined(AX_PLATFORM_LINUX)
         XLibWindow* xLibWindow = reinterpret_cast<XLibWindow*>(windowObjPtr);
 
-        Vk::XlibSurfaceCreateInfoKHR createInfo({}, static_cast<Display*>(xLibWindow->getNativeDisplay()),
-                                                *static_cast<::Window*>(xLibWindow->getNativeWindow()));
-        Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createXlibSurfaceKHR(createInfo);
+        Vk::XlibSurfaceCreateInfoKHR surfaceCreateInfo({}, static_cast<Display*>(xLibWindow->getNativeDisplay()),
+                                                       *static_cast<::Window*>(xLibWindow->getNativeWindow()));
+        Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createXlibSurfaceKHR(surfaceCreateInfo);
 
-        AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Failed to create window surface!");
+        AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Falied to create window surface: {}", Vk::to_string(surfaceResult.result));
+        surface = surfaceResult.value;
+#elif defined(AX_PLATFORM_MACOS)
+        MacOSWindow* macOsWindow = reinterpret_cast<MacOSWindow*>(windowObjPtr);
+
+        Vk::MetalSurfaceCreateInfoEXT surfaceCreateInfo({}, static_cast<CAMetalLayer*>(reinterpret_cast<MacOSWindow*>(macOsWindow)->getMetalLayer()));
+        Vk::ResultValue<Vk::SurfaceKHR> surfaceResult = instance.createMetalSurfaceEXT(surfaceCreateInfo);
+
+        AX_CORE_ASSERT(surfaceResult.result == Vk::Result::eSuccess, "Falied to create window surface: {}", Vk::to_string(surfaceResult.result));
         surface = surfaceResult.value;
 #endif
     }
@@ -323,6 +368,9 @@ namespace Axiom {
         std::vector<Vk::ExtensionProperties> availableExtensions = availableExtensionsResult.value;
         std::vector<const char*> requiredExtensions = {Vk::KHRSwapchainExtensionName, Vk::KHRDynamicRenderingExtensionName,
                                                        Vk::KHRSynchronization2ExtensionName};
+#if defined(AX_PLATFORM_MACOS)
+        requiredExtensions.push_back("VK_KHR_portability_subset");
+#endif
 
         for (const char* requiredExt : requiredExtensions) {
             bool extensionFound = false;
@@ -415,14 +463,24 @@ namespace Axiom {
 
         Vk::PhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.setSamplerAnisotropy(Vk::True);
-        Vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
-        dynamicRenderingFeatures.setDynamicRendering(Vk::True);
-        Vk::PhysicalDeviceSynchronization2Features synchronization2Features{};
-        synchronization2Features.setSynchronization2(Vk::True);
+        Vk::PhysicalDeviceVulkan12Features vulkan12features{};
+        vulkan12features.setRuntimeDescriptorArray(Vk::True);
+        vulkan12features.setShaderSampledImageArrayNonUniformIndexing(Vk::True);
+        vulkan12features.setDescriptorBindingPartiallyBound(Vk::True);
+        vulkan12features.setDescriptorBindingSampledImageUpdateAfterBind(Vk::True);
+        Vk::PhysicalDeviceVulkan13Features vulkan13features{};
+        vulkan13features.setShaderDemoteToHelperInvocation(Vk::True);
+        vulkan13features.setDynamicRendering(Vk::True);
+        vulkan13features.setSynchronization2(Vk::True);
 
-        dynamicRenderingFeatures.setPNext(&synchronization2Features);
+        vulkan12features.setPNext(&vulkan13features);
 
-        Vk::DeviceCreateInfo deviceCreateInfo({}, queueCreateInfos, {}, {Vk::KHRSwapchainExtensionName}, &deviceFeatures, &dynamicRenderingFeatures);
+        std::vector<const char*> enabledDeviceExtensions = {Vk::KHRSwapchainExtensionName};
+#if defined(AX_PLATFORM_MACOS)
+        enabledDeviceExtensions.push_back("VK_KHR_portability_subset");
+#endif
+
+        Vk::DeviceCreateInfo deviceCreateInfo({}, queueCreateInfos, {}, enabledDeviceExtensions, &deviceFeatures, &vulkan12features);
         Vk::ResultValue<Vk::Device> logicalDeviceResult = physicalDevice.createDevice(deviceCreateInfo);
 
         AX_CORE_ASSERT(logicalDeviceResult.result == Vk::Result::eSuccess, "Failed to create Vulkan logical device: {}",
@@ -444,12 +502,13 @@ namespace Axiom {
 
     void VulkanDevice::createDescriptorPool() {
         std::array<Vk::DescriptorPoolSize, 5> poolSizes = {
-            Vk::DescriptorPoolSize(Vk::DescriptorType::eUniformBuffer, 100),       Vk::DescriptorPoolSize(Vk::DescriptorType::eStorageBuffer, 100),
-            Vk::DescriptorPoolSize(Vk::DescriptorType::eSampledImage, 100),        Vk::DescriptorPoolSize(Vk::DescriptorType::eSampler, 100),
-            Vk::DescriptorPoolSize(Vk::DescriptorType::eCombinedImageSampler, 50),
+            Vk::DescriptorPoolSize(Vk::DescriptorType::eUniformBuffer, 1024),      Vk::DescriptorPoolSize(Vk::DescriptorType::eStorageBuffer, 1024),
+            Vk::DescriptorPoolSize(Vk::DescriptorType::eSampledImage, 1024),       Vk::DescriptorPoolSize(Vk::DescriptorType::eSampler, 1024),
+            Vk::DescriptorPoolSize(Vk::DescriptorType::eCombinedImageSampler, 64),
         };
 
-        Vk::DescriptorPoolCreateInfo poolCreateInfo(Vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, 500, poolSizes);
+        Vk::DescriptorPoolCreateInfo poolCreateInfo(Vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | Vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind,
+                                                    500, poolSizes);
         Vk::ResultValue<Vk::DescriptorPool> descriptorPoolResult = logicalDevice.createDescriptorPool(poolCreateInfo);
 
         AX_CORE_ASSERT(descriptorPoolResult.result == Vk::Result::eSuccess, "Failed to create Vulkan descriptor pool: {}",
