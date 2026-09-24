@@ -6,7 +6,7 @@
 namespace Axiom {
     class MetalSwapChain : public SwapChain {
       public:
-        MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height);
+        MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height, uint32_t maxFramesInFlight);
         ~MetalSwapChain() override;
 
         bool acquireNextImage() override;
@@ -19,6 +19,8 @@ namespace Axiom {
         uint32_t getHeight() const override;
         uint32_t getFrameCount() const override;
         uint32_t getCurrentFrameIndex() const override;
+        CA::MetalDrawable* getCurrentDrawable() const { return currentDrawable; }
+        void setCurrentFrameIndex(uint32_t frame) { currentFrameIndex = frame; }
 
       private:
         MTL::Device* device = nullptr;
@@ -29,6 +31,7 @@ namespace Axiom {
         std::vector<std::unique_ptr<MetalTexture>> depthTextures;
         Format depthTextureFormat = Format::Undefined;
 
+        uint32_t maxFramesInFlight = 0;
         uint32_t currentFrameIndex = 0;
     };
 } // namespace Axiom

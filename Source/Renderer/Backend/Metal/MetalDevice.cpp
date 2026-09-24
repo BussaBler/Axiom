@@ -31,6 +31,7 @@ namespace Axiom {
         for (uint32_t i = 0; i < maxFramesInFlight; i++) {
             commandBuffers.push_back(std::make_unique<MetalCommandBuffer>(commandQueue));
         }
+        frameSemaphore = dispatch_semaphore_create(maxFramesInFlight);
     }
 
     MetalDevice::~MetalDevice() {
@@ -49,7 +50,7 @@ namespace Axiom {
     }
 
     std::unique_ptr<SwapChain> MetalDevice::createSwapchain(uint32_t width, uint32_t height) {
-        return std::make_unique<MetalSwapChain>(metalDevice, metalLayer, width, height);
+        return std::make_unique<MetalSwapChain>(metalDevice, metalLayer, width, height, maxFramesInFlight);
     }
 
     std::unique_ptr<Shader> MetalDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
@@ -85,7 +86,11 @@ namespace Axiom {
     }
 
     bool MetalDevice::beginFrame(SwapChain* swapChain) {
+        dispatch_semaphore_wait(frameSemaphore, DISPATCH_TIME_FOREVER);
+        static_cast<MetalSwapChain*>(swapChain)->setCurrentFrameIndex(currentFrameIndex);
+
         if (!swapChain->acquireNextImage()) {
+            dispatch_semaphore_signal(frameSemaphore);
             return false;
         }
         return true;
@@ -109,12 +114,25 @@ namespace Axiom {
     }
 
     void MetalDevice::submitCommandBuffers(const std::vector<CommandBuffer*> commandBuffers, SwapChain* swapChain) {
-        for (CommandBuffer* commandBuffer : commandBuffers) {
-            MetalCommandBuffer* metalCommandBuffer = static_cast<MetalCommandBuffer*>(commandBuffer);
+        MetalSwapChain* mtlSwapChain = static_cast<MetalSwapChain*>(swapChain);
+
+        for (size_t i = 0; i < commandBuffers.size(); ++i) {
+            MetalCommandBuffer* metalCommandBuffer = static_cast<MetalCommandBuffer*>(commandBuffers[i]);
             MTL::CommandBuffer* mtlCommandBuffer = metalCommandBuffer->getHandle();
+
+            bool isLast = (i == commandBuffers.size() - 1);
+
+            if (isLast) {
+                if (mtlSwapChain && mtlSwapChain->getCurrentDrawable()) {
+                    mtlCommandBuffer->presentDrawable(mtlSwapChain->getCurrentDrawable());
+                }
+                mtlCommandBuffer->addCompletedHandler(^(MTL::CommandBuffer* cb) {
+                    dispatch_semaphore_signal(frameSemaphore);
+                });
+            }
+
             mtlCommandBuffer->commit();
         }
-
         currentFrameIndex = (currentFrameIndex + 1) % maxFramesInFlight;
     }
 

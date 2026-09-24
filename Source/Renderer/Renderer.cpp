@@ -13,8 +13,10 @@
 namespace Axiom {
     Renderer::Renderer(Window* windowPtr) : window(windowPtr) {
         Device::CreateInfo deviceCreateInfo{};
+        // TODO: make the api represent the correct thing
         deviceCreateInfo.api = GraphicsApi::Vulkan;
         deviceCreateInfo.windowObjPtr = window;
+        deviceCreateInfo.maxFramesInFlight = MAX_FRAMES_IN_FLIGHT;
 
         device = Device::create(deviceCreateInfo);
         swapChain = device->createSwapchain(window->getFramebufferWidth(), window->getFramebufferHeight());

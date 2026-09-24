@@ -11,6 +11,7 @@
 #include "MetalUtils.h"
 #include "Renderer/Device.h"
 
+#include <dispatch/dispatch.h>
 #include <memory>
 
 namespace Axiom {
@@ -42,5 +43,6 @@ namespace Axiom {
         uint32_t maxFramesInFlight = 0;
         uint32_t currentFrameIndex = 0;
         std::vector<std::unique_ptr<MetalCommandBuffer>> commandBuffers;
+        dispatch_semaphore_t frameSemaphore;
     };
 } // namespace Axiom

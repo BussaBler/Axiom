@@ -7,6 +7,7 @@
 #include "Renderer/ResourceSet.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -65,6 +66,9 @@ namespace Axiom {
 
       private:
         void createDefaultSamplers();
+
+      public:
+        inline static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
       private:
         // TODO: remove this pointer, handle the resizes through the event system

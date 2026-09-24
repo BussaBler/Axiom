@@ -3,8 +3,8 @@
 #include "MetalSwapChain.h"
 
 namespace Axiom {
-    MetalSwapChain::MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height)
-        : SwapChain(), device(metalDevice), metalLayer(metalLayer) {
+    MetalSwapChain::MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height, uint32_t maxFramesInFlight)
+        : SwapChain(), device(metalDevice), metalLayer(metalLayer), maxFramesInFlight(maxFramesInFlight) {
         metalLayer->setDrawableSize({static_cast<CGFloat>(width), static_cast<CGFloat>(height)});
         metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm_sRGB);
         metalLayer->setFramebufferOnly(true);
@@ -14,7 +14,7 @@ namespace Axiom {
         textureFormat = Format::B8G8R8A8Srgb;
         depthTextureFormat = Format::D32sFloat;
 
-        depthTextures.resize(metalLayer->maximumDrawableCount());
+        depthTextures.resize(maxFramesInFlight);
         Texture::CreateInfo depthTextureCreateInfo = {
             .width = width,
             .height = height,
@@ -26,7 +26,7 @@ namespace Axiom {
             .memoryUsage = MemoryUsage::GPUOnly,
         };
 
-        for (size_t i = 0; i < depthTextures.size(); i++) {
+        for (uint32_t i = 0; i < maxFramesInFlight; i++) {
             depthTextures[i] = std::make_unique<MetalTexture>(depthTextureCreateInfo, device);
         }
     }
@@ -44,8 +44,6 @@ namespace Axiom {
         currentDrawable = drawable->retain();
         currentDrawableTexture = std::make_unique<MetalTexture>(currentDrawable->texture());
         textureFormat = currentDrawableTexture->getFormat();
-
-        currentFrameIndex = (currentFrameIndex + 1) % depthTextures.size();
 
         return true;
     }
@@ -68,7 +66,6 @@ namespace Axiom {
 
     bool MetalSwapChain::present() {
         if (currentDrawable) {
-            currentDrawable->present();
             currentDrawable->release();
             currentDrawable = nullptr;
             currentDrawableTexture.reset();
