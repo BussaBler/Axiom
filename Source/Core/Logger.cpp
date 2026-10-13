@@ -2,6 +2,8 @@
 
 #include "Logger.h"
 
+#include <string_view>
+
 namespace Axiom {
     Logger::Logger() : mPriority(Logger::Priority::Debug), mInitialString("") {
     }
@@ -25,33 +27,23 @@ namespace Axiom {
         return mFile.is_open();
     }
 
-    const std::string Logger::messagePriorityToString(Priority p) {
-        std::string priorityString;
+    const std::string_view Logger::messagePriorityToString(Priority p) {
 
         switch (p) {
         case Axiom::Logger::Priority::Trace:
-            priorityString = "[TRACE]";
-            break;
+            return "[TRACE]";
         case Axiom::Logger::Priority::Debug:
-            priorityString = "[DEBUG]";
-            break;
+            return "[DEBUG]";
         case Axiom::Logger::Priority::Info:
-            priorityString = "[INFO]";
-            break;
+            return "[INFO]";
         case Axiom::Logger::Priority::Warn:
-            priorityString = "[WARN]";
-            break;
+            return "[WARN]";
         case Axiom::Logger::Priority::Error:
-            priorityString = "[ERROR]";
-            break;
+            return "[ERROR]";
         case Axiom::Logger::Priority::Count:
-            priorityString = "[COUNT]";
-            break;
+            return "[COUNT]";
         default:
-            priorityString = "[PRIORITY]";
-            break;
+            return "[PRIORITY]";
         }
-
-        return priorityString;
     }
 } // namespace Axiom

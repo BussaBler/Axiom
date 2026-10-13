@@ -6,14 +6,14 @@
 #define AX_ASSERT(x, ...)                                                                                                                                      \
     do {                                                                                                                                                       \
         if (!(x)) {                                                                                                                                            \
-            Axiom::AX_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                                    \
+            AX_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                                           \
             __debugbreak();                                                                                                                                    \
         }                                                                                                                                                      \
     } while (0)
 #define AX_CORE_ASSERT(x, ...)                                                                                                                                 \
     do {                                                                                                                                                       \
         if (!(x)) {                                                                                                                                            \
-            Axiom::AX_CORE_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                               \
+            AX_CORE_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                                      \
             __debugbreak();                                                                                                                                    \
         }                                                                                                                                                      \
     } while (0)
@@ -21,14 +21,14 @@
 #define AX_ASSERT(x, ...)                                                                                                                                      \
     do {                                                                                                                                                       \
         if (!(x)) {                                                                                                                                            \
-            Axiom::AX_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                                    \
+            AX_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                                           \
             __builtin_trap();                                                                                                                                  \
         }                                                                                                                                                      \
     } while (0)
 #define AX_CORE_ASSERT(x, ...)                                                                                                                                 \
     do {                                                                                                                                                       \
         if (!(x)) {                                                                                                                                            \
-            Axiom::AX_CORE_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                               \
+            AX_CORE_LOG_ERROR("Assertion failed: " #x " - " __VA_ARGS__);                                                                                      \
             __builtin_trap();                                                                                                                                  \
         }                                                                                                                                                      \
     } while (0)

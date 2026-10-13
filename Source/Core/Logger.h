@@ -1,14 +1,26 @@
 #pragma once
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <source_location>
 #include <string>
+#include <utility>
 
 namespace Axiom {
+    template <typename... Args> struct LogMessage {
+        std::format_string<Args...> fmt;
+        std::source_location location;
+
+        template <typename StringType>
+        consteval LogMessage(const StringType& formatStr, std::source_location srcLocation = std::source_location::current())
+            : fmt(formatStr), location(srcLocation) {}
+    };
+
     class Logger {
       public:
         enum class Priority { Trace = 0, Debug, Info, Warn, Error, Count };
@@ -20,6 +32,7 @@ namespace Axiom {
 
         void setPriority(Priority priority) { mPriority = priority; }
         Priority getPriority() const { return mPriority; }
+        bool isEnabled(Priority priority) const { return priority >= mPriority; }
 
         void setInitialString(const std::string& initial) { mInitialString = initial; }
         const std::string& getInitialString() const { return mInitialString; }
@@ -34,17 +47,27 @@ namespace Axiom {
         void setTimestampFormat(const std::string& format) { mTimestampFormat = format; }
         const std::string& getTimestampFormat() const { return mTimestampFormat; }
 
-        template <typename... Args> void trace(std::string_view fmt, Args&&... args) { log(Priority::Trace, fmt, std::forward<Args>(args)...); }
-        template <typename... Args> void debug(std::string_view fmt, Args&&... args) { log(Priority::Debug, fmt, std::forward<Args>(args)...); }
-        template <typename... Args> void info(std::string_view fmt, Args&&... args) { log(Priority::Info, fmt, std::forward<Args>(args)...); }
-        template <typename... Args> void warn(std::string_view fmt, Args&&... args) { log(Priority::Warn, fmt, std::forward<Args>(args)...); }
-        template <typename... Args> void error(std::string_view fmt, Args&&... args) { log(Priority::Error, fmt, std::forward<Args>(args)...); }
+        template <typename... Args> void trace(std::type_identity_t<LogMessage<Args...>> msg, Args&&... args) {
+            log(Priority::Trace, std::move(msg), std::forward<Args>(args)...);
+        }
+        template <typename... Args> void debug(std::type_identity_t<LogMessage<Args...>> msg, Args&&... args) {
+            log(Priority::Debug, std::move(msg), std::forward<Args>(args)...);
+        }
+        template <typename... Args> void info(std::type_identity_t<LogMessage<Args...>> msg, Args&&... args) {
+            log(Priority::Info, std::move(msg), std::forward<Args>(args)...);
+        }
+        template <typename... Args> void warn(std::type_identity_t<LogMessage<Args...>> msg, Args&&... args) {
+            log(Priority::Warn, std::move(msg), std::forward<Args>(args)...);
+        }
+        template <typename... Args> void error(std::type_identity_t<LogMessage<Args...>> msg, Args&&... args) {
+            log(Priority::Error, std::move(msg), std::forward<Args>(args)...);
+        }
 
       private:
         bool enableFileOutput();
-        const std::string messagePriorityToString(Priority p);
+        const std::string_view messagePriorityToString(Priority p);
 
-        template <typename... Args> void log(Priority priority, std::string_view fmtString, Args&&... args) {
+        template <typename... Args> void log(Priority priority, std::type_identity_t<LogMessage<Args...>> msg, Args&&... args) {
             if (priority < mPriority) {
                 return;
             }
@@ -63,16 +86,24 @@ namespace Axiom {
             auto zonedTime = std::chrono::zoned_time{std::chrono::current_zone(), currentTime};
             timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", zonedTime);
 #endif
-            std::string formatted = std::vformat(fmtString, std::make_format_args(args...));
+            std::string formatted = std::vformat(msg.fmt.get(), std::make_format_args(args...));
+            std::string filename = std::filesystem::path(msg.location.file_name()).filename().string();
 
-            std::scoped_lock lock(mLogLock);
-            auto color = mColorCodes[static_cast<size_t>(priority)];
-            auto reset = mColorCodes[static_cast<size_t>(Priority::Trace)];
+            std::string logLine =
+                std::format("[{}]{}{}[{}:{}] {}\n", timestamp, messagePriorityToString(priority), mInitialString, filename, msg.location.line(), formatted);
 
-            std::cout << color << '[' << timestamp << ']' << messagePriorityToString(priority) << mInitialString << formatted << '\n' << reset;
+            {
+                std::scoped_lock lock(mLogLock);
+                auto color = mColorCodes[static_cast<size_t>(priority)];
+                auto reset = mColorCodes[static_cast<size_t>(Priority::Trace)];
+                std::cout << color << logLine << reset;
+                if (mFile.is_open()) {
+                    mFile << logLine;
 
-            if (mFile.is_open()) {
-                mFile << '[' << timestamp << ']' << messagePriorityToString(priority) << mInitialString << formatted << '\n';
+                    if (priority >= Priority::Warn) {
+                        mFile.flush();
+                    }
+                }
             }
         }
 
