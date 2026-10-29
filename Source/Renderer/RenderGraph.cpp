@@ -4,7 +4,7 @@
 
 #include "Core/Locator.h"
 #include "Core/Log.h"
-#include "Renderer.h"
+#include "RenderHardwareInterface.h"
 #include "Renderer/Texture.h"
 
 #include <cstddef>
@@ -110,7 +110,7 @@ namespace Axiom {
                         std::swap(*it, list.back());
                         list.pop_back();
                     } else {
-                        std::unique_ptr<Texture> newTexture = Locator::getRenderer()->createTexture(vResource.createInfo);
+                        std::unique_ptr<Texture> newTexture = Locator::getRHI()->createTexture(vResource.createInfo);
                         vResource.texture = newTexture.get();
                         vResource.currentState = vResource.currentState;
                         vResource.texture->setCurrentState(vResource.currentState);

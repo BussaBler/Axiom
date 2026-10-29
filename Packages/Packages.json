@@ -1,9 +1,24 @@
 {
     "Assets": {
+        "3629371504142647110": {
+            "Type": 5,
+            "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+            "Name": "Default PBR Shader"
+        },
         "9916347032240535866": {
             "Type": 5,
             "FilePath": "axiom://Packages/Shaders/BuiltIn.Skybox.axs",
             "Name": "BuiltIn.Skybox"
+        },
+        "16102306717090981489": {
+            "Type": 5,
+            "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.axs",
+            "Name": "BuiltIn.UI.Shader"
+        },
+        "10801915436558958101": {
+            "Type": 5,
+            "FilePath": "axiom://Packages/Shaders/BuiltIn.Sprite2D.axs",
+            "Name": "BuiltIn.Sprite2D"
         },
         "5563698960615070661": {
             "Type": 5,
@@ -24,16 +39,6 @@
             "Type": 5,
             "FilePath": "axiom://Packages/Shaders/BuiltIn.Gizmos.axs",
             "Name": "BuiltIn.Gizmos"
-        },
-        "3629371504142647110": {
-            "Type": 5,
-            "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
-            "Name": "Default PBR Shader"
-        },
-        "16102306717090981489": {
-            "Type": 5,
-            "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.axs",
-            "Name": "BuiltIn.UI.Shader"
         },
         "13689507778184384423": {
             "Type": 5,

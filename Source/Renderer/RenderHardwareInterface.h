@@ -14,10 +14,12 @@
 #include <utility>
 
 namespace Axiom {
-    class Renderer {
+    class TextureRegistry;
+
+    class RenderHardwareInterface {
       public:
-        Renderer(Window* windowPtr);
-        ~Renderer();
+        RenderHardwareInterface(Window* windowPtr);
+        ~RenderHardwareInterface();
 
         void initPipelines();
         template <typename T, typename... Args> inline T* registerPipeline(const std::string& name, Args&&... args) {
@@ -59,8 +61,8 @@ namespace Axiom {
         inline Sampler* getNearestSampler() { return nearestSampler.get(); }
         inline uint32_t getFrameCount() const { return swapChain->getFrameCount(); }
         inline uint32_t getCurrentFrameIndex() const { return swapChain->getCurrentFrameIndex(); }
-        // Return the Forward Rendering Pipeline
         inline ForwardRenderPipeline* getFRP() { return forwardRP; }
+        inline TextureRegistry* getTextureRegistry() const { return textureRegistry.get(); }
 
         void recreateSwapChain();
 
@@ -86,6 +88,8 @@ namespace Axiom {
         std::unordered_map<std::string, std::unique_ptr<RenderPipeline>> registeredPipelines;
         ForwardRenderPipeline* forwardRP = nullptr;
 
-        inline static constexpr std::string FORWARD_PIPELINE_NAME = "Forward";
+        std::unique_ptr<TextureRegistry> textureRegistry;
+
+        static constexpr std::string FORWARD_PIPELINE_NAME = "Forward";
     };
 } // namespace Axiom

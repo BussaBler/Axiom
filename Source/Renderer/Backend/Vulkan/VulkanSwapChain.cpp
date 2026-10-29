@@ -3,11 +3,10 @@
 #include "VulkanSwapChain.h"
 
 #include "Math/AxMath.h"
-#include "vulkan/vulkan.hpp"
 
 namespace Axiom {
     VulkanSwapChain::VulkanSwapChain(const CreateInfo& createInfo)
-        : device(createInfo.logicDevice), presentQueue(createInfo.presentQueue), depthFormat(createInfo.depthFormat) {
+        : SwapChain(createInfo.imageFormat), device(createInfo.logicDevice), presentQueue(createInfo.presentQueue), depthFormat(createInfo.depthFormat) {
         Vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(createInfo.swapChainDetails.formats);
         Vk::PresentModeKHR presentMode = chooseSwapPresentMode(createInfo.swapChainDetails.presentModes);
         Vk::Extent2D extent = chooseSwapExtent(createInfo.swapChainDetails.capabilities, createInfo.windowSize);

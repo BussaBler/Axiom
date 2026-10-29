@@ -53,26 +53,26 @@ namespace Axiom {
         switch (format) {
         case Format::Undefined:
             return MTL::PixelFormatInvalid;
-        case Format::B8G8R8A8Unorm:
-            return MTL::PixelFormatBGRA8Unorm;
         case Format::R8Unorm:
             return MTL::PixelFormatR8Unorm;
         case Format::R8G8Unorm:
             return MTL::PixelFormatRG8Unorm;
         case Format::R8G8B8Unorm:
-            return MTL::PixelFormatRGBA8Unorm;
+            return MTL::PixelFormatRGBA8Unorm; // Metal needs it to be 32-bit
         case Format::R8G8B8A8Unorm:
             return MTL::PixelFormatRGBA8Unorm;
-        case Format::B8G8R8A8Srgb:
-            return MTL::PixelFormatBGRA8Unorm_sRGB;
+        case Format::B8G8R8A8Unorm:
+            return MTL::PixelFormatBGRA8Unorm;
         case Format::R8Srgb:
             return MTL::PixelFormatR8Unorm_sRGB;
         case Format::R8G8Srgb:
             return MTL::PixelFormatRG8Unorm_sRGB;
         case Format::R8G8B8Srgb:
-            return MTL::PixelFormatRGBA8Unorm_sRGB;
+            return MTL::PixelFormatRGBA8Unorm_sRGB; // Metal needs it to be 32-bit
         case Format::R8G8B8A8Srgb:
             return MTL::PixelFormatRGBA8Unorm_sRGB;
+        case Format::B8G8R8A8Srgb:
+            return MTL::PixelFormatBGRA8Unorm_sRGB;
         case Format::D24UnormS8Uint:
             return MTL::PixelFormatDepth24Unorm_Stencil8;
         case Format::D32sFloat:
@@ -85,6 +85,7 @@ namespace Axiom {
             return MTL::PixelFormatRGBA32Float;
         case Format::R32G32B32A32Sfloat:
             return MTL::PixelFormatRGBA32Float;
+
         default:
             return MTL::PixelFormatInvalid;
         }
@@ -94,22 +95,22 @@ namespace Axiom {
         switch (pixelFormat) {
         case MTL::PixelFormatInvalid:
             return Format::Undefined;
-        case MTL::PixelFormatBGRA8Unorm:
-            return Format::B8G8R8A8Unorm;
         case MTL::PixelFormatR8Unorm:
             return Format::R8Unorm;
         case MTL::PixelFormatRG8Unorm:
             return Format::R8G8Unorm;
         case MTL::PixelFormatRGBA8Unorm:
             return Format::R8G8B8A8Unorm;
-        case MTL::PixelFormatBGRA8Unorm_sRGB:
-            return Format::B8G8R8A8Srgb;
+        case MTL::PixelFormatBGRA8Unorm:
+            return Format::B8G8R8A8Unorm;
         case MTL::PixelFormatR8Unorm_sRGB:
             return Format::R8Srgb;
         case MTL::PixelFormatRG8Unorm_sRGB:
             return Format::R8G8Srgb;
         case MTL::PixelFormatRGBA8Unorm_sRGB:
             return Format::R8G8B8A8Srgb;
+        case MTL::PixelFormatBGRA8Unorm_sRGB:
+            return Format::B8G8R8A8Srgb;
         case MTL::PixelFormatDepth24Unorm_Stencil8:
             return Format::D24UnormS8Uint;
         case MTL::PixelFormatDepth32Float:
@@ -119,7 +120,7 @@ namespace Axiom {
         case MTL::PixelFormatRG32Float:
             return Format::R32G32Sfloat;
         case MTL::PixelFormatRGBA32Float:
-            return Format::R32G32B32A32Sfloat; // Metal doesn't have a separate RGBA32Float format, using RGBA32Float for both
+            return Format::R32G32B32A32Sfloat;
         default:
             return Format::Undefined;
         }

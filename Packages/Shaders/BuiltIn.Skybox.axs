@@ -6,15 +6,7 @@ layout(location = 0) in vec3 aPosition;
 
 layout(location = 0) out vec3 vPosition;
 
-layout(set = 0, binding = 0) uniform GlobalData {
-    mat4 uView;
-    mat4 uProjection;
-    vec4 uCameraPosition;
-
-    vec4 uAmbientColor;
-    vec4 uDirectionalLightDir;
-    vec4 uDirectionalLightColor;
-} globalData;
+#include "RS.GlobalData.axsinc"
 
 void main() {
     vPosition = aPosition;

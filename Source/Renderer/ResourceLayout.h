@@ -9,7 +9,6 @@ namespace Axiom {
         Texture2D,
         Texture3D,
         Sampler,
-        CombinedTextureSampler,
     };
 
     enum class ShaderStage {

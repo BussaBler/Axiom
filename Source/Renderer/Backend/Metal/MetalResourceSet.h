@@ -2,6 +2,8 @@
 #include "MetalUtils.h"
 #include "Renderer/ResourceSet.h"
 
+#include <unordered_map>
+
 namespace Axiom {
     class MetalResourceSet : public ResourceSet {
       public:
@@ -23,5 +25,7 @@ namespace Axiom {
 
         std::vector<MTL::Buffer*> residentBuffers;
         std::vector<MTL::Texture*> residentTextures;
+
+        std::unordered_map<uint32_t, uint32_t> maxResourcesPerBinding;
     };
 } // namespace Axiom

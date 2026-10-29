@@ -3,21 +3,21 @@
 #include "MetalSwapChain.h"
 
 namespace Axiom {
-    MetalSwapChain::MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height, uint32_t maxFramesInFlight)
-        : SwapChain(), device(metalDevice), metalLayer(metalLayer), maxFramesInFlight(maxFramesInFlight) {
-        metalLayer->setDrawableSize({static_cast<CGFloat>(width), static_cast<CGFloat>(height)});
-        metalLayer->setPixelFormat(MTL::PixelFormatBGRA8Unorm_sRGB);
+    MetalSwapChain::MetalSwapChain(const CreateInfo& createInfo)
+        : SwapChain(createInfo.imageFormat), device(createInfo.metalDevice), metalLayer(createInfo.metalLayer),
+          maxFramesInFlight(createInfo.maxFramesInFlight) {
+        metalLayer->setDrawableSize({static_cast<CGFloat>(createInfo.width), static_cast<CGFloat>(createInfo.height)});
+        depthTextureFormat = Format::D32sFloat;
+        metalLayer->setPixelFormat(axToMetalPixelFormat(textureFormat));
         metalLayer->setFramebufferOnly(true);
         CGColorSpaceRef colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
         metalLayer->setColorspace(colorSpace);
         CGColorSpaceRelease(colorSpace);
-        textureFormat = Format::B8G8R8A8Srgb;
-        depthTextureFormat = Format::D32sFloat;
 
         depthTextures.resize(maxFramesInFlight);
         Texture::CreateInfo depthTextureCreateInfo = {
-            .width = width,
-            .height = height,
+            .width = createInfo.width,
+            .height = createInfo.height,
             .mipLevels = 1,
             .arrayLayers = 1,
             .format = depthTextureFormat,
@@ -58,10 +58,6 @@ namespace Axiom {
 
     Format MetalSwapChain::getDepthTextureFormat() const {
         return depthTextureFormat;
-    }
-
-    Format MetalSwapChain::getTextureFormat() const {
-        return textureFormat;
     }
 
     bool MetalSwapChain::present() {

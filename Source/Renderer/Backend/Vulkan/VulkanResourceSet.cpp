@@ -2,9 +2,15 @@
 
 #include "VulkanResourceSet.h"
 
+#include "Renderer/Buffer.h"
 #include "Renderer/ResourceLayout.h"
+#include "Renderer/Sampler.h"
 #include "Renderer/Texture.h"
 #include "vulkan/vulkan.hpp"
+
+#include <cstdint>
+#include <deque>
+#include <vector>
 
 namespace Axiom {
     VulkanResourceSet::VulkanResourceSet(Vk::Device logicalDevice, Vk::DescriptorPool descriptorPool, Vk::DescriptorSetLayout descriptorSetLayout)
@@ -20,74 +26,71 @@ namespace Axiom {
         std::vector<Vk::WriteDescriptorSet> descriptorWrites;
         descriptorWrites.reserve(bindings.size());
 
-        std::list<std::vector<Vk::DescriptorBufferInfo>> allBufferInfos;
-        std::list<std::vector<Vk::DescriptorImageInfo>> allImageInfos;
+        std::deque<std::vector<Vk::DescriptorBufferInfo>> bufferInfosStorage;
+        std::deque<std::vector<Vk::DescriptorImageInfo>> imageInfosStorage;
 
         for (const auto& binding : bindings) {
             Vk::WriteDescriptorSet write{};
             write.setDstSet(descriptorSet);
             write.setDstBinding(binding.binding);
-            write.setDstArrayElement(0);
-
-            allBufferInfos.emplace_back();
-            allImageInfos.emplace_back();
-            auto& bufferInfos = allBufferInfos.back();
-            auto& imageInfos = allImageInfos.back();
-
-            bufferInfos.reserve(binding.buffers.size());
-            imageInfos.reserve(binding.textures.size() + binding.samplers.size());
+            write.setDstArrayElement(binding.dataOffset);
 
             switch (binding.type) {
             case ResourceType::UniformBuffer: {
                 write.setDescriptorType(Vk::DescriptorType::eUniformBuffer);
-                for (Buffer* buffer : binding.buffers) {
+                const auto& buffers = std::get<std::span<Buffer*>>(binding.data);
+                std::vector<Vk::DescriptorBufferInfo>& buffersInfo = bufferInfosStorage.emplace_back();
+                buffersInfo.reserve(buffers.size());
+
+                for (Buffer* buffer : buffers) {
                     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
-                    bufferInfos.push_back({vkBuffer->getHandle(), 0, vkBuffer->getSize()});
+                    buffersInfo.push_back({vkBuffer->getHandle(), 0, vkBuffer->getSize()});
                 }
-                write.setPBufferInfo(bufferInfos.data());
-                write.setDescriptorCount(static_cast<uint32_t>(bufferInfos.size()));
+                write.setPBufferInfo(buffersInfo.data());
+                write.setDescriptorCount(static_cast<uint32_t>(buffersInfo.size()));
                 break;
             }
             case ResourceType::StorageBuffer: {
                 write.setDescriptorType(Vk::DescriptorType::eStorageBuffer);
-                for (Buffer* buffer : binding.buffers) {
+                const auto& buffers = std::get<std::span<Buffer*>>(binding.data);
+                std::vector<Vk::DescriptorBufferInfo>& buffersInfo = bufferInfosStorage.emplace_back();
+                buffersInfo.reserve(buffers.size());
+
+                for (Buffer* buffer : buffers) {
                     VulkanBuffer* vkBuffer = static_cast<VulkanBuffer*>(buffer);
-                    bufferInfos.push_back({vkBuffer->getHandle(), 0, vkBuffer->getSize()});
+                    buffersInfo.push_back({vkBuffer->getHandle(), 0, vkBuffer->getSize()});
                 }
-                write.setPBufferInfo(bufferInfos.data());
-                write.setDescriptorCount(static_cast<uint32_t>(bufferInfos.size()));
+                write.setPBufferInfo(buffersInfo.data());
+                write.setDescriptorCount(static_cast<uint32_t>(buffersInfo.size()));
                 break;
             }
             case ResourceType::Texture3D:
             case ResourceType::Texture2D: {
                 write.setDescriptorType(Vk::DescriptorType::eSampledImage);
-                for (Texture* texture : binding.textures) {
+                const auto& textures = std::get<std::span<Texture*>>(binding.data);
+                std::vector<Vk::DescriptorImageInfo>& texturesInfo = imageInfosStorage.emplace_back();
+                texturesInfo.reserve(textures.size());
+
+                for (Texture* texture : textures) {
                     VulkanTexture* vkTexture = static_cast<VulkanTexture*>(texture);
-                    imageInfos.push_back({nullptr, vkTexture->getImageView(), Vk::ImageLayout::eShaderReadOnlyOptimal});
+                    texturesInfo.push_back({nullptr, vkTexture->getImageView(), Vk::ImageLayout::eShaderReadOnlyOptimal});
                 }
-                write.setPImageInfo(imageInfos.data());
-                write.setDescriptorCount(static_cast<uint32_t>(imageInfos.size()));
+                write.setPImageInfo(texturesInfo.data());
+                write.setDescriptorCount(static_cast<uint32_t>(texturesInfo.size()));
                 break;
             }
             case ResourceType::Sampler: {
                 write.setDescriptorType(Vk::DescriptorType::eSampler);
-                for (Sampler* sampler : binding.samplers) {
+                const auto& samplers = std::get<std::span<Sampler*>>(binding.data);
+                std::vector<Vk::DescriptorImageInfo>& samplersInfo = imageInfosStorage.emplace_back();
+                samplersInfo.reserve(samplers.size());
+
+                for (Sampler* sampler : samplers) {
                     VulkanSampler* vkSampler = static_cast<VulkanSampler*>(sampler);
-                    imageInfos.push_back({vkSampler->getSampler(), nullptr, Vk::ImageLayout::eUndefined});
+                    samplersInfo.push_back({vkSampler->getSampler(), nullptr, Vk::ImageLayout::eUndefined});
                 }
-                write.setPImageInfo(imageInfos.data());
-                write.setDescriptorCount(static_cast<uint32_t>(imageInfos.size()));
-                break;
-            }
-            case ResourceType::CombinedTextureSampler: {
-                write.setDescriptorType(Vk::DescriptorType::eCombinedImageSampler);
-                for (size_t i = 0; i < binding.textures.size() && i < binding.samplers.size(); i++) {
-                    VulkanTexture* vkTexture = static_cast<VulkanTexture*>(binding.textures[i]);
-                    VulkanSampler* vkSampler = static_cast<VulkanSampler*>(binding.samplers[i]);
-                    imageInfos.push_back({vkSampler->getSampler(), vkTexture->getImageView(), Vk::ImageLayout::eShaderReadOnlyOptimal});
-                }
-                write.setPImageInfo(imageInfos.data());
-                write.setDescriptorCount(static_cast<uint32_t>(imageInfos.size()));
+                write.setPImageInfo(samplersInfo.data());
+                write.setDescriptorCount(static_cast<uint32_t>(samplersInfo.size()));
                 break;
             }
             default:

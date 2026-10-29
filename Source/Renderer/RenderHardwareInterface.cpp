@@ -1,17 +1,19 @@
 #include "axpch.h"
 
-#include "Renderer.h"
+#include "RenderHardwareInterface.h"
 
 #include "Renderer/ForwardRenderPipeline.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
+#include "Renderer/Texture.h"
+#include "TextureRegistry.h"
 
 #include <memory>
 #include <utility>
 
 namespace Axiom {
-    Renderer::Renderer(Window* windowPtr) : window(windowPtr) {
+    RenderHardwareInterface::RenderHardwareInterface(Window* windowPtr) : window(windowPtr) {
         Device::CreateInfo deviceCreateInfo{};
         // TODO: make the api represent the correct thing
         deviceCreateInfo.api = GraphicsApi::Vulkan;
@@ -19,28 +21,31 @@ namespace Axiom {
         deviceCreateInfo.maxFramesInFlight = MAX_FRAMES_IN_FLIGHT;
 
         device = Device::create(deviceCreateInfo);
-        swapChain = device->createSwapchain(window->getFramebufferWidth(), window->getFramebufferHeight());
+        swapChain = device->createSwapchain(Format::B8G8R8A8Unorm, window->getFramebufferWidth(), window->getFramebufferHeight());
 
         renderTargetBarrier = {.oldState = TextureState::Undefined, .newState = TextureState::RenderTarget, .aspect = TextureAspect::Color};
         presentBarrier = {.oldState = TextureState::RenderTarget, .newState = TextureState::Present, .aspect = TextureAspect::Color};
         depthBarrier = {.oldState = TextureState::Undefined, .newState = TextureState::DepthStencilTarget, .aspect = TextureAspect::Depth};
 
         createDefaultSamplers();
+
+        textureRegistry = std::make_unique<TextureRegistry>(this);
+        textureRegistry->init();
     }
 
-    Renderer::~Renderer() {
+    RenderHardwareInterface::~RenderHardwareInterface() {
         device->waitIdle();
     }
 
-    void Renderer::initPipelines() {
+    void RenderHardwareInterface::initPipelines() {
         forwardRP = registerPipeline<ForwardRenderPipeline>(FORWARD_PIPELINE_NAME);
     }
 
-    void Renderer::waitIdle() {
+    void RenderHardwareInterface::waitIdle() {
         device->waitIdle();
     }
 
-    CommandBuffer* Renderer::beginFrame() {
+    CommandBuffer* RenderHardwareInterface::beginFrame() {
         for (auto& [name, pipeline] : registeredPipelines) {
             pipeline->beginFrame();
         }
@@ -61,7 +66,7 @@ namespace Axiom {
         return commandBuffer;
     }
 
-    void Renderer::endFrame() {
+    void RenderHardwareInterface::endFrame() {
         CommandBuffer* commandBuffer = device->getCurrentCommandBuffer();
         presentBarrier.texture = renderTargetBarrier.texture;
         // commandBuffer->pipelineBarrier({presentBarrier});
@@ -74,43 +79,43 @@ namespace Axiom {
         }
     }
 
-    std::unique_ptr<Shader> Renderer::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
+    std::unique_ptr<Shader> RenderHardwareInterface::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
         return device->createShader(vertexSource, fragmentSource);
     }
 
-    std::unique_ptr<Pipeline> Renderer::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
+    std::unique_ptr<Pipeline> RenderHardwareInterface::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         return device->createPipeline(pipelineCreateInfo);
     }
 
-    std::unique_ptr<Buffer> Renderer::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
+    std::unique_ptr<Buffer> RenderHardwareInterface::createBuffer(const Buffer::CreateInfo& bufferCreateInfo) {
         return device->createBuffer(bufferCreateInfo);
     }
 
-    std::unique_ptr<Texture> Renderer::createTexture(const Texture::CreateInfo& textureCreateInfo) {
+    std::unique_ptr<Texture> RenderHardwareInterface::createTexture(const Texture::CreateInfo& textureCreateInfo) {
         return device->createTexture(textureCreateInfo);
     }
 
-    std::unique_ptr<Sampler> Renderer::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {
+    std::unique_ptr<Sampler> RenderHardwareInterface::createSampler(const Sampler::CreateInfo& samplerCreateInfo) {
         return device->createSampler(samplerCreateInfo);
     }
 
-    std::unique_ptr<ResourceLayout> Renderer::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
+    std::unique_ptr<ResourceLayout> RenderHardwareInterface::createResourceLayout(const std::vector<ResourceLayout::BindingCreateInfo>& bindings) {
         return device->createResourceLayout(bindings);
     }
 
-    std::unique_ptr<ResourceSet> Renderer::createResourceSet(const ResourceLayout* resourceLayout) {
+    std::unique_ptr<ResourceSet> RenderHardwareInterface::createResourceSet(const ResourceLayout* resourceLayout) {
         return device->createResourceSet(resourceLayout);
     }
 
-    std::unique_ptr<CommandBuffer> Renderer::beginSingleTimeCommands() {
+    std::unique_ptr<CommandBuffer> RenderHardwareInterface::beginSingleTimeCommands() {
         return device->beginSingleTimeCommands();
     }
 
-    void Renderer::endSingleTimeCommands(CommandBuffer* commandBuffer) {
+    void RenderHardwareInterface::endSingleTimeCommands(CommandBuffer* commandBuffer) {
         device->endSingleTimeCommands(commandBuffer);
     }
 
-    Pipeline* Renderer::getOrCreatePipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
+    Pipeline* RenderHardwareInterface::getOrCreatePipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
         if (pipelineCache.find(pipelineCreateInfo) != pipelineCache.end()) {
             return pipelineCache[pipelineCreateInfo].get();
         }
@@ -122,16 +127,16 @@ namespace Axiom {
         return pNewPipeline;
     }
 
-    void Renderer::recreateSwapChain() {
+    void RenderHardwareInterface::recreateSwapChain() {
         uint32_t width = window->getFramebufferWidth();
         uint32_t height = window->getFramebufferHeight();
 
         device->waitIdle();
         swapChain.reset();
-        swapChain = device->createSwapchain(width, height);
+        swapChain = device->createSwapchain(Format::B8G8R8A8Unorm, width, height);
     }
 
-    void Renderer::createDefaultSamplers() {
+    void RenderHardwareInterface::createDefaultSamplers() {
         Sampler::CreateInfo linearSamplerCreateInfo = {
             .adressMode = SamplerAddressMode::Repeat, .filterMode = SamplerFilterMode::Linear, .mipmapFilterMode = SamplerFilterMode::Linear};
         linearSampler = device->createSampler(linearSamplerCreateInfo);

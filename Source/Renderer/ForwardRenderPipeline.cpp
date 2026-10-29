@@ -4,13 +4,13 @@
 
 #include "Asset/Asset.h"
 #include "Asset/AssetManager.h"
-#include "Asset/MaterialAsset.h"
 #include "Asset/MeshAsset.h"
 #include "Asset/ShaderAsset.h"
 #include "Asset/UUID.h"
 #include "Core/Assert.h"
 #include "Core/Locator.h"
 #include "ECS/Components/MeshComponent.h"
+#include "ECS/Components/Sprite2DComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "Math/Color.h"
 #include "Math/Mat.h"
@@ -20,15 +20,17 @@
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderFeature.h"
 #include "Renderer/RenderGraph.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/RenderPipeline.h"
-#include "Renderer/Renderer.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 #include "Renderer/Texture.h"
+#include "Renderer/TextureRegistry.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -36,10 +38,10 @@
 
 namespace Axiom {
     ForwardRenderPipeline::ForwardRenderPipeline() {
-        // TODO: create renderer objects
         createGlobalData();
         createOpaquePassData();
         createSkyboxPassData();
+        createSpritePassData();
         createWorldGridPassData();
         createGizmosPassData();
     }
@@ -62,85 +64,102 @@ namespace Axiom {
         RGTextureHandle colorBufferHandle = renderGraph.importTexture("ColorBuffer", context.renderTarget);
         RGTextureHandle depthBufferHandle = renderGraph.importTexture("DepthBuffer", context.depthTarget);
 
-        renderGraph.addBlackboardData<GlobalResourceData>(
-            {.colorBuffer = colorBufferHandle, .depthBuffer = depthBufferHandle, .viewportIndex = currentViewportIndex});
+        renderGraph.addBlackboardData<GlobalResourceData>({.scene = context.targetScene,
+                                                           .colorBuffer = colorBufferHandle,
+                                                           .depthBuffer = depthBufferHandle,
+                                                           .viewportIndex = currentViewportIndex,
+                                                           .gizmoPosition = context.gizmosPosition});
 
         injectRenderFeatures(RenderInjectionPoint::BeforeOpaque, renderGraph, context);
-        renderGraph.addPass<DefaultPassData>("Opaque Pass",
-                                             [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
-                                                 const auto& resourceData = blackboard.get<GlobalResourceData>();
-                                                 builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-                                                 builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-                                                 passData.renderTarget = resourceData.colorBuffer;
-                                                 passData.depthTarget = resourceData.depthBuffer;
-                                                 passData.scene = context.targetScene;
+        renderGraph.addPass<DefaultPassData>("Opaque Pass", [this](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+            const auto& resourceData = blackboard.get<GlobalResourceData>();
+            builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+            builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+            passData.renderTarget = resourceData.colorBuffer;
+            passData.depthTarget = resourceData.depthBuffer;
+            passData.scene = resourceData.scene;
+            passData.viewportIndex = resourceData.viewportIndex;
 
-                                                 return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources,
-                                                                             CommandBuffer* cmd, const Blackboard& blackboard, const FrameContext& frameCtx) {
-                                                     const auto& resourceData = blackboard.get<GlobalResourceData>();
-                                                     opaquePass(passData.scene, resources.getTexture(passData.renderTarget),
-                                                                resources.getTexture(passData.depthTarget), cmd, resourceData.viewportIndex);
-                                                 };
-                                             });
+            return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
+                          const FrameContext& frameCtx) {
+                const auto& resourceData = blackboard.get<GlobalResourceData>();
+                opaquePass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
+                           resourceData.viewportIndex);
+            };
+        });
         injectRenderFeatures(RenderInjectionPoint::AfterOpaque, renderGraph, context);
 
         injectRenderFeatures(RenderInjectionPoint::BeforeSkybox, renderGraph, context);
         if (context.shouldDrawSkybox) {
-            renderGraph.addPass<DefaultPassData>(
-                "Skybox Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
-                    const auto& resourceData = blackboard.get<GlobalResourceData>();
-                    builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-                    builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-                    passData.renderTarget = resourceData.colorBuffer;
-                    passData.depthTarget = resourceData.depthBuffer;
-                    passData.scene = context.targetScene;
+            renderGraph.addPass<DefaultPassData>("Skybox Pass", [this](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+                const auto& resourceData = blackboard.get<GlobalResourceData>();
+                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                passData.renderTarget = resourceData.colorBuffer;
+                passData.depthTarget = resourceData.depthBuffer;
+                passData.scene = resourceData.scene;
 
-                    return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd,
-                                                const Blackboard& blackboard, const FrameContext& frameCtx) {
-                        const auto& resourceData = blackboard.get<GlobalResourceData>();
-                        skyboxPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
-                    };
-                });
+                return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
+                              const FrameContext& frameCtx) {
+                    const auto& resourceData = blackboard.get<GlobalResourceData>();
+                    skyboxPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
+                };
+            });
         }
         injectRenderFeatures(RenderInjectionPoint::AfterSkybox, renderGraph, context);
 
-        if (context.shouldDrawWorldGrid) {
-            renderGraph.addPass<DefaultPassData>(
-                "World Grid Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
-                    const auto& resourceData = blackboard.get<GlobalResourceData>();
-                    builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-                    builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-                    passData.renderTarget = resourceData.colorBuffer;
-                    passData.depthTarget = resourceData.depthBuffer;
-                    passData.scene = context.targetScene;
+        renderGraph.addPass<DefaultPassData>("Sprite Pass", [this](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+            const auto& resourceData = blackboard.get<GlobalResourceData>();
+            builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+            builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+            passData.renderTarget = resourceData.colorBuffer;
+            passData.depthTarget = resourceData.depthBuffer;
+            passData.scene = resourceData.scene;
 
-                    return [this, &renderGraph](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd,
-                                                const Blackboard& blackboard, const FrameContext& frameCtx) {
-                        const auto& resourceData = blackboard.get<GlobalResourceData>();
-                        worldGridPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
-                    };
-                });
+            return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
+                          const FrameContext& frameCtx) {
+                const auto& resourceData = blackboard.get<GlobalResourceData>();
+                spritePass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
+                           resourceData.viewportIndex);
+            };
+        });
+
+        if (context.shouldDrawWorldGrid) {
+            renderGraph.addPass<DefaultPassData>("World Grid Pass", [this](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+                const auto& resourceData = blackboard.get<GlobalResourceData>();
+                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                passData.renderTarget = resourceData.colorBuffer;
+                passData.depthTarget = resourceData.depthBuffer;
+                passData.scene = resourceData.scene;
+
+                return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
+                              const FrameContext& frameCtx) {
+                    const auto& resourceData = blackboard.get<GlobalResourceData>();
+                    worldGridPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
+                };
+            });
         }
         if (context.shouldDrawGizmos) {
-            renderGraph.addPass<DefaultPassData>(
-                "Gizmos Pass", [this, &renderGraph, &context](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
-                    const auto& resourceData = blackboard.get<GlobalResourceData>();
-                    builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
-                    builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
-                    passData.renderTarget = resourceData.colorBuffer;
-                    passData.depthTarget = resourceData.depthBuffer;
-                    passData.scene = context.targetScene;
+            renderGraph.addPass<GizmosPassData>("Gizmos Pass", [this](PassBuilder& builder, GizmosPassData& passData, Blackboard& blackboard) {
+                const auto& resourceData = blackboard.get<GlobalResourceData>();
+                builder.writeTexture(resourceData.colorBuffer, TextureState::RenderTarget);
+                builder.writeTexture(resourceData.depthBuffer, TextureState::DepthStencilTarget);
+                passData.renderTarget = resourceData.colorBuffer;
+                passData.depthTarget = resourceData.depthBuffer;
+                passData.scene = resourceData.scene;
+                passData.gizmosPosition = resourceData.gizmoPosition;
 
-                    return [this, &renderGraph, &context](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd,
-                                                          const Blackboard& blackboard, const FrameContext& frameCtx) {
-                        const auto& resourceData = blackboard.get<GlobalResourceData>();
-                        gizmosPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
-                                   context.gizmosPosition);
-                    };
-                });
+                return [this](const GizmosPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
+                              const FrameContext& frameCtx) {
+                    const auto& resourceData = blackboard.get<GlobalResourceData>();
+                    gizmosPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
+                               passData.gizmosPosition);
+                };
+            });
         }
 
-        renderGraph.addPass<DefaultPassData>("Prepare Present Pass", [&renderGraph](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
+        renderGraph.addPass<DefaultPassData>("Prepare Present Pass", [](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
             const auto& resourceData = blackboard.get<GlobalResourceData>();
             builder.readTexture(resourceData.colorBuffer, TextureState::Present);
             return [](const auto&...) {};
@@ -151,23 +170,23 @@ namespace Axiom {
         globalData = {};
 
         std::vector<ResourceLayout::BindingCreateInfo> bindingsCreateInfo(1);
-        bindingsCreateInfo[0].binding = 0;
+        bindingsCreateInfo[0].binding = Bindings::GlobalDataBinding;
         bindingsCreateInfo[0].type = ResourceType::UniformBuffer;
         bindingsCreateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
         bindingsCreateInfo[0].count = 1;
-        globalDataResourceLayout = Locator::getRenderer()->createResourceLayout(bindingsCreateInfo);
-        globalDataResourceSet = Locator::getRenderer()->createResourceSet(globalDataResourceLayout.get());
+        globalDataResourceLayout = Locator::getRHI()->createResourceLayout(bindingsCreateInfo);
+        globalDataResourceSet = Locator::getRHI()->createResourceSet(globalDataResourceLayout.get());
 
         Buffer::CreateInfo globalDataBufferCreateInfo = {
             .size = sizeof(GlobalData) * MAX_VIEWPORTS, .usage = BufferUsage::Uniform, .memoryUsage = MemoryUsage::GPUandCPU};
-        globalDataBuffer = Locator::getRenderer()->createBuffer(globalDataBufferCreateInfo);
+        globalDataBuffer = Locator::getRHI()->createBuffer(globalDataBufferCreateInfo);
 
+        Buffer* bufferData[] = {globalDataBuffer.get()};
         std::vector<ResourceSet::Binding> bindingUpdateInfo(1);
-        bindingUpdateInfo[0].binding = 0;
+        bindingUpdateInfo[0].binding = Bindings::GlobalDataBinding;
         bindingUpdateInfo[0].type = ResourceType::UniformBuffer;
         bindingUpdateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
-        bindingUpdateInfo[0].buffers = {globalDataBuffer.get()};
-        bindingUpdateInfo[0].maxNumberOfResources = 1;
+        bindingUpdateInfo[0].data = bufferData;
         globalDataResourceSet->update(bindingUpdateInfo);
     }
 
@@ -185,20 +204,114 @@ namespace Axiom {
         bindingsCreateInfo[0].type = ResourceType::StorageBuffer;
         bindingsCreateInfo[0].stages = ShaderStage::Vertex;
         bindingsCreateInfo[0].count = 1;
-        instanceResourceLayout = Locator::getRenderer()->createResourceLayout(bindingsCreateInfo);
-        instanceResourceSet = Locator::getRenderer()->createResourceSet(instanceResourceLayout.get());
+        instanceResourceLayout = Locator::getRHI()->createResourceLayout(bindingsCreateInfo);
+        instanceResourceSet = Locator::getRHI()->createResourceSet(instanceResourceLayout.get());
 
-        Buffer::CreateInfo instanceSBBOCreateInfo = {
+        Buffer::CreateInfo instanceSSBOCreateInfo = {
             .size = sizeof(Math::Mat4) * MAX_INSTANCES_PER_FRAME, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
-        instanceSBBO = Locator::getRenderer()->createBuffer(instanceSBBOCreateInfo);
+        instanceSSBO = Locator::getRHI()->createBuffer(instanceSSBOCreateInfo);
 
+        Buffer* bufferData[] = {instanceSSBO.get()};
         std::vector<ResourceSet::Binding> bindingsUpdateInfo(1);
         bindingsUpdateInfo[0].binding = 1;
         bindingsUpdateInfo[0].type = ResourceType::StorageBuffer;
         bindingsUpdateInfo[0].stages = ShaderStage::Vertex;
-        bindingsUpdateInfo[0].buffers = {instanceSBBO.get()};
-        bindingsUpdateInfo[0].maxNumberOfResources = 1;
+        bindingsUpdateInfo[0].data = bufferData;
         instanceResourceSet->update(bindingsUpdateInfo);
+    }
+
+    void ForwardRenderPipeline::createSpritePassData() {
+        RenderAttachment colorAttachment = {.loadOp = LoadOp::Load, .storeOp = StoreOp::Store};
+        RenderAttachment depthAttachment = {.loadOp = LoadOp::Load, .storeOp = StoreOp::Store};
+        spriteRenderPass = {};
+        spriteRenderPass.colorAttachments[0] = colorAttachment;
+        spriteRenderPass.colorAttachmentCount = 1;
+        spriteRenderPass.depthAttachment = depthAttachment;
+        spriteRenderPass.hasDepthAttachment = true;
+
+        struct QuadVertex {
+            Math::Vec3 postion;
+            Math::Vec2 uv;
+        };
+
+        std::vector<QuadVertex> quadVertices = {
+            {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}}, {{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}}, {{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}}, {{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f}}};
+        std::vector<uint32_t> quadIndices = {0, 1, 2, 2, 3, 0};
+
+        Buffer::CreateInfo spriteVertexBufferCreateInfo = {
+            .size = sizeof(QuadVertex) * quadVertices.size(), .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        spriteVertexBuffer = Locator::getRHI()->createBuffer(spriteVertexBufferCreateInfo);
+
+        Buffer::CreateInfo spriteVBStagingCreateInfo = {
+            .size = spriteVertexBufferCreateInfo.size, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+        auto spriteVBStaging = Locator::getRHI()->createBuffer(spriteVBStagingCreateInfo);
+        spriteVBStaging->setData<QuadVertex>(quadVertices);
+
+        Buffer::CreateInfo spriteIndexBufferCreateInfo = {
+            .size = sizeof(uint32_t) * quadIndices.size(), .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        spriteIndexBuffer = Locator::getRHI()->createBuffer(spriteIndexBufferCreateInfo);
+
+        Buffer::CreateInfo spriteIBStagingCreateInfo = {
+            .size = spriteIndexBufferCreateInfo.size, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+        auto spriteIBStaging = Locator::getRHI()->createBuffer(spriteIBStagingCreateInfo);
+        spriteIBStaging->setData<uint32_t>(quadIndices);
+
+        auto cmd = Locator::getRHI()->beginSingleTimeCommands();
+        cmd->copyBuffer(spriteVBStaging.get(), spriteVertexBuffer.get(), spriteVertexBufferCreateInfo.size);
+        cmd->copyBuffer(spriteIBStaging.get(), spriteIndexBuffer.get(), spriteIndexBufferCreateInfo.size);
+        Locator::getRHI()->endSingleTimeCommands(cmd.get());
+
+        std::vector<ResourceLayout::BindingCreateInfo> bindingsCreateInfo(1);
+        bindingsCreateInfo[0].binding = 0;
+        bindingsCreateInfo[0].type = ResourceType::StorageBuffer;
+        bindingsCreateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
+        bindingsCreateInfo[0].count = 1;
+
+        spriteInstanceResourceLayout = Locator::getRHI()->createResourceLayout(bindingsCreateInfo);
+        spriteInstanceResourceSet = Locator::getRHI()->createResourceSet(spriteInstanceResourceLayout.get());
+
+        struct GPUInstanceData {
+            Math::Mat4 modelMatrix;
+            Math::Vec4 color;
+            uint32_t textureIndex;
+            float padding[3];
+        };
+
+        Buffer::CreateInfo spriteInstanceSSBOCreateInfo = {
+            .size = sizeof(GPUInstanceData) * MAX_SPRITE_INSTANCES_PER_FRAME, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
+        spriteInstanceSSBO = Locator::getRHI()->createBuffer(spriteInstanceSSBOCreateInfo);
+
+        Buffer* bufferData[] = {spriteInstanceSSBO.get()};
+        std::vector<ResourceSet::Binding> bindingsUpdateInfo(1);
+        bindingsUpdateInfo[0].binding = 0;
+        bindingsUpdateInfo[0].type = ResourceType::StorageBuffer;
+        bindingsUpdateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
+        bindingsUpdateInfo[0].data = bufferData;
+        spriteInstanceResourceSet->update(bindingsUpdateInfo);
+
+        UUID spriteShaderHandle = AssetManager::importAsset("BuiltIn.Sprite2D", "axiom://Packages/Shaders/BuiltIn.Sprite2D.axs", AssetType::Shader);
+        std::shared_ptr<ShaderAsset> spriteShader = AssetManager::getAsset<ShaderAsset>(spriteShaderHandle);
+
+        std::vector<VertexBindingDescription> vertexBindings = {{.binding = 0, .stride = sizeof(QuadVertex), .inputRate = VertexInputRate::Vertex}};
+        std::vector<VertexAttributeDescription> vertexAttributes = {
+            {.location = 0, .binding = 0, .format = Format::R32G32B32Sfloat, .offset = 0},
+            {.location = 1, .binding = 0, .format = Format::R32G32Sfloat, .offset = offsetof(QuadVertex, uv)}};
+
+        Pipeline::CreateInfo pipelineCreateInfo = {.shader = spriteShader->getShader(),
+                                                   .vertexBindings = vertexBindings,
+                                                   .vertexAttributes = vertexAttributes,
+                                                   .topology = PrimitiveTopology::TriangleList,
+                                                   .polygonMode = PolygonMode::Fill,
+                                                   .cullMode = CullMode::None,
+                                                   .frontFaceClockwise = true,
+                                                   .enableBlending = true,
+                                                   .enableDepthTest = true,
+                                                   .enableDepthWrite = false,
+                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
+                                                   .depthAttachmentFormat = Locator::getRHI()->getDepthTextureFormat(),
+                                                   .resourceLayouts = {globalDataResourceLayout.get(), spriteInstanceResourceLayout.get(),
+                                                                       Locator::getRHI()->getTextureRegistry()->getResourceLayout()}};
+        spritePipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::createSkyboxPassData() {
@@ -216,24 +329,24 @@ namespace Axiom {
 
         Buffer::CreateInfo skyboxVertexBufferCreateInfo = {
             .size = sizeof(Math::Vec3) * skyboxVertices.size(), .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        skyboxVertexBuffer = Locator::getRenderer()->createBuffer(skyboxVertexBufferCreateInfo);
+        skyboxVertexBuffer = Locator::getRHI()->createBuffer(skyboxVertexBufferCreateInfo);
         Buffer::CreateInfo skyboxVertexStagingBufferCreateInfo = {
             .size = sizeof(Math::Vec3) * skyboxVertices.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> skyboxVertexStagingBuffer = Locator::getRenderer()->createBuffer(skyboxVertexStagingBufferCreateInfo);
+        std::unique_ptr<Buffer> skyboxVertexStagingBuffer = Locator::getRHI()->createBuffer(skyboxVertexStagingBufferCreateInfo);
         skyboxVertexStagingBuffer->setData<Math::Vec3>(skyboxVertices);
 
         Buffer::CreateInfo skyboxIndexBufferCreateInfo = {
             .size = sizeof(uint32_t) * skyboxIndices.size(), .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        skyboxIndexBuffer = Locator::getRenderer()->createBuffer(skyboxIndexBufferCreateInfo);
+        skyboxIndexBuffer = Locator::getRHI()->createBuffer(skyboxIndexBufferCreateInfo);
         Buffer::CreateInfo skyboxIndexStagingBufferCreateInfo = {
             .size = sizeof(uint32_t) * skyboxIndices.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> skyboxIndexStagingBuffer = Locator::getRenderer()->createBuffer(skyboxIndexStagingBufferCreateInfo);
+        std::unique_ptr<Buffer> skyboxIndexStagingBuffer = Locator::getRHI()->createBuffer(skyboxIndexStagingBufferCreateInfo);
         skyboxIndexStagingBuffer->setData<uint32_t>(skyboxIndices);
 
-        auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+        auto commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
         commandBuffer->copyBuffer(skyboxVertexStagingBuffer.get(), skyboxVertexBuffer.get(), skyboxVertexBufferCreateInfo.size);
         commandBuffer->copyBuffer(skyboxIndexStagingBuffer.get(), skyboxIndexBuffer.get(), skyboxIndexBufferCreateInfo.size);
-        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
 
         UUID skyboxShaderHandle = AssetManager::importAsset("BuiltIn.Skybox", "axiom://Packages/Shaders/BuiltIn.Skybox.axs", AssetType::Shader);
         std::shared_ptr<ShaderAsset> skyboxShader = AssetManager::getAsset<ShaderAsset>(skyboxShaderHandle);
@@ -253,10 +366,10 @@ namespace Axiom {
                                                    .enableBlending = false,
                                                    .enableDepthTest = true,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
-                                                   .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
+                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
+                                                   .depthAttachmentFormat = Locator::getRHI()->getDepthTextureFormat(),
                                                    .resourceLayouts = {globalDataResourceLayout.get()}};
-        skyboxPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
+        skyboxPipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::createWorldGridPassData() {
@@ -281,10 +394,10 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = true,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
-                                                   .depthAttachmentFormat = Locator::getRenderer()->getDepthTextureFormat(),
+                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
+                                                   .depthAttachmentFormat = Locator::getRHI()->getDepthTextureFormat(),
                                                    .resourceLayouts = {globalDataResourceLayout.get()}};
-        worldGridPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
+        worldGridPipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::createGizmosPassData() {
@@ -314,10 +427,10 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = false,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Locator::getRenderer()->getRenderTargetFormat()},
+                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
                                                    .depthAttachmentFormat = Format::Undefined,
                                                    .resourceLayouts = {globalDataResourceLayout.get()}};
-        gizmosPipeline = Locator::getRenderer()->createPipeline(pipelineCreateInfo);
+        gizmosPipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::opaquePass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer,
@@ -338,8 +451,6 @@ namespace Axiom {
             }
         }
 
-        // TODO: add sprite component rendering
-
         std::sort(drawList.begin(), drawList.end());
 
         std::vector<Math::Mat4> allTransforms;
@@ -352,7 +463,7 @@ namespace Axiom {
         totalInstanceCount += allTransforms.size();
         AX_CORE_ASSERT(totalInstanceCount < MAX_INSTANCES_PER_FRAME, "Instance buffer overflow!");
 
-        instanceSBBO->setData(allTransforms.data(), allTransforms.size() * sizeof(Math::Mat4), passInstanceOffset * sizeof(Math::Mat4));
+        instanceSSBO->setData(allTransforms.data(), allTransforms.size() * sizeof(Math::Mat4), passInstanceOffset * sizeof(Math::Mat4));
 
         Math::iVec2 renderTargetSize = renderTarget->getSize();
         opaqueRenderPass.colorAttachments[0].texture = renderTarget;
@@ -391,7 +502,6 @@ namespace Axiom {
 
             PushConstants pc = {.viewportIndex = viewportIndex, .instanceIndex = batchStartOffset};
             commandBuffer->bindPushConstants(&pc, sizeof(PushConstants));
-
             commandBuffer->drawIndexed(activeMesh->getIndexCount(), batchInstanceCount, activeMesh->getIndexOffset(), activeMesh->getVertexOffset());
 
             batchStartOffset += batchInstanceCount;
@@ -427,7 +537,7 @@ namespace Axiom {
                 }
                 pipelineCreateInfo.resourceLayouts = {globalDataResourceLayout.get(), instanceResourceLayout.get()};
 
-                commandBuffer->bindPipeline(Locator::getRenderer()->getOrCreatePipeline(pipelineCreateInfo));
+                commandBuffer->bindPipeline(Locator::getRHI()->getOrCreatePipeline(pipelineCreateInfo));
                 commandBuffer->bindResources({globalDataResourceSet.get(), instanceResourceSet.get()});
             }
 
@@ -442,6 +552,61 @@ namespace Axiom {
         }
 
         flushBatch();
+        commandBuffer->endRendering();
+    }
+
+    void ForwardRenderPipeline::spritePass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer,
+                                           uint32_t viewportIndex) {
+        struct alignas(16) SpriteInstance {
+            Math::Mat4 modelMatrix;
+            Math::Vec4 color;
+            uint32_t textureIndex;
+            float padding[3];
+        };
+
+        std::vector<SpriteInstance> spriteInstances;
+        spriteInstances.reserve(1000);
+
+        auto view = scene->view<Sprite2DComponent, TransformComponent>();
+        for (const uint32_t id : view) {
+            const auto& [sprite, transform] = scene->getEntity(id).getComponents<Sprite2DComponent, TransformComponent>();
+
+            uint32_t texIdx = Locator::getRHI()->getTextureRegistry()->getOrRegister(sprite.textureId);
+
+            spriteInstances.push_back({.modelMatrix = transform.modelMatrix(), .color = sprite.color, .textureIndex = texIdx, .padding = {0.0f, 0.0f, 0.0f}});
+        }
+
+        if (spriteInstances.empty()) {
+            return;
+        }
+
+        AX_CORE_ASSERT(spriteInstances.size() < MAX_SPRITE_INSTANCES_PER_FRAME, "Sprite instance buffer overflow!");
+
+        spriteInstanceSSBO->setData(spriteInstances.data(), spriteInstances.size() * sizeof(SpriteInstance));
+
+        Math::iVec2 renderTargetSize = renderTarget->getSize();
+        spriteRenderPass.width = renderTargetSize.x();
+        spriteRenderPass.height = renderTargetSize.y();
+        spriteRenderPass.colorAttachments[0].texture = renderTarget;
+        spriteRenderPass.depthAttachment.texture = depthTarget;
+
+        commandBuffer->beginRendering(spriteRenderPass);
+        commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
+        commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
+
+        commandBuffer->bindPipeline(spritePipeline.get());
+        commandBuffer->bindVertexBuffers({spriteVertexBuffer.get()});
+        commandBuffer->bindIndexBuffer(spriteIndexBuffer.get());
+
+        commandBuffer->bindResources({globalDataResourceSet.get(), spriteInstanceResourceSet.get(), Locator::getRHI()->getTextureRegistry()->getResourceSet()});
+
+        struct PushConstants {
+            uint32_t viewportIndex;
+        } pc{.viewportIndex = viewportIndex};
+        commandBuffer->bindPushConstants(&pc, sizeof(PushConstants));
+
+        commandBuffer->drawIndexed(6, static_cast<uint32_t>(spriteInstances.size()), 0, 0, 0);
+
         commandBuffer->endRendering();
     }
 

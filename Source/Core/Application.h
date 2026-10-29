@@ -12,7 +12,7 @@
 #include "Log.h"
 #include "Math/AxMath.h"
 #include "Renderer/RenderGraph.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "UI/UIRenderer.h"
 #include "Utils/FileSystem.h"
 #include "Window.h"
@@ -88,7 +88,7 @@ namespace Axiom {
 
       private:
         std::unique_ptr<Window> window;
-        std::unique_ptr<Renderer> renderer;
+        std::unique_ptr<RenderHardwareInterface> renderer;
         std::unique_ptr<UIRenderer> uiRenderer;
         std::unique_ptr<TaskManager> taskManager;
         bool running = true;

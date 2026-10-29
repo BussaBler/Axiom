@@ -8,15 +8,7 @@ const vec3 vertices[6] = vec3[](
         vec3(-1.0, 0.0, 1.0), vec3(-1.0, 0.0, -1.0), vec3(1.0, 0.0, 1.0)
     );
 
-layout(set = 0, binding = 0) uniform GlobalData {
-    mat4 uView;
-    mat4 uProjection;
-    vec4 uCameraPosition;
-
-    vec4 uAmbientColor;
-    vec4 uDirectionalLightDir;
-    vec4 uDirectionalLightColor;
-} globalData;
+#include "RS.GlobalData.axsinc"
 
 layout(location = 0) out vec3 vWorldPosition;
 
@@ -35,15 +27,7 @@ void main() {
 #version 460
 #pragma shader_stage(fragment)
 
-layout(set = 0, binding = 0) uniform GlobalData {
-    mat4 uProjection;
-    mat4 uView;
-    vec4 uCameraPosition;
-
-    vec4 uAmbientColor;
-    vec4 uDirectionalLightDir;
-    vec4 uDirectionalLightColor;
-} globalData;
+#include "RS.GlobalData.axsinc"
 
 layout(location = 0) in vec3 vWorldPosition;
 

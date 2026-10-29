@@ -6,12 +6,21 @@
 namespace Axiom {
     class MetalSwapChain : public SwapChain {
       public:
-        MetalSwapChain(MTL::Device* metalDevice, CA::MetalLayer* metalLayer, uint32_t width, uint32_t height, uint32_t maxFramesInFlight);
+        struct CreateInfo {
+            MTL::Device* metalDevice;
+            CA::MetalLayer* metalLayer;
+            uint32_t width;
+            uint32_t height;
+            uint32_t maxFramesInFlight;
+            Format imageFormat;
+        };
+
+      public:
+        MetalSwapChain(const CreateInfo& createInfo);
         ~MetalSwapChain() override;
 
         bool acquireNextImage() override;
         Texture* getCurrentTexture() override;
-        Format getTextureFormat() const override;
         Texture* getCurrentDepthTexture() override;
         Format getDepthTextureFormat() const override;
         bool present() override;
@@ -27,7 +36,6 @@ namespace Axiom {
         CA::MetalLayer* metalLayer = nullptr;
         CA::MetalDrawable* currentDrawable = nullptr;
         std::unique_ptr<MetalTexture> currentDrawableTexture = nullptr;
-        Format textureFormat = Format::Undefined;
         std::vector<std::unique_ptr<MetalTexture>> depthTextures;
         Format depthTextureFormat = Format::Undefined;
 

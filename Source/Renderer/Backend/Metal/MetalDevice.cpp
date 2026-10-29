@@ -5,9 +5,15 @@
 #define MTL_PRIVATE_IMPLEMENTATION
 
 #include "Core/Assert.h"
-#include "Metal/Metal.hpp"
 #include "MetalDevice.h"
 #include "Platform/MacOS/MacOSWindow.h"
+#include "Renderer/Backend/Metal/MetalBuffer.h"
+#include "Renderer/Backend/Metal/MetalPipeline.h"
+#include "Renderer/Backend/Metal/MetalResourceLayout.h"
+#include "Renderer/Backend/Metal/MetalResourceSet.h"
+#include "Renderer/Backend/Metal/MetalSampler.h"
+#include "Renderer/Backend/Metal/MetalShader.h"
+#include "Renderer/Backend/Metal/MetalSwapChain.h"
 
 namespace Axiom {
     std::unique_ptr<Device> Device::create(const CreateInfo& createInfo) {
@@ -49,8 +55,14 @@ namespace Axiom {
         }
     }
 
-    std::unique_ptr<SwapChain> MetalDevice::createSwapchain(uint32_t width, uint32_t height) {
-        return std::make_unique<MetalSwapChain>(metalDevice, metalLayer, width, height, maxFramesInFlight);
+    std::unique_ptr<SwapChain> MetalDevice::createSwapchain(Format imageFormat, uint32_t width, uint32_t height) {
+        MetalSwapChain::CreateInfo createInfo = {.metalDevice = metalDevice,
+                                                 .metalLayer = metalLayer,
+                                                 .width = width,
+                                                 .height = height,
+                                                 .maxFramesInFlight = maxFramesInFlight,
+                                                 .imageFormat = imageFormat};
+        return std::make_unique<MetalSwapChain>(createInfo);
     }
 
     std::unique_ptr<Shader> MetalDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {

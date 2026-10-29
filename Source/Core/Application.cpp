@@ -2,11 +2,13 @@
 
 #include "Application.h"
 
+#include "Asset/AssetManager.h"
 #include "Core/Locator.h"
 #include "Core/TaskManager.h"
 #include "ECS/ComponentRegistry.h"
 #include "Profiler.h"
 #include "Renderer/RenderGraph.h"
+#include "Renderer/TextureRegistry.h"
 #include "Utils/FileSystem.h"
 
 namespace Axiom {
@@ -33,10 +35,11 @@ namespace Axiom {
         taskManager = std::make_unique<TaskManager>();
         Locator::provideTaskManager(taskManager.get());
 
-        renderer = std::make_unique<Renderer>(window.get());
+        renderer = std::make_unique<RenderHardwareInterface>(window.get());
         Locator::provideRenderer(renderer.get());
 
         AssetManager::init();
+        renderer->getTextureRegistry()->setFallbackTexture(AssetManager::getDefaultTexture()->getTexture());
 
         uiRenderer = std::make_unique<UIRenderer>();
         Locator::provideUIRenderer(uiRenderer.get());

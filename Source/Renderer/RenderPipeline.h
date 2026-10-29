@@ -1,10 +1,11 @@
 #pragma once
-#include "CommandBuffer.h"
 #include "Math/Mat.h"
 #include "Math/Vec.h"
 #include "Renderer/RenderGraph.h"
 #include "Scene/Scene.h"
 #include "Texture.h"
+
+#include <cstdint>
 
 namespace Axiom {
     struct RenderContext {
@@ -28,6 +29,7 @@ namespace Axiom {
         Scene* scene;
         RGTextureHandle renderTarget;
         RGTextureHandle depthTarget;
+        uint8_t viewportIndex = 0;
     };
 
     class RenderPipeline {

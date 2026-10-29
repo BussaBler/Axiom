@@ -40,7 +40,7 @@ namespace Axiom {
 
         static std::unique_ptr<Device> create(const CreateInfo& createInfo);
 
-        virtual std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) = 0;
+        virtual std::unique_ptr<SwapChain> createSwapchain(Format imageFormat, uint32_t width, uint32_t height) = 0;
         virtual std::unique_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource) = 0;
         virtual std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) = 0;
         virtual std::unique_ptr<CommandBuffer> createCommandBuffer() = 0;

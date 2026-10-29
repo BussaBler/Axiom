@@ -1,0 +1,4 @@
+// resource set for bindless texture array
+#extension GL_EXT_nonuniform_qualifier : enable
+layout(set = SET_BINDLESS_TEXTURE, binding = BINDING_BINDLESS_TEXTURE) uniform texture2D globalTextures[];
+layout(set = SET_BINDLESS_TEXTURE, binding = BINDING_BINDLESS_TEXTURE_SAMPLERS) uniform sampler globalSamplers[];

@@ -4,13 +4,17 @@
 
 #include "Core/Log.h"
 #include "Renderer/Backend/Metal/MetalBindingLayout.h"
+#include "Renderer/ResourceSet.h"
+#include "Renderer/ShaderIncluder.h"
 #include "spirv_cross_error_handling.hpp"
 
 #include <SpirvCross/spirv_msl.hpp>
 #include <cstdint>
 #include <expected>
+#include <memory>
 #include <shaderc/shaderc.hpp>
 #include <shaderc/status.h>
+#include <string>
 
 namespace Axiom {
     MetalShader::MetalShader(const std::string& vertexSource, const std::string& fragmentSource, MTL::Device* device) {
@@ -81,6 +85,13 @@ namespace Axiom {
         shaderc::Compiler compiler = {};
         shaderc::CompileOptions options = {};
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+        options.SetIncluder(std::make_unique<ShaderIncluder>());
+        options.AddMacroDefinition("SET_GLOBAL_DATA", std::to_string(Bindings::GlobalDataSet));
+        options.AddMacroDefinition("BINDING_GLOBAL_DATA", std::to_string(Bindings::GlobalDataBinding));
+        options.AddMacroDefinition("SET_BINDLESS_TEXTURE", std::to_string(Bindings::BindlessTextureSet));
+        options.AddMacroDefinition("BINDING_BINDLESS_TEXTURE", std::to_string(Bindings::BindlessTextureBinding));
+        options.AddMacroDefinition("BINDING_BINDLESS_TEXTURE_SAMPLERS", std::to_string(Bindings::BindlessTextureSamplersBinding));
+
         shaderc::CompilationResult compResult =
             compiler.CompileGlslToSpv(source.c_str(), source.size(), shaderc_shader_kind::shaderc_glsl_infer_from_source, "shader", "main", options);
         if (compResult.GetCompilationStatus() != shaderc_compilation_status_success) {

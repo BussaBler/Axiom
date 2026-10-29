@@ -110,11 +110,18 @@ namespace Axiom {
         }
     }
 
-    std::unique_ptr<SwapChain> VulkanDevice::createSwapchain(uint32_t width, uint32_t height) {
+    std::unique_ptr<SwapChain> VulkanDevice::createSwapchain(Format imageFormat, uint32_t width, uint32_t height) {
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
         QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-        VulkanSwapChain::CreateInfo createInfo{
-            logicalDevice, surface, presentQueue, swapChainSupport, queueFamilyIndices, Vk::Extent2D(width, height), findDepthFormat(), maxFramesInFlight};
+        VulkanSwapChain::CreateInfo createInfo = {.logicDevice = logicalDevice,
+                                                  .surface = surface,
+                                                  .presentQueue = presentQueue,
+                                                  .swapChainDetails = swapChainSupport,
+                                                  .queueFamilyIndices = queueFamilyIndices,
+                                                  .windowSize = Vk::Extent2D(width, height),
+                                                  .depthFormat = findDepthFormat(),
+                                                  .maxFramesInFlight = maxFramesInFlight,
+                                                  .imageFormat = imageFormat};
         return std::make_unique<VulkanSwapChain>(createInfo);
     }
 

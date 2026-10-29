@@ -5,6 +5,7 @@
 #include "Math/Mat.h"
 #include "Math/Vec.h"
 #include "Renderer/Buffer.h"
+#include "Renderer/CommandBuffer.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderFeature.h"
 #include "Renderer/RenderGraph.h"
@@ -12,16 +13,29 @@
 #include "Renderer/RenderPipeline.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
+#include "Renderer/Texture.h"
+#include "Scene/Scene.h"
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
 
 namespace Axiom {
     struct GlobalResourceData {
+        Scene* scene;
         RGTextureHandle colorBuffer;
         RGTextureHandle depthBuffer;
         uint32_t viewportIndex = 0;
+        Math::Vec3 gizmoPosition = Math::Vec3::zero();
+    };
+
+    struct GizmosPassData {
+        Scene* scene;
+        RGTextureHandle renderTarget;
+        RGTextureHandle depthTarget;
+        uint8_t viewportIndex = 0;
+        Math::Vec3 gizmosPosition = Math::Vec3::zero();
     };
 
     class ForwardRenderPipeline : public RenderPipeline {
@@ -37,11 +51,13 @@ namespace Axiom {
       private:
         void createGlobalData();
         void createOpaquePassData();
+        void createSpritePassData();
         void createSkyboxPassData();
         void createWorldGridPassData();
         void createGizmosPassData();
 
         void opaquePass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer, uint32_t viewportIndex);
+        void spritePass(Scene* scene, const Texture* renderTarget, const Texture* depthtarget, CommandBuffer* commandBuffer, uint32_t viewportIndex);
         void skyboxPass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer);
         void transparentPass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer);
         void shadowPass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer);
@@ -79,6 +95,7 @@ namespace Axiom {
         static constexpr uint32_t INSTANCE_DATA_ALIGNMENT = 256;
         static constexpr uint8_t MAX_VIEWPORTS = 10;
         static constexpr uint32_t MAX_INSTANCES_PER_FRAME = 10000;
+        static constexpr uint32_t MAX_SPRITE_INSTANCES_PER_FRAME = 1000;
         uint32_t globalDataAllocations = 0;
         uint32_t totalInstanceCount = 0;
 
@@ -90,7 +107,15 @@ namespace Axiom {
         RenderPass opaqueRenderPass;
         std::unique_ptr<ResourceLayout> instanceResourceLayout;
         std::unique_ptr<ResourceSet> instanceResourceSet;
-        std::unique_ptr<Buffer> instanceSBBO;
+        std::unique_ptr<Buffer> instanceSSBO;
+
+        RenderPass spriteRenderPass;
+        std::unique_ptr<Buffer> spriteVertexBuffer;
+        std::unique_ptr<Buffer> spriteIndexBuffer;
+        std::unique_ptr<ResourceLayout> spriteInstanceResourceLayout;
+        std::unique_ptr<ResourceSet> spriteInstanceResourceSet;
+        std::unique_ptr<Buffer> spriteInstanceSSBO;
+        std::unique_ptr<Pipeline> spritePipeline;
 
         RenderPass skyboxRenderPass;
         std::unique_ptr<Buffer> skyboxVertexBuffer;

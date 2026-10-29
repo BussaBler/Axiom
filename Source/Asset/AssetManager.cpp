@@ -12,7 +12,7 @@
 #include "Core/TaskManager.h"
 #include "Math/Color.h"
 #include "MeshAsset.h"
-#include "Renderer/Renderer.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/Shader.h"
 #include "ShaderAsset.h"
 #include "TextureAsset.h"
@@ -54,10 +54,10 @@ namespace Axiom {
 
         Buffer::CreateInfo vertexBufferCreateInfo = {
             .size = globalBufferSize, .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        globalVertexBuffer = Locator::getRenderer()->createBuffer(vertexBufferCreateInfo);
+        globalVertexBuffer = Locator::getRHI()->createBuffer(vertexBufferCreateInfo);
         Buffer::CreateInfo indexBufferCreateInfo = {
             .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        globalIndexBuffer = Locator::getRenderer()->createBuffer(indexBufferCreateInfo);
+        globalIndexBuffer = Locator::getRHI()->createBuffer(indexBufferCreateInfo);
 
         deserializeManifest("axiom://Packages/Packages.json");
 
@@ -141,11 +141,11 @@ namespace Axiom {
                                                  .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
                                                  .aspect = TextureAspect::Color,
                                                  .memoryUsage = MemoryUsage::GPUOnly};
-        std::unique_ptr<Texture> defaultTexture = Locator::getRenderer()->createTexture(textureCreateInfo);
+        std::unique_ptr<Texture> defaultTexture = Locator::getRHI()->createTexture(textureCreateInfo);
 
         Buffer::CreateInfo stagingBufferCreateInfo = {
             .size = defaultTextureSize * defaultTextureSize * sizeof(uint32_t), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(stagingBufferCreateInfo);
+        std::unique_ptr<Buffer> stagingBuffer = Locator::getRHI()->createBuffer(stagingBufferCreateInfo);
 
         // Magenta: R=255, G=0, B=255, A=255
         // Black:   R=0,   G=0, B=0,   A=255
@@ -163,10 +163,10 @@ namespace Axiom {
             }
         }
 
-        std::unique_ptr<CommandBuffer> commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+        std::unique_ptr<CommandBuffer> commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
         stagingBuffer->setData<uint32_t>(defaultTextureData);
         commandBuffer->copyBufferToTexture(stagingBuffer.get(), defaultTexture.get(), defaultTextureSize, defaultTextureSize);
-        Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+        Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
 
         AssetMetadata defaultTextureMeta = {.name = "BuiltIn.DefaultTexture", .type = AssetType::Texture, .filePath = ""};
         registry[defaultTextureHandle] = defaultTextureMeta;
@@ -228,17 +228,17 @@ namespace Axiom {
         uint32_t indexBytes = cubeIndices.size() * sizeof(uint32_t);
 
         Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> vertexStaging = Locator::getRenderer()->createBuffer(vertexStagingInfo);
+        std::unique_ptr<Buffer> vertexStaging = Locator::getRHI()->createBuffer(vertexStagingInfo);
         vertexStaging->setData(cubeVertices.data(), vertexBytes);
 
         Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> indexStaging = Locator::getRenderer()->createBuffer(indexStagingInfo);
+        std::unique_ptr<Buffer> indexStaging = Locator::getRHI()->createBuffer(indexStagingInfo);
         indexStaging->setData(cubeIndices.data(), indexBytes);
 
-        auto cubeCommandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+        auto cubeCommandBuffer = Locator::getRHI()->beginSingleTimeCommands();
         cubeCommandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, 0);
         cubeCommandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, 0);
-        Locator::getRenderer()->endSingleTimeCommands(cubeCommandBuffer.get());
+        Locator::getRHI()->endSingleTimeCommands(cubeCommandBuffer.get());
 
         currentVertexCount += cubeVertices.size();
         currentIndexCount += cubeIndices.size();
@@ -309,7 +309,7 @@ namespace Axiom {
         std::string vertexSource = errorShaderSource.substr(vertexPos + 13, fragmentPos - (vertexPos + 13));
         std::string fragmentSource = errorShaderSource.substr(fragmentPos + 15, std::string::npos);
 
-        std::unique_ptr<Shader> errorShader = Locator::getRenderer()->createShader(vertexSource, fragmentSource);
+        std::unique_ptr<Shader> errorShader = Locator::getRHI()->createShader(vertexSource, fragmentSource);
         AssetMetadata errorShaderMeta = {.name = "Error Shader", .type = AssetType::Shader, .filePath = ""};
         registry[errorShaderHandle] = errorShaderMeta;
         loadedAssets[errorShaderHandle] = std::make_shared<ShaderAsset>(errorShaderHandle, "Error Shader", std::move(errorShader));
@@ -328,16 +328,16 @@ namespace Axiom {
                                               .aspect = TextureAspect::Color,
                                               .memoryUsage = MemoryUsage::GPUOnly};
 
-            std::unique_ptr<Texture> texture = Locator::getRenderer()->createTexture(createInfo);
+            std::unique_ptr<Texture> texture = Locator::getRHI()->createTexture(createInfo);
 
             Buffer::CreateInfo stagingBufferCreateInfo = {
                 .size = imageResult->data.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> stagingBuffer = Locator::getRenderer()->createBuffer(stagingBufferCreateInfo);
+            std::unique_ptr<Buffer> stagingBuffer = Locator::getRHI()->createBuffer(stagingBufferCreateInfo);
             stagingBuffer->setData(imageResult->data.data(), imageResult->data.size());
 
-            std::unique_ptr<CommandBuffer> commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+            std::unique_ptr<CommandBuffer> commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
             commandBuffer->copyBufferToTexture(stagingBuffer.get(), texture.get(), imageResult->width, imageResult->height);
-            Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+            Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
 
             return std::make_shared<TextureAsset>(uuid, path.filename().string(), std::move(texture));
         }
@@ -365,7 +365,7 @@ namespace Axiom {
         std::string vertexSource = source.substr(vertexPos + 13, fragmentPos - (vertexPos + 13));
         std::string fragmentSource = source.substr(fragmentPos + 15, std::string::npos);
 
-        std::unique_ptr<Shader> shader = Locator::getRenderer()->createShader(vertexSource, fragmentSource);
+        std::unique_ptr<Shader> shader = Locator::getRHI()->createShader(vertexSource, fragmentSource);
         if (!shader->isCompiled()) {
             AX_CORE_LOG_ERROR_ONCE("Shader {} was not compiled properly.", path.generic_string());
             return loadedAssets[uuid];
@@ -404,19 +404,19 @@ namespace Axiom {
                 uint32_t indexBytes = indexCount * sizeof(uint32_t);
 
                 Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-                std::unique_ptr<Buffer> vertexStaging = Locator::getRenderer()->createBuffer(vertexStagingInfo);
+                std::unique_ptr<Buffer> vertexStaging = Locator::getRHI()->createBuffer(vertexStagingInfo);
                 vertexStaging->setData(vertices.data(), vertexBytes);
 
                 Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-                std::unique_ptr<Buffer> indexStaging = Locator::getRenderer()->createBuffer(indexStagingInfo);
+                std::unique_ptr<Buffer> indexStaging = Locator::getRHI()->createBuffer(indexStagingInfo);
                 indexStaging->setData(indices.data(), indexBytes);
 
-                auto commandBuffer = Locator::getRenderer()->beginSingleTimeCommands();
+                auto commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
                 uint32_t vertexByteDstOffset = currentVertexCount * sizeof(MeshVertex);
                 uint32_t indexByteDstOffset = currentIndexCount * sizeof(uint32_t);
                 commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, 0, vertexByteDstOffset);
                 commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, 0, indexByteDstOffset);
-                Locator::getRenderer()->endSingleTimeCommands(commandBuffer.get());
+                Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
 
                 currentVertexCount += vertexCount;
                 currentIndexCount += indexCount;

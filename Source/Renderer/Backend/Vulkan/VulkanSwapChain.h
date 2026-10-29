@@ -18,13 +18,13 @@ namespace Axiom {
             Vk::Extent2D windowSize;
             Vk::Format depthFormat;
             uint32_t maxFramesInFlight;
+            Format imageFormat;
         };
 
         VulkanSwapChain(const CreateInfo& createInfo);
         ~VulkanSwapChain() override;
         bool acquireNextImage() override;
         Texture* getCurrentTexture() override;
-        Format getTextureFormat() const override;
         Texture* getCurrentDepthTexture() override;
         Format getDepthTextureFormat() const override;
         bool present() override;

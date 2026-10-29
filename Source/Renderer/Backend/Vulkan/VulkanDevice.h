@@ -31,7 +31,7 @@ namespace Axiom {
         VulkanDevice(const Device::CreateInfo& createInfo);
         ~VulkanDevice() override;
 
-        std::unique_ptr<SwapChain> createSwapchain(uint32_t width, uint32_t height) override;
+        std::unique_ptr<SwapChain> createSwapchain(Format imageformat, uint32_t width, uint32_t height) override;
         std::unique_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource) override;
         std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) override;
         std::unique_ptr<CommandBuffer> createCommandBuffer() override;
