@@ -2,6 +2,9 @@
 #include "Asset.h"
 #include "Renderer/Shader.h"
 
+#include <memory>
+#include <utility>
+
 namespace Axiom {
     class ShaderAsset : public Asset {
       public:
@@ -10,7 +13,9 @@ namespace Axiom {
 
         inline Shader* getShader() const { return shader.get(); }
 
+        inline void updateData(std::unique_ptr<Shader> newShader) { shader = std::move(newShader); }
+
       private:
         std::unique_ptr<Shader> shader;
     };
-}
+} // namespace Axiom

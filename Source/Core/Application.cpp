@@ -3,13 +3,16 @@
 #include "Application.h"
 
 #include "Asset/AssetManager.h"
-#include "Core/Locator.h"
+#include "Core/Input.h"
 #include "Core/TaskManager.h"
 #include "ECS/ComponentRegistry.h"
+#include "ECS/Components/ComponentReflection.h"
 #include "Profiler.h"
-#include "Renderer/RenderGraph.h"
-#include "Renderer/TextureRegistry.h"
+#include "Renderer/PSOManager.h"
+#include "Renderer/SceneRenderer.h"
 #include "Utils/FileSystem.h"
+
+#include <memory>
 
 namespace Axiom {
     Application* Application::instance = nullptr;
@@ -29,29 +32,26 @@ namespace Axiom {
 
         WindowProps windowProps{appInfo.name, appInfo.width, appInfo.height};
         window = Window::create(windowProps);
-        Locator::provideWindow(window.get());
         window->setEventCallback(std::bind(&Application::onEvent, this, std::placeholders::_1));
 
         taskManager = std::make_unique<TaskManager>();
-        Locator::provideTaskManager(taskManager.get());
 
-        renderer = std::make_unique<RenderHardwareInterface>(window.get());
-        Locator::provideRenderer(renderer.get());
+        rhi = std::make_unique<RenderHardwareInterface>(window.get());
+        psoManager = std::make_unique<PSOManager>(*rhi);
 
-        AssetManager::init();
-        renderer->getTextureRegistry()->setFallbackTexture(AssetManager::getDefaultTexture()->getTexture());
+        assetManager = std::make_unique<AssetManager>(*rhi, *taskManager);
 
-        uiRenderer = std::make_unique<UIRenderer>();
-        Locator::provideUIRenderer(uiRenderer.get());
-
-        ComponentRegistry::registerDefaultComponents();
+        componentRegistry = std::make_unique<ComponentRegistry>();
+        componentRegistry->registerDefaultComponents();
         ComponentReflection::init();
 
-        renderer->initPipelines();
+        uiRenderer = std::make_unique<UIRenderer>(*rhi, *window, *assetManager, *taskManager);
+        sceneRenderer = std::make_unique<SceneRenderer>(*rhi, *psoManager, *assetManager);
+
+        engineContext = {window.get(), taskManager.get(), rhi.get(), assetManager.get(), componentRegistry.get(), uiRenderer.get(), sceneRenderer.get()};
     }
 
     Application::~Application() {
-        AssetManager::shutdown();
     }
 
     void Application::onEvent(Event& event) {
@@ -78,7 +78,7 @@ namespace Axiom {
     }
 
     bool Application::onWindowClose(WindowCloseEvent& e) {
-        running = false;
+        isRunning = false;
         return true;
     }
 
@@ -86,7 +86,7 @@ namespace Axiom {
         if (e.getWidth() == 0 || e.getHeight() == 0) {
             return false;
         }
-        renderer->recreateSwapChain();
+        rhi->recreateSwapChain();
         return true;
     }
 
@@ -129,6 +129,7 @@ namespace Axiom {
             switch (layerAction.action) {
             case Layer::ActionType::Transition:
                 (*it)->onDetach();
+                layerAction.newLayer->engineContext = &engineContext;
                 layerAction.newLayer->onAttach();
 
                 *it = std::move(layerAction.newLayer);
@@ -137,6 +138,7 @@ namespace Axiom {
             case Layer::ActionType::Suspend:
                 (*it)->onSuspend();
                 (*it)->isSuspended = true;
+                layerAction.newLayer->engineContext = &engineContext;
                 layerAction.newLayer->onAttach();
 
                 layerStack.insertLayer(it + 1, std::move(layerAction.newLayer));
@@ -159,7 +161,7 @@ namespace Axiom {
     }
 
     void Application::run() {
-        while (running) {
+        while (isRunning) {
             Profiler::beginFrame();
             window->beginFrame();
             for (const auto& layer : layerStack) {
@@ -174,20 +176,22 @@ namespace Axiom {
                 layer->onUIRender();
             }
 
-            renderGraph.begin();
-            CommandBuffer* commandBuffer = renderer->beginFrame();
-            for (const auto& layer : layerStack) {
-                layer->onRender(renderGraph);
+            CommandBuffer* commandBuffer = rhi->beginFrame();
+            if (commandBuffer) {
+                sceneRenderer->beginFrame();
+                for (const auto& layer : layerStack) {
+                    layer->onRender();
+                }
+                // TODO: add the delta time
+                sceneRenderer->execute(commandBuffer);
+                uiRenderer->onRender(commandBuffer, rhi->getCurrentRenderTarget());
+                rhi->endFrame();
             }
-            // TODO: add the delta time
-            renderGraph.execute(commandBuffer, FrameContext{.frameIndex = renderer->getCurrentFrameIndex()});
-            uiRenderer->onRender(commandBuffer, renderer->getCurrentRenderTarget());
-            renderer->endFrame();
 
             window->onUpdate();
             window->endFrame();
             processLayerActions();
         }
-        renderer->waitIdle();
+        rhi->waitIdle();
     }
 } // namespace Axiom

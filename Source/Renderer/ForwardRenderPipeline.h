@@ -1,4 +1,5 @@
 #pragma once
+#include "Asset/AssetManager.h"
 #include "Asset/MaterialAsset.h"
 #include "Asset/MeshAsset.h"
 #include "Math/Color.h"
@@ -6,14 +7,17 @@
 #include "Math/Vec.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/CommandBuffer.h"
+#include "Renderer/PSOManager.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderFeature.h"
 #include "Renderer/RenderGraph.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/RenderPipeline.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 #include "Renderer/Texture.h"
+#include "Renderer/TextureRegistry.h"
 #include "Scene/Scene.h"
 
 #include <cstdint>
@@ -40,7 +44,7 @@ namespace Axiom {
 
     class ForwardRenderPipeline : public RenderPipeline {
       public:
-        ForwardRenderPipeline();
+        ForwardRenderPipeline(RenderHardwareInterface& rhi, AssetManager& assetManager, TextureRegistry& textureRegistry, PSOManager& psoManager);
         ~ForwardRenderPipeline();
 
         void beginFrame() override;
@@ -96,25 +100,32 @@ namespace Axiom {
         static constexpr uint8_t MAX_VIEWPORTS = 10;
         static constexpr uint32_t MAX_INSTANCES_PER_FRAME = 10000;
         static constexpr uint32_t MAX_SPRITE_INSTANCES_PER_FRAME = 1000;
+
+        RenderHardwareInterface& rhi;
+        AssetManager& assetManager;
+        TextureRegistry& textureRegistry;
+        PSOManager& psoManager;
+
         uint32_t globalDataAllocations = 0;
         uint32_t totalInstanceCount = 0;
+        uint32_t currentFrameIndex = 0;
 
         GlobalData globalData;
         std::unique_ptr<ResourceLayout> globalDataResourceLayout;
-        std::unique_ptr<ResourceSet> globalDataResourceSet;
-        std::unique_ptr<Buffer> globalDataBuffer;
+        std::vector<std::unique_ptr<ResourceSet>> globalDataResourceSets;
+        std::vector<std::unique_ptr<Buffer>> globalDataBuffers;
 
         RenderPass opaqueRenderPass;
         std::unique_ptr<ResourceLayout> instanceResourceLayout;
-        std::unique_ptr<ResourceSet> instanceResourceSet;
-        std::unique_ptr<Buffer> instanceSSBO;
+        std::vector<std::unique_ptr<ResourceSet>> instanceResourceSets;
+        std::vector<std::unique_ptr<Buffer>> instanceSSBOs;
 
         RenderPass spriteRenderPass;
         std::unique_ptr<Buffer> spriteVertexBuffer;
         std::unique_ptr<Buffer> spriteIndexBuffer;
         std::unique_ptr<ResourceLayout> spriteInstanceResourceLayout;
-        std::unique_ptr<ResourceSet> spriteInstanceResourceSet;
-        std::unique_ptr<Buffer> spriteInstanceSSBO;
+        std::vector<std::unique_ptr<ResourceSet>> spriteInstanceResourceSets;
+        std::vector<std::unique_ptr<Buffer>> spriteInstanceSSBOs;
         std::unique_ptr<Pipeline> spritePipeline;
 
         RenderPass skyboxRenderPass;

@@ -1,10 +1,13 @@
 #pragma once
+#include "Asset/AssetManager.h"
 #include "Asset/ShaderAsset.h"
-#include "Core/Locator.h"
+#include "Core/TaskManager.h"
+#include "Core/Window.h"
 #include "Font.h"
 #include "Math/AxMath.h"
 #include "Math/Color.h"
 #include "Renderer/CommandBuffer.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/ResourceSet.h"
 #include "UIVertex.h"
 
@@ -14,7 +17,7 @@
 namespace Axiom {
     class UIRenderer {
       public:
-        UIRenderer();
+        UIRenderer(RenderHardwareInterface& rhi, Window& window, AssetManager& assetManager, TaskManager& taskManager);
         ~UIRenderer() = default;
 
         void beginFrame();
@@ -42,6 +45,10 @@ namespace Axiom {
         ResourceSet* getResourceSetForTexture(Texture* texture);
 
       private:
+        RenderHardwareInterface& rhi;
+        Window& window;
+        AssetManager& assetManager;
+        TaskManager& taskManager;
         // used for rendering lines in the editor (e.g. gizmos)
         Math::Mat4 gizmosProjection;
         Math::Mat4 gizmosView;

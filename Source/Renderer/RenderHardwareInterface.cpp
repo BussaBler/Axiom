@@ -2,15 +2,12 @@
 
 #include "RenderHardwareInterface.h"
 
-#include "Renderer/ForwardRenderPipeline.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 #include "Renderer/Texture.h"
-#include "TextureRegistry.h"
 
 #include <memory>
-#include <utility>
 
 namespace Axiom {
     RenderHardwareInterface::RenderHardwareInterface(Window* windowPtr) : window(windowPtr) {
@@ -28,17 +25,10 @@ namespace Axiom {
         depthBarrier = {.oldState = TextureState::Undefined, .newState = TextureState::DepthStencilTarget, .aspect = TextureAspect::Depth};
 
         createDefaultSamplers();
-
-        textureRegistry = std::make_unique<TextureRegistry>(this);
-        textureRegistry->init();
     }
 
     RenderHardwareInterface::~RenderHardwareInterface() {
         device->waitIdle();
-    }
-
-    void RenderHardwareInterface::initPipelines() {
-        forwardRP = registerPipeline<ForwardRenderPipeline>(FORWARD_PIPELINE_NAME);
     }
 
     void RenderHardwareInterface::waitIdle() {
@@ -46,10 +36,6 @@ namespace Axiom {
     }
 
     CommandBuffer* RenderHardwareInterface::beginFrame() {
-        for (auto& [name, pipeline] : registeredPipelines) {
-            pipeline->beginFrame();
-        }
-
         if (!device->beginFrame(swapChain.get())) {
             recreateSwapChain();
             return nullptr;
@@ -79,8 +65,8 @@ namespace Axiom {
         }
     }
 
-    std::unique_ptr<Shader> RenderHardwareInterface::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
-        return device->createShader(vertexSource, fragmentSource);
+    std::unique_ptr<Shader> RenderHardwareInterface::createShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv) {
+        return device->createShader(vertexSpirv, fragmentSpirv);
     }
 
     std::unique_ptr<Pipeline> RenderHardwareInterface::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
@@ -113,18 +99,6 @@ namespace Axiom {
 
     void RenderHardwareInterface::endSingleTimeCommands(CommandBuffer* commandBuffer) {
         device->endSingleTimeCommands(commandBuffer);
-    }
-
-    Pipeline* RenderHardwareInterface::getOrCreatePipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
-        if (pipelineCache.find(pipelineCreateInfo) != pipelineCache.end()) {
-            return pipelineCache[pipelineCreateInfo].get();
-        }
-
-        std::unique_ptr<Pipeline> newPipeline = createPipeline(pipelineCreateInfo);
-        Pipeline* pNewPipeline = newPipeline.get();
-        pipelineCache[pipelineCreateInfo] = std::move(newPipeline);
-
-        return pNewPipeline;
     }
 
     void RenderHardwareInterface::recreateSwapChain() {

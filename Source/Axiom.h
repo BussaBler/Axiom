@@ -8,7 +8,6 @@
 #include "Core/ConsoleLayer.h"
 #include "Core/Input.h"
 #include "Core/Layer.h"
-#include "Core/Locator.h"
 #include "Core/Log.h"
 #include "Core/Profiler.h"
 #include "ECS/Components/CameraComponent.h"
@@ -40,3 +39,4 @@
 #include "UI/UITextInput.h"
 #include "UI/UIVerticalBox.h"
 #include "Utils/FileDialogs.h"
+#include "Utils/FileSystem.h"

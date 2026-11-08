@@ -7,27 +7,56 @@
 #include "Asset/UUID.h"
 #include "AxImageLoader.h"
 #include "AxModelLoader.h"
-#include "Core/Locator.h"
+#include "BuiltInShaders.h"
 #include "Core/Log.h"
 #include "Core/TaskManager.h"
 #include "Math/Color.h"
 #include "MeshAsset.h"
+#include "Renderer/Buffer.h"
 #include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/Shader.h"
+#include "Renderer/ShaderCompiler.h"
+#include "Renderer/Texture.h"
 #include "ShaderAsset.h"
 #include "TextureAsset.h"
 #include "Utils/FileSystem.h"
 #include "Utils/JSONSerializer.h"
 
-namespace Axiom {
-    std::unordered_map<UUID, AssetMetadata> AssetManager::registry;
-    std::unordered_map<UUID, std::shared_ptr<Asset>> AssetManager::loadedAssets;
-    std::unordered_map<std::string, UUID> AssetManager::assetHandles;
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <string>
+#include <thread>
+#include <utility>
 
-    std::unique_ptr<Buffer> AssetManager::globalVertexBuffer;
-    std::unique_ptr<Buffer> AssetManager::globalIndexBuffer;
-    uint32_t AssetManager::currentVertexCount = 0;
-    uint32_t AssetManager::currentIndexCount = 0;
+namespace Axiom {
+    AssetManager::AssetManager(RenderHardwareInterface& rhi, TaskManager& taskManager) : rhi(rhi), taskManager(taskManager) {
+        uint64_t globalBufferSize = Math::megabytes(256);
+
+        Buffer::CreateInfo vertexBufferCreateInfo = {
+            .size = globalBufferSize, .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        globalVertexBuffer = rhi.createBuffer(vertexBufferCreateInfo);
+        Buffer::CreateInfo indexBufferCreateInfo = {
+            .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
+        globalIndexBuffer = rhi.createBuffer(indexBufferCreateInfo);
+
+        deserializeManifest("axiom://Packages/Packages.json");
+
+        initDefaultAssets();
+    }
+
+    AssetManager::~AssetManager() {
+        loadedAssets.clear();
+        assetHandles.clear();
+
+        globalVertexBuffer.reset();
+        globalIndexBuffer.reset();
+
+        serializeManifest("axiom://Packages/Packages.json", "axiom://");
+
+        registry.clear();
+    }
 
     UUID AssetManager::importAsset(const std::string& name, const std::filesystem::path& path, AssetType type) {
         std::string cacheString = path.generic_string();
@@ -47,33 +76,6 @@ namespace Axiom {
         assetHandles[cacheString] = newID;
 
         return newID;
-    }
-
-    void AssetManager::init() {
-        uint64_t globalBufferSize = Math::megabytes(256);
-
-        Buffer::CreateInfo vertexBufferCreateInfo = {
-            .size = globalBufferSize, .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        globalVertexBuffer = Locator::getRHI()->createBuffer(vertexBufferCreateInfo);
-        Buffer::CreateInfo indexBufferCreateInfo = {
-            .size = globalBufferSize, .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        globalIndexBuffer = Locator::getRHI()->createBuffer(indexBufferCreateInfo);
-
-        deserializeManifest("axiom://Packages/Packages.json");
-
-        initDefaultAssets();
-    }
-
-    void AssetManager::shutdown() {
-        loadedAssets.clear();
-        assetHandles.clear();
-
-        globalVertexBuffer.reset();
-        globalIndexBuffer.reset();
-
-        serializeManifest("axiom://Packages/Packages.json", "axiom://");
-
-        registry.clear();
     }
 
     void AssetManager::serializeManifest(const std::filesystem::path& manifestPath, const std::string& vfsFilter) {
@@ -141,11 +143,11 @@ namespace Axiom {
                                                  .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
                                                  .aspect = TextureAspect::Color,
                                                  .memoryUsage = MemoryUsage::GPUOnly};
-        std::unique_ptr<Texture> defaultTexture = Locator::getRHI()->createTexture(textureCreateInfo);
+        std::unique_ptr<Texture> defaultTexture = rhi.createTexture(textureCreateInfo);
 
         Buffer::CreateInfo stagingBufferCreateInfo = {
             .size = defaultTextureSize * defaultTextureSize * sizeof(uint32_t), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> stagingBuffer = Locator::getRHI()->createBuffer(stagingBufferCreateInfo);
+        std::unique_ptr<Buffer> stagingBuffer = rhi.createBuffer(stagingBufferCreateInfo);
 
         // Magenta: R=255, G=0, B=255, A=255
         // Black:   R=0,   G=0, B=0,   A=255
@@ -163,25 +165,25 @@ namespace Axiom {
             }
         }
 
-        std::unique_ptr<CommandBuffer> commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
+        std::unique_ptr<CommandBuffer> commandBuffer = rhi.beginSingleTimeCommands();
         stagingBuffer->setData<uint32_t>(defaultTextureData);
         commandBuffer->copyBufferToTexture(stagingBuffer.get(), defaultTexture.get(), defaultTextureSize, defaultTextureSize);
-        Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
+        rhi.endSingleTimeCommands(commandBuffer.get());
 
         AssetMetadata defaultTextureMeta = {.name = "BuiltIn.DefaultTexture", .type = AssetType::Texture, .filePath = ""};
-        registry[defaultTextureHandle] = defaultTextureMeta;
-        loadedAssets[defaultTextureHandle] = std::make_shared<TextureAsset>(defaultMaterialHandle, "BuiltIn.DefaultTexture", std::move(defaultTexture));
+        registry[DEFAULT_TEXTURE_HANDLE] = defaultTextureMeta;
+        loadedAssets[DEFAULT_TEXTURE_HANDLE] = std::make_shared<TextureAsset>(DEFAULT_MATERIAL_HANDLE, "BuiltIn.DefaultTexture", std::move(defaultTexture));
 
         // Default material
         std::filesystem::path defaultShaderPath = "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs";
         UUID defaultShaderHandle = importAsset("BuiltIn.DefaultPBR", defaultShaderPath, AssetType::Shader);
 
-        auto material = std::make_shared<MaterialAsset>(defaultMaterialHandle, "BuiltIn.DefaultPBR", defaultShaderHandle, nullptr);
+        auto material = std::make_shared<MaterialAsset>(DEFAULT_MATERIAL_HANDLE, "BuiltIn.DefaultPBR", defaultShaderHandle, nullptr);
         material->setAlbedoColor(Color::lightGray());
 
         AssetMetadata defaultMaterialMeta = {.name = "BuiltIn.DefaultMaterial", .type = AssetType::Material, .filePath = ""};
-        registry[defaultMaterialHandle] = defaultMaterialMeta;
-        loadedAssets[defaultMaterialHandle] = material;
+        registry[DEFAULT_MATERIAL_HANDLE] = defaultMaterialMeta;
+        loadedAssets[DEFAULT_MATERIAL_HANDLE] = material;
 
         // Default Mesh
         const std::vector<MeshVertex> cubeVertices = {// Front face (Z = 0.5)
@@ -228,25 +230,25 @@ namespace Axiom {
         uint32_t indexBytes = cubeIndices.size() * sizeof(uint32_t);
 
         Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> vertexStaging = Locator::getRHI()->createBuffer(vertexStagingInfo);
+        std::unique_ptr<Buffer> vertexStaging = rhi.createBuffer(vertexStagingInfo);
         vertexStaging->setData(cubeVertices.data(), vertexBytes);
 
         Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> indexStaging = Locator::getRHI()->createBuffer(indexStagingInfo);
+        std::unique_ptr<Buffer> indexStaging = rhi.createBuffer(indexStagingInfo);
         indexStaging->setData(cubeIndices.data(), indexBytes);
 
-        auto cubeCommandBuffer = Locator::getRHI()->beginSingleTimeCommands();
+        auto cubeCommandBuffer = rhi.beginSingleTimeCommands();
         cubeCommandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, 0);
         cubeCommandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, 0);
-        Locator::getRHI()->endSingleTimeCommands(cubeCommandBuffer.get());
+        rhi.endSingleTimeCommands(cubeCommandBuffer.get());
 
         currentVertexCount += cubeVertices.size();
         currentIndexCount += cubeIndices.size();
 
         AssetMetadata defaultMeshMeta = {.name = "Default Mesh", .type = AssetType::Mesh, .filePath = ""};
-        registry[defaultMeshHandle] = defaultMeshMeta;
+        registry[DEFAULT_MESH_HANDLE] = defaultMeshMeta;
 
-        loadedAssets[defaultMeshHandle] = std::make_shared<MeshAsset>(defaultMeshHandle, "Default Mesh", 0, 0, cubeIndices.size());
+        loadedAssets[DEFAULT_MESH_HANDLE] = std::make_shared<MeshAsset>(DEFAULT_MESH_HANDLE, "Default Mesh", 0, 0, cubeIndices.size());
 
         // Error shader
         const std::string errorShaderSource = R"glsl(
@@ -303,47 +305,68 @@ namespace Axiom {
         }
         )glsl";
 
-        size_t vertexPos = errorShaderSource.find("#type vertex");
-        size_t fragmentPos = errorShaderSource.find("#type fragment");
+        ShaderCompiler compiler("");
+        std::expected<ShaderSources, std::string> sources = ShaderCompiler::split(errorShaderSource);
+        std::expected<CompiledShader, std::string> compiled = compiler.compile(sources.value(), "error");
 
-        std::string vertexSource = errorShaderSource.substr(vertexPos + 13, fragmentPos - (vertexPos + 13));
-        std::string fragmentSource = errorShaderSource.substr(fragmentPos + 15, std::string::npos);
-
-        std::unique_ptr<Shader> errorShader = Locator::getRHI()->createShader(vertexSource, fragmentSource);
+        std::unique_ptr<Shader> errorShader = rhi.createShader(compiled->vertex, compiled->fragment);
         AssetMetadata errorShaderMeta = {.name = "Error Shader", .type = AssetType::Shader, .filePath = ""};
-        registry[errorShaderHandle] = errorShaderMeta;
-        loadedAssets[errorShaderHandle] = std::make_shared<ShaderAsset>(errorShaderHandle, "Error Shader", std::move(errorShader));
+        registry[ERROR_SHADER_HANDLE] = errorShaderMeta;
+        loadedAssets[ERROR_SHADER_HANDLE] = std::make_shared<ShaderAsset>(ERROR_SHADER_HANDLE, "Error Shader", std::move(errorShader));
+
+        registerBuiltInShaders();
+    }
+
+    void AssetManager::registerBuiltInShaders() {
+        for (const auto& entry : BuiltInShaders::Table) {
+            UUID handle = UUID::fromName("BuiltIn." + std::string(entry.name));
+            auto asset = std::make_shared<ShaderAsset>(handle, std::string(entry.name), rhi.createShader(entry.vertex, entry.fragment));
+            asset->setState(AssetState::Loaded);
+            loadedAssets[handle] = asset;
+            builtinShaders[std::string(entry.name)] = handle;
+        }
     }
 
     std::shared_ptr<Asset> AssetManager::loadTexture(const std::filesystem::path& path, UUID uuid) {
-        auto imageResult = AxImageLoader::loadImage(path, 4);
+        std::shared_ptr<TextureAsset> textureAsset = std::make_shared<TextureAsset>(uuid, path.filename().string(), nullptr);
+        textureAsset->setState(AssetState::Loading);
+        loadedAssets[uuid] = textureAsset;
 
-        if (imageResult.has_value()) {
-            Texture::CreateInfo createInfo = {.width = imageResult->width,
-                                              .height = imageResult->height,
-                                              .mipLevels = 1,
-                                              .arrayLayers = 1,
-                                              .format = Format::R8G8B8A8Unorm,
-                                              .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
-                                              .aspect = TextureAspect::Color,
-                                              .memoryUsage = MemoryUsage::GPUOnly};
+        std::thread([this, path, textureAsset]() {
+            auto imageResult = AxImageLoader::loadImage(path, 4);
+            if (!imageResult.has_value()) {
+                AX_CORE_LOG_ERROR("Failed to load texture({}): {}", uint64_t(textureAsset->getHandle()), imageResult.error());
+                textureAsset->setState(AssetState::Failed);
+                return;
+            }
 
-            std::unique_ptr<Texture> texture = Locator::getRHI()->createTexture(createInfo);
+            taskManager.submitToMain(
+                [this, textureAsset, imageData = std::move(imageResult->data), width = imageResult->width, height = imageResult->height]() {
+                    Texture::CreateInfo textureCreateInfo = {.width = width,
+                                                             .height = height,
+                                                             .mipLevels = 1,
+                                                             .arrayLayers = 1,
+                                                             .format = Format::R8G8B8A8Unorm,
+                                                             .usage = TextureUsage::Sampled | TextureUsage::TransferDst,
+                                                             .aspect = TextureAspect::Color,
+                                                             .memoryUsage = MemoryUsage::GPUOnly};
+                    std::unique_ptr<Texture> texture = rhi.createTexture(textureCreateInfo);
 
-            Buffer::CreateInfo stagingBufferCreateInfo = {
-                .size = imageResult->data.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-            std::unique_ptr<Buffer> stagingBuffer = Locator::getRHI()->createBuffer(stagingBufferCreateInfo);
-            stagingBuffer->setData(imageResult->data.data(), imageResult->data.size());
+                    Buffer::CreateInfo stagingBufferCreateInfo = {
+                        .size = imageData.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
+                    std::unique_ptr<Buffer> stagingBuffer = rhi.createBuffer(stagingBufferCreateInfo);
+                    stagingBuffer->setData(imageData.data(), imageData.size());
 
-            std::unique_ptr<CommandBuffer> commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
-            commandBuffer->copyBufferToTexture(stagingBuffer.get(), texture.get(), imageResult->width, imageResult->height);
-            Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
+                    std::unique_ptr<CommandBuffer> commandBuffer = rhi.beginSingleTimeCommands();
+                    commandBuffer->copyBufferToTexture(stagingBuffer.get(), texture.get(), width, height);
+                    rhi.endSingleTimeCommands(commandBuffer.get());
 
-            return std::make_shared<TextureAsset>(uuid, path.filename().string(), std::move(texture));
-        }
+                    textureAsset->updateData(std::move(texture));
+                    textureAsset->setState(AssetState::Loaded);
+                });
+        }).detach();
 
-        AX_CORE_LOG_ERROR("Failed to load texture({}): {}", uint64_t(uuid), imageResult.error());
-        return nullptr;
+        return loadedAssets[uuid];
     }
 
     std::shared_ptr<Asset> AssetManager::loadShader(const std::filesystem::path& path, UUID uuid) {
@@ -354,31 +377,54 @@ namespace Axiom {
             AX_CORE_LOG_ERROR_ONCE("Failed to read shader file: {}", path.generic_string());
             return loadedAssets[uuid];
         }
+        std::shared_ptr<ShaderAsset> shaderAsset = std::make_shared<ShaderAsset>(uuid, path.filename().string(), nullptr);
+        shaderAsset->setState(AssetState::Loading);
+        loadedAssets[uuid] = shaderAsset;
 
-        size_t vertexPos = source.find("#type vertex");
-        size_t fragmentPos = source.find("#type fragment");
-        if (vertexPos == std::string::npos || fragmentPos == std::string::npos) {
-            AX_CORE_LOG_ERROR_ONCE("Shader {} is missing #type vertex or #type fragment tags.", path.generic_string());
-            return loadedAssets[uuid];
-        }
+        std::thread([this, path, shaderAsset]() {
+            auto source = FileSystem::readFileStr(path);
+            if (source.empty()) {
+                AX_CORE_LOG_ERROR("Failed to read shader file: {}", path.generic_string());
+                shaderAsset->setState(AssetState::Failed);
+                return;
+            }
 
-        std::string vertexSource = source.substr(vertexPos + 13, fragmentPos - (vertexPos + 13));
-        std::string fragmentSource = source.substr(fragmentPos + 15, std::string::npos);
+            ShaderCompiler compiler("axiom://Packages/Shaders/Includes");
+            std::expected<ShaderSources, std::string> sources = ShaderCompiler::split(source);
+            if (!sources.has_value()) {
+                AX_CORE_LOG_ERROR("{}", sources.error());
+                return;
+            }
+            std::expected<CompiledShader, std::string> compiled = compiler.compile(sources.value(), path.filename().string());
+            if (!compiled.has_value()) {
+                AX_CORE_LOG_ERROR("{}", compiled.error());
+                return;
+            }
 
-        std::unique_ptr<Shader> shader = Locator::getRHI()->createShader(vertexSource, fragmentSource);
-        if (!shader->isCompiled()) {
-            AX_CORE_LOG_ERROR_ONCE("Shader {} was not compiled properly.", path.generic_string());
-            return loadedAssets[uuid];
-        }
+            taskManager.submitToMain([this, shaderAsset, path, &compiled]() {
+                std::unique_ptr<Shader> shader = rhi.createShader(compiled->vertex, compiled->fragment);
+                if (!shader || !shader->isCompiled()) {
+                    AX_CORE_LOG_ERROR("Shader {} was not compiled properly", path.generic_string());
+                    shaderAsset->setState(AssetState::Failed);
+                    return;
+                }
 
-        loadedAssets[uuid] = std::make_shared<ShaderAsset>(uuid, path.filename().string(), std::move(shader));
+                shaderAsset->updateData(std::move(shader));
+                shaderAsset->setState(AssetState::Loaded);
+            });
+        }).detach();
+
         return loadedAssets[uuid];
     }
 
     std::shared_ptr<Asset> AssetManager::loadMesh(const std::filesystem::path& path, UUID uuid) {
-        loadedAssets[uuid] = getDefaultMesh();
+        auto defaultMesh = getDefaultMesh();
+        std::shared_ptr<MeshAsset> meshAsset = std::make_shared<MeshAsset>(uuid, path.filename().string(), defaultMesh->getVertexOffset(),
+                                                                           defaultMesh->getIndexOffset(), defaultMesh->getIndexCount());
+        meshAsset->setState(AssetState::Loading);
+        loadedAssets[uuid] = meshAsset;
 
-        std::thread([path, uuid]() {
+        std::thread([this, path, uuid, meshAsset]() {
             std::fstream test(path);
 
             auto modelResult = AxModelLoader::loadModel(FileSystem::resolvePath(path));
@@ -397,32 +443,32 @@ namespace Axiom {
                 vertices.push_back(vertex);
             }
 
-            Locator::getTaskManager()->submitToMain([uuid, path, vertices = std::move(vertices), indices = std::move(modelResult->indices)]() {
+            taskManager.submitToMain([this, meshAsset, path, vertices = std::move(vertices), indices = std::move(modelResult->indices)]() {
                 uint32_t vertexCount = vertices.size();
                 uint32_t indexCount = indices.size();
                 uint32_t vertexBytes = vertexCount * sizeof(MeshVertex);
                 uint32_t indexBytes = indexCount * sizeof(uint32_t);
 
                 Buffer::CreateInfo vertexStagingInfo = {.size = vertexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-                std::unique_ptr<Buffer> vertexStaging = Locator::getRHI()->createBuffer(vertexStagingInfo);
+                std::unique_ptr<Buffer> vertexStaging = rhi.createBuffer(vertexStagingInfo);
                 vertexStaging->setData(vertices.data(), vertexBytes);
 
                 Buffer::CreateInfo indexStagingInfo = {.size = indexBytes, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-                std::unique_ptr<Buffer> indexStaging = Locator::getRHI()->createBuffer(indexStagingInfo);
+                std::unique_ptr<Buffer> indexStaging = rhi.createBuffer(indexStagingInfo);
                 indexStaging->setData(indices.data(), indexBytes);
 
-                auto commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
+                auto commandBuffer = rhi.beginSingleTimeCommands();
                 uint32_t vertexByteDstOffset = currentVertexCount * sizeof(MeshVertex);
                 uint32_t indexByteDstOffset = currentIndexCount * sizeof(uint32_t);
                 commandBuffer->copyBuffer(vertexStaging.get(), globalVertexBuffer.get(), vertexBytes, 0, vertexByteDstOffset);
                 commandBuffer->copyBuffer(indexStaging.get(), globalIndexBuffer.get(), indexBytes, 0, indexByteDstOffset);
-                Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
+                rhi.endSingleTimeCommands(commandBuffer.get());
+
+                meshAsset->updateData(currentVertexCount, currentIndexCount, indexCount);
+                meshAsset->setState(AssetState::Loaded);
 
                 currentVertexCount += vertexCount;
                 currentIndexCount += indexCount;
-
-                loadedAssets[uuid] = std::make_shared<MeshAsset>(uuid, path.filename().string(), currentVertexCount - vertexCount,
-                                                                 currentIndexCount - indexCount, indices.size());
             });
         }).detach();
 
@@ -430,71 +476,72 @@ namespace Axiom {
     }
 
     std::shared_ptr<Asset> AssetManager::loadMaterial(const std::filesystem::path& path, UUID uuid) {
-        std::string fileContent = FileSystem::readFileStr(path);
-        if (fileContent.empty()) {
-            AX_CORE_LOG_ERROR("Failed to read material file: {}", path.generic_string());
-            return nullptr;
-        }
+        std::shared_ptr<MaterialAsset> materialAsset =
+            std::make_shared<MaterialAsset>(uuid, path.filename().string(), getDefaultMaterial()->getShader(), nullptr);
+        materialAsset->setState(AssetState::Loading);
+        loadedAssets[uuid] = materialAsset;
 
-        JSONValue root = JSONSerializer::deserialize(fileContent);
-        if (root.getType() != JSONValueType::Object) {
-            AX_CORE_LOG_ERROR("Invalid material file format: {}", path.generic_string());
-            return nullptr;
-        }
-
-        std::string name = path.filename().string();
-        if (root.hasChild("Name")) {
-            name = root.getChild("Name").getString();
-        }
-
-        UUID shaderHandle = UUID();
-        if (root.hasChild("Shader")) {
-            shaderHandle = UUID(std::stoull(root.getChild("Shader").getString()));
-        }
-
-        if (!shaderHandle.isValid()) {
-            AX_CORE_LOG_ERROR("Material {} is missing a valid Shader UUID!", path.generic_string());
-            // return nullptr;
-        }
-
-        auto material = std::make_shared<MaterialAsset>(uuid, name, shaderHandle, nullptr);
-
-        if (root.hasChild("AlbedoColor")) {
-            const auto& colorArray = root.getChild("AlbedoColor").getArrayElements();
-            if (colorArray.size() >= 4) {
-                material->setAlbedoColor(Color(colorArray[0].getFloat(), colorArray[1].getFloat(), colorArray[2].getFloat(), colorArray[3].getFloat()));
+        std::thread([this, path, materialAsset]() {
+            std::string fileContent = FileSystem::readFileStr(path);
+            if (fileContent.empty()) {
+                AX_CORE_LOG_ERROR("Failed to read material file: {}", path.generic_string());
+                materialAsset->setState(AssetState::Failed);
+                return;
             }
-        }
 
-        if (root.hasChild("Metallic")) {
-            material->setMetallic(root.getChild("Metallic").getFloat());
-        }
-
-        if (root.hasChild("Roughness")) {
-            material->setRoughness(root.getChild("Roughness").getFloat());
-        }
-
-        if (root.hasChild("Emission")) {
-            material->setEmission(root.getChild("Emission").getFloat());
-        }
-
-        if (root.hasChild("UVTiling")) {
-            const auto& uvArray = root.getChild("UVTiling").getArrayElements();
-            if (uvArray.size() >= 2) {
-                material->setUvTiling(Math::Vec2(uvArray[0].getFloat(), uvArray[1].getFloat()));
+            JSONValue root = JSONSerializer::deserialize(fileContent);
+            if (root.getType() != JSONValueType::Object) {
+                AX_CORE_LOG_ERROR("Invalid material file format: {}", path.generic_string());
+                materialAsset->setState(AssetState::Failed);
+                return;
             }
-        }
 
-        if (root.hasChild("AlbedoMap")) {
-            material->setAlbedoMap(UUID(std::stoull(root.getChild("AlbedoMap").getString())));
-        }
-        if (root.hasChild("NormalMap")) {
-            material->setNormalMap(UUID(std::stoull(root.getChild("NormalMap").getString())));
-        }
-        if (root.hasChild("MetallicRoughnessMap")) {
-            material->setMetallicRoughnessMap(UUID(std::stoull(root.getChild("MetallicRoughnessMap").getString())));
-        }
+            taskManager.submitToMain([materialAsset, path, root = std::move(root)]() {
+                if (root.hasChild("Name")) {
+                    materialAsset->setName(root.getChild("Name").getString());
+                }
+                if (root.hasChild("Shader")) {
+                    materialAsset->setShader(UUID(std::stoull(root.getChild("Shader").getString())));
+                }
 
-        return material;
+                if (root.hasChild("AlbedoColor")) {
+                    const auto& colorArray = root.getChild("AlbedoColor").getArrayElements();
+                    if (colorArray.size() >= 4) {
+                        materialAsset->setAlbedoColor(
+                            Color(colorArray[0].getFloat(), colorArray[1].getFloat(), colorArray[2].getFloat(), colorArray[3].getFloat()));
+                    }
+                }
+
+                if (root.hasChild("Metallic")) {
+                    materialAsset->setMetallic(root.getChild("Metallic").getFloat());
+                }
+                if (root.hasChild("Roughness")) {
+                    materialAsset->setRoughness(root.getChild("Roughness").getFloat());
+                }
+                if (root.hasChild("Emission")) {
+                    materialAsset->setEmission(root.getChild("Emission").getFloat());
+                }
+
+                if (root.hasChild("UVTiling")) {
+                    const auto& uvArray = root.getChild("UVTiling").getArrayElements();
+                    if (uvArray.size() >= 2)
+                        materialAsset->setUvTiling(Math::Vec2(uvArray[0].getFloat(), uvArray[1].getFloat()));
+                }
+
+                if (root.hasChild("AlbedoMap")) {
+                    materialAsset->setAlbedoMap(UUID(std::stoull(root.getChild("AlbedoMap").getString())));
+                }
+                if (root.hasChild("NormalMap")) {
+                    materialAsset->setNormalMap(UUID(std::stoull(root.getChild("NormalMap").getString())));
+                }
+                if (root.hasChild("MetallicRoughnessMap")) {
+                    materialAsset->setMetallicRoughnessMap(UUID(std::stoull(root.getChild("MetallicRoughnessMap").getString())));
+                }
+
+                materialAsset->setState(AssetState::Loaded);
+            });
+        }).detach();
+
+        return loadedAssets[uuid];
     }
 } // namespace Axiom

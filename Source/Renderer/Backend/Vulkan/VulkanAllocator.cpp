@@ -41,7 +41,8 @@ namespace Axiom {
         uint32_t memoryTypeIndex = instance->findMemoryType(memoryRequirements.memoryTypeBits, memoryProperties);
 
         if (instance->memoryPools.find(memoryTypeIndex) == instance->memoryPools.end()) {
-            instance->memoryPools[memoryTypeIndex] = std::make_unique<VulkanMemoryPool>(instance->device, instance->DEFAULT_POOL_SIZE, memoryTypeIndex);
+            instance->memoryPools[memoryTypeIndex] =
+                std::make_unique<VulkanMemoryPool>(instance->device, instance->DEFAULT_POOL_SIZE, memoryTypeIndex, memoryProperties);
         }
 
         VulkanMemoryPool* pool = instance->memoryPools[memoryTypeIndex].get();
@@ -55,7 +56,8 @@ namespace Axiom {
         uint32_t memoryTypeIndex = instance->findMemoryType(memoryRequirements.memoryTypeBits, memoryProperties);
 
         if (instance->memoryPools.find(memoryTypeIndex) == instance->memoryPools.end()) {
-            instance->memoryPools[memoryTypeIndex] = std::make_unique<VulkanMemoryPool>(instance->device, instance->DEFAULT_POOL_SIZE, memoryTypeIndex);
+            instance->memoryPools[memoryTypeIndex] =
+                std::make_unique<VulkanMemoryPool>(instance->device, instance->DEFAULT_POOL_SIZE, memoryTypeIndex, memoryProperties);
         }
 
         VulkanMemoryPool* pool = instance->memoryPools[memoryTypeIndex].get();

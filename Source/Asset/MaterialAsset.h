@@ -23,6 +23,7 @@ namespace Axiom {
         inline void setAlbedoMap(UUID uuid) { albedoMap = uuid; }
         inline void setNormalMap(UUID uuid) { normalMap = uuid; }
         inline void setMetallicRoughnessMap(UUID uuid) { roughness = uuid; }
+        inline void setShader(UUID newShader) { shader = newShader; }
 
         inline Color getAlbedoColor() const { return albedoColor; }
 

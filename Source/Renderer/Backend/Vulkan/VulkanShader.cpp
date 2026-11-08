@@ -2,14 +2,14 @@
 
 #include "VulkanShader.h"
 
-#include "shaderc/status.h"
-
-#include <shaderc/shaderc.hpp>
+#include <cstdint>
+#include <span>
 
 namespace Axiom {
-    VulkanShader::VulkanShader(Vk::Device logicalDevice, const std::string& vertexSource, const std::string& fragmentSource) : device(logicalDevice) {
-        vertexShaderModule = createShaderModule(logicalDevice, vertexSource);
-        fragmentShaderModule = createShaderModule(logicalDevice, fragmentSource);
+    VulkanShader::VulkanShader(Vk::Device logicalDevice, std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv)
+        : device(logicalDevice) {
+        vertexShaderModule = createShaderModule(logicalDevice, vertexSpirv);
+        fragmentShaderModule = createShaderModule(logicalDevice, fragmentSpirv);
         m_isCompiled = true;
     }
 
@@ -22,19 +22,8 @@ namespace Axiom {
         }
     }
 
-    Vk::ShaderModule VulkanShader::createShaderModule(Vk::Device logicalDevice, const std::string& source) {
-        shaderc::Compiler compiler = {};
-        shaderc::CompileOptions options = {};
-        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
-        shaderc::CompilationResult compResult =
-            compiler.CompileGlslToSpv(source.c_str(), source.size(), shaderc_shader_kind::shaderc_glsl_infer_from_source, "shader", "main", options);
-        shaderc_compilation_status compilationStatus = compResult.GetCompilationStatus();
-        AX_CORE_ASSERT(compilationStatus == shaderc_compilation_status_success, "Failed to compile shader: {0}", compResult.GetErrorMessage());
-
-        size_t codeSize = std::distance(compResult.cbegin(), compResult.cend()) * sizeof(uint32_t);
-        const uint32_t* shaderCode = compResult.cbegin();
-
-        Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, codeSize, shaderCode);
+    Vk::ShaderModule VulkanShader::createShaderModule(Vk::Device logicalDevice, std::span<const uint32_t> spirv) {
+        Vk::ShaderModuleCreateInfo shaderModuleCreateInfo({}, spirv.size() * sizeof(uint32_t), spirv.data());
         Vk::ResultValue<Vk::ShaderModule> shaderModuleResult = logicalDevice.createShaderModule(shaderModuleCreateInfo);
 
         AX_CORE_ASSERT(shaderModuleResult.result == Vk::Result::eSuccess, "Failed to create shader module!");

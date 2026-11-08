@@ -1,7 +1,6 @@
 #pragma once
 #include "Event/KeyEvent.h"
 #include "Layer.h"
-#include "Renderer/RenderGraph.h"
 #include "UI/UICanvas.h"
 #include "UI/UIScrollBox.h"
 
@@ -19,7 +18,7 @@ namespace Axiom {
         void onUpdate() override;
         void onEvent(Event& event) override;
         void onUIRender() override;
-        void onRender(RenderGraph& renderGraph) override;
+        void onRender() override;
 
       private:
         void refreshConsoleHistory();

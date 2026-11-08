@@ -3,6 +3,9 @@
 #include "Renderer/Sampler.h"
 #include "Renderer/Texture.h"
 
+#include <memory>
+#include <utility>
+
 namespace Axiom {
     class TextureAsset : public Asset {
       public:
@@ -16,6 +19,7 @@ namespace Axiom {
 
         inline void setAddressMode(SamplerAddressMode mode) { addressMode = mode; }
         inline void setFilterMode(SamplerFilterMode mode) { filterMode = mode; }
+        inline void updateData(std::unique_ptr<Texture> newTexture) { texture = std::move(newTexture); }
 
       private:
         std::unique_ptr<Texture> texture;

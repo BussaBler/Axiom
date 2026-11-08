@@ -9,7 +9,9 @@
 #include "SwapChain.h"
 #include "Texture.h"
 
+#include <cstdint>
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace Axiom {
@@ -41,7 +43,7 @@ namespace Axiom {
         static std::unique_ptr<Device> create(const CreateInfo& createInfo);
 
         virtual std::unique_ptr<SwapChain> createSwapchain(Format imageFormat, uint32_t width, uint32_t height) = 0;
-        virtual std::unique_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource) = 0;
+        virtual std::unique_ptr<Shader> createShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv) = 0;
         virtual std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) = 0;
         virtual std::unique_ptr<CommandBuffer> createCommandBuffer() = 0;
         virtual std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) = 0;

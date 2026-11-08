@@ -9,11 +9,11 @@
 #include "ECS/ECS.h"
 
 namespace Axiom {
-    Scene::Scene() {
+    Scene::Scene(ComponentRegistry& componentRegistry) : componentRegistry(componentRegistry) {
         ecs = std::make_unique<ECS>();
         systemManager = std::make_unique<SystemManager>();
 
-        for (const auto& registerFn : ComponentRegistry::getRegisterFunctions()) {
+        for (const auto& registerFn : componentRegistry.getRegisterFunctions()) {
             registerFn(ecs.get());
         }
 

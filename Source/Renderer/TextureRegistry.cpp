@@ -1,6 +1,5 @@
 #include "TextureRegistry.h"
 
-#include "Asset/AssetManager.h"
 #include "Asset/TextureAsset.h"
 #include "Asset/UUID.h"
 #include "Core/Log.h"
@@ -19,10 +18,10 @@ namespace Axiom {
             .binding = Bindings::BindlessTextureBinding, .type = ResourceType::Texture2D, .stages = ShaderStage::Fragment, .count = 1000};
         ResourceLayout::BindingCreateInfo samplersBindingCreateInfo = {
             .binding = Bindings::BindlessTextureSamplersBinding, .type = ResourceType::Sampler, .stages = ShaderStage::Fragment, .count = 2};
-        resourceLayout = rhi->createResourceLayout({texturesBindingCreateInfo, samplersBindingCreateInfo});
-        resourceSet = rhi->createResourceSet(resourceLayout.get());
+        resourceLayout = rhi.createResourceLayout({texturesBindingCreateInfo, samplersBindingCreateInfo});
+        resourceSet = rhi.createResourceSet(resourceLayout.get());
 
-        Sampler* samplersData[] = {rhi->getNearestSampler(), rhi->getLinearSampler()};
+        Sampler* samplersData[] = {rhi.getNearestSampler(), rhi.getLinearSampler()};
         ResourceSet::Binding samplerUpdateBinding = {
             .binding = Bindings::BindlessTextureSamplersBinding,
             .type = ResourceType::Sampler,
@@ -51,7 +50,7 @@ namespace Axiom {
             return FALLBACK_SLOT;
         }
 
-        std::shared_ptr<TextureAsset> asset = AssetManager::getAsset<TextureAsset>(textureId);
+        std::shared_ptr<TextureAsset> asset = assetManager.getAsset<TextureAsset>(textureId);
         if (!asset || !asset->getTexture()) {
             return FALLBACK_SLOT;
         }

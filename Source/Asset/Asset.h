@@ -5,6 +5,7 @@
 
 namespace Axiom {
     enum class AssetType { None, Texture, Mesh, Font, Audio, Shader, Material };
+    enum class AssetState { Unloaded, Loading, Loaded, Failed };
 
     class Asset {
       public:
@@ -13,11 +14,16 @@ namespace Axiom {
 
         inline UUID getHandle() const { return handle; }
         inline AssetType getType() const { return type; }
+        inline AssetState getState() const { return state; }
         inline const std::string& getName() const { return name; }
 
-      private:
+        inline void setName(const std::string& newName) { name = newName; }
+        inline void setState(AssetState newState) { state = newState; }
+
+      protected:
         UUID handle = 0;
         AssetType type = AssetType::None;
-        const std::string name;
+        AssetState state = AssetState::Unloaded;
+        std::string name;
     };
 } // namespace Axiom

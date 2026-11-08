@@ -4,9 +4,10 @@
 #include "Asset/MeshAsset.h"
 #include "Asset/ShaderAsset.h"
 #include "Asset/UUID.h"
-#include "Core/Locator.h"
 #include "Core/Log.h"
+#include "Core/TaskManager.h"
 #include "Renderer/Buffer.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "TextureAsset.h"
 
 #include <filesystem>
@@ -25,7 +26,10 @@ namespace Axiom {
         friend class Application;
 
       public:
-        template <typename T> static std::shared_ptr<T> getAsset(UUID handle) {
+        AssetManager(RenderHardwareInterface& rhi, TaskManager& taskManager);
+        ~AssetManager();
+
+        template <typename T> std::shared_ptr<T> getAsset(UUID handle) {
             if (!handle.isValid()) {
                 return nullptr;
             }
@@ -66,19 +70,19 @@ namespace Axiom {
             return nullptr;
         }
 
-        static UUID importAsset(const std::string& name, const std::filesystem::path& path, AssetType type);
+        UUID importAsset(const std::string& name, const std::filesystem::path& path, AssetType type);
 
-        static Buffer* getGlobalVertexBuffer() { return globalVertexBuffer.get(); }
-        static Buffer* getGlobalIndexBuffer() { return globalIndexBuffer.get(); }
+        Buffer* getGlobalVertexBuffer() { return globalVertexBuffer.get(); }
+        Buffer* getGlobalIndexBuffer() { return globalIndexBuffer.get(); }
 
-        static const AssetMetadata& getMetadata(UUID handle) {
+        const AssetMetadata& getMetadata(UUID handle) {
             static AssetMetadata nullMeta;
             if (!handle.isValid() || registry.find(handle) == registry.end()) {
                 return nullMeta;
             }
             return registry.at(handle);
         }
-        static bool isAssetRegistered(UUID handle) {
+        bool isAssetRegistered(UUID handle) {
             if (!handle.isValid()) {
                 return false;
             }
@@ -86,7 +90,7 @@ namespace Axiom {
             return registry.find(handle) != registry.end();
         }
 
-        static std::vector<UUID> getAssetsByType(AssetType type) {
+        std::vector<UUID> getAssetsByType(AssetType type) {
             std::vector<UUID> handles;
             for (const auto& [handle, meta] : registry) {
                 if (meta.type == type) {
@@ -96,41 +100,48 @@ namespace Axiom {
             return handles;
         }
 
-        inline static UUID getDefaultTextureHandle() { return defaultTextureHandle; }
-        inline static std::shared_ptr<TextureAsset> getDefaultTexture() { return std::static_pointer_cast<TextureAsset>(loadedAssets[defaultTextureHandle]); }
-        inline static std::shared_ptr<MaterialAsset> getDefaultMaterial() {
-            return std::static_pointer_cast<MaterialAsset>(loadedAssets[defaultMaterialHandle]);
+        inline UUID getDefaultTextureHandle() { return DEFAULT_TEXTURE_HANDLE; }
+        inline std::shared_ptr<TextureAsset> getDefaultTexture() { return std::static_pointer_cast<TextureAsset>(loadedAssets[DEFAULT_TEXTURE_HANDLE]); }
+        inline std::shared_ptr<MaterialAsset> getDefaultMaterial() { return std::static_pointer_cast<MaterialAsset>(loadedAssets[DEFAULT_MATERIAL_HANDLE]); }
+        inline std::shared_ptr<MeshAsset> getDefaultMesh() { return std::static_pointer_cast<MeshAsset>(loadedAssets[DEFAULT_MESH_HANDLE]); }
+        inline std::shared_ptr<ShaderAsset> getErrorShader() { return std::static_pointer_cast<ShaderAsset>(loadedAssets[ERROR_SHADER_HANDLE]); }
+        inline std::shared_ptr<ShaderAsset> getBuiltInShader(const std::string& name) {
+            auto it = builtinShaders.find(name);
+            if (it == builtinShaders.end()) {
+                AX_CORE_LOG_ERROR("{} is not a BuiltIn Shader", name);
+                return nullptr;
+            }
+            return std::static_pointer_cast<ShaderAsset>(loadedAssets[builtinShaders[name]]);
         }
-        inline static std::shared_ptr<MeshAsset> getDefaultMesh() { return std::static_pointer_cast<MeshAsset>(loadedAssets[defaultMeshHandle]); }
-        inline static std::shared_ptr<ShaderAsset> getErrorShader() { return std::static_pointer_cast<ShaderAsset>(loadedAssets[errorShaderHandle]); }
 
-        static void serializeManifest(const std::filesystem::path& manifestPath, const std::string& vfsFilter);
-        static void deserializeManifest(const std::filesystem::path& manisfestPath);
+        void serializeManifest(const std::filesystem::path& manifestPath, const std::string& vfsFilter);
+        void deserializeManifest(const std::filesystem::path& manisfestPath);
 
       private:
-        static void init();
-        static void shutdown();
+        void initDefaultAssets();
+        void registerBuiltInShaders();
 
-        static void initDefaultAssets();
-
-        static std::shared_ptr<Asset> loadTexture(const std::filesystem::path& path, UUID uuid);
-        static std::shared_ptr<Asset> loadShader(const std::filesystem::path& path, UUID uuid);
-        static std::shared_ptr<Asset> loadMesh(const std::filesystem::path& path, UUID uuid);
-        static std::shared_ptr<Asset> loadMaterial(const std::filesystem::path& path, UUID uuid);
+        std::shared_ptr<Asset> loadTexture(const std::filesystem::path& path, UUID uuid);
+        std::shared_ptr<Asset> loadShader(const std::filesystem::path& path, UUID uuid);
+        std::shared_ptr<Asset> loadMesh(const std::filesystem::path& path, UUID uuid);
+        std::shared_ptr<Asset> loadMaterial(const std::filesystem::path& path, UUID uuid);
 
       private:
-        static std::unordered_map<UUID, AssetMetadata> registry;
-        static std::unordered_map<UUID, std::shared_ptr<Asset>> loadedAssets;
-        static std::unordered_map<std::string, UUID> assetHandles;
+        RenderHardwareInterface& rhi;
+        TaskManager& taskManager;
+        std::unordered_map<UUID, AssetMetadata> registry;
+        std::unordered_map<UUID, std::shared_ptr<Asset>> loadedAssets;
+        std::unordered_map<std::string, UUID> assetHandles;
+        std::unordered_map<std::string, UUID> builtinShaders;
 
-        static std::unique_ptr<Buffer> globalVertexBuffer;
-        static std::unique_ptr<Buffer> globalIndexBuffer;
-        static uint32_t currentVertexCount;
-        static uint32_t currentIndexCount;
+        std::unique_ptr<Buffer> globalVertexBuffer;
+        std::unique_ptr<Buffer> globalIndexBuffer;
+        uint32_t currentVertexCount = 0;
+        uint32_t currentIndexCount = 0;
 
-        inline static const UUID defaultTextureHandle = 0;
-        inline static const UUID defaultMaterialHandle = 1;
-        inline static const UUID defaultMeshHandle = 2;
-        inline static const UUID errorShaderHandle = 3;
+        inline static const UUID DEFAULT_TEXTURE_HANDLE = 0;
+        inline static const UUID DEFAULT_MATERIAL_HANDLE = 1;
+        inline static const UUID DEFAULT_MESH_HANDLE = 2;
+        inline static const UUID ERROR_SHADER_HANDLE = 3;
     };
 } // namespace Axiom

@@ -2,6 +2,7 @@
 
 #include "Core/Log.h"
 #include "Renderer/CommandBuffer.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/Texture.h"
 
 #include <any>
@@ -96,7 +97,7 @@ namespace Axiom {
 
     class RenderGraph {
       public:
-        RenderGraph() = default;
+        RenderGraph(RenderHardwareInterface& rhi);
         ~RenderGraph() = default;
 
         void begin();
@@ -136,11 +137,13 @@ namespace Axiom {
             uint32_t lastPass = 0;
             TextureState currentState = TextureState::Undefined;
 
+            bool lastAcessWasWrite = false;
             bool isExternal = false;
         };
 
       private:
         friend class PassBuilder;
+        RenderHardwareInterface& rhi;
         Blackboard blackboard;
         std::vector<RenderPassNode> passes;
         std::vector<VirtualResource> virtualResources;

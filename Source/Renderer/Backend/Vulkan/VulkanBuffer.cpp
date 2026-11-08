@@ -28,14 +28,8 @@ namespace Axiom {
     }
 
     void VulkanBuffer::setData(const void* data, uint64_t size, uint64_t offset) {
+        AX_CORE_ASSERT(allocation.mappedPtr, "setData called on a buffer that isn't CPU-visible");
         AX_CORE_ASSERT(offset + size <= this->size, "Data size exceeds buffer size");
-        Vk::ResultValue<void*> mapResult = device.mapMemory(allocation.memory, allocation.offset + offset, size);
-
-        AX_CORE_ASSERT(mapResult.result == Vk::Result::eSuccess, "Failed to map buffer memory");
-        void* mappedData = mapResult.value;
-
-        std::memcpy(mappedData, data, size);
-
-        device.unmapMemory(allocation.memory);
+        std::memcpy(allocation.mappedPtr + offset, data, size);
     }
 } // namespace Axiom

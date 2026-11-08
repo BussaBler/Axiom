@@ -10,7 +10,7 @@
 namespace Axiom {
     shaderc_include_result* ShaderIncluder::GetInclude(const char* requestedSource, shaderc_include_type type, const char* requestingSource,
                                                        size_t includeDepth) {
-        std::filesystem::path fullPath = FileSystem::resolvePath("axiom://Packages/Shaders/Includes/" + std::string(requestedSource));
+        std::filesystem::path fullPath = includeDir / std::string(requestedSource);
 
         IncludeData* includeData = new IncludeData();
         includeData->sourceName = fullPath.generic_string();

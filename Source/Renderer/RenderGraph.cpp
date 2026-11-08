@@ -2,9 +2,8 @@
 
 #include "RenderGraph.h"
 
-#include "Core/Locator.h"
 #include "Core/Log.h"
-#include "RenderHardwareInterface.h"
+#include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/Texture.h"
 
 #include <cstddef>
@@ -68,6 +67,9 @@ namespace Axiom {
         return textures.at(handle.id);
     }
 
+    RenderGraph::RenderGraph(RenderHardwareInterface& rhi) : rhi(rhi) {
+    }
+
     void RenderGraph::begin() {
         passes.clear();
         virtualResources.clear();
@@ -110,7 +112,7 @@ namespace Axiom {
                         std::swap(*it, list.back());
                         list.pop_back();
                     } else {
-                        std::unique_ptr<Texture> newTexture = Locator::getRHI()->createTexture(vResource.createInfo);
+                        std::unique_ptr<Texture> newTexture = rhi.createTexture(vResource.createInfo);
                         vResource.texture = newTexture.get();
                         vResource.currentState = vResource.currentState;
                         vResource.texture->setCurrentState(vResource.currentState);
@@ -124,21 +126,23 @@ namespace Axiom {
 
             for (const auto& read : pass.textureReads) {
                 VirtualResource& vResource = virtualResources[read.textureId];
-                if (vResource.currentState != read.state) {
+                if (vResource.currentState != read.state || vResource.lastAcessWasWrite) {
                     passBarriers.push_back(
                         {.texture = vResource.texture, .oldState = vResource.currentState, .newState = read.state, .aspect = vResource.createInfo.aspect});
                     vResource.currentState = read.state;
                 }
+                vResource.lastAcessWasWrite = false;
                 passResources.textures[read.textureId] = vResource.texture;
             }
 
             for (const auto& write : pass.textureWrites) {
                 VirtualResource& vResource = virtualResources[write.textureId];
-                if (vResource.currentState != write.state) {
+                if (vResource.currentState != write.state || vResource.lastAcessWasWrite) {
                     passBarriers.push_back(
                         {.texture = vResource.texture, .oldState = vResource.currentState, .newState = write.state, .aspect = vResource.createInfo.aspect});
                     vResource.currentState = write.state;
                 }
+                vResource.lastAcessWasWrite = true;
                 passResources.textures[write.textureId] = vResource.texture;
             }
 

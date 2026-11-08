@@ -1,8 +1,11 @@
 #pragma once
+#include <cstdint>
 #include <format>
+#include <functional>
 #include <iomanip>
 #include <random>
 #include <sstream>
+#include <string>
 
 namespace Axiom {
     class UUID {
@@ -12,6 +15,7 @@ namespace Axiom {
         ~UUID() = default;
 
         inline static UUID generate() { return UUID(distribution(generator)); }
+        inline static UUID fromName(const std::string& name) { return static_cast<uint64_t>(std::hash<std::string>{}(name)); }
 
         inline bool isValid() const { return value != 0; }
 

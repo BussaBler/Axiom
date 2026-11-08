@@ -1,6 +1,6 @@
 #pragma once
+#include "Core/EngineContext.h"
 #include "Event/Event.h"
-#include "Renderer/RenderGraph.h"
 
 namespace Axiom {
     class Layer {
@@ -12,7 +12,7 @@ namespace Axiom {
         virtual void onUpdate() {}
         virtual void onEvent(Event& event) {}
         virtual void onUIRender() {}
-        virtual void onRender(RenderGraph& renderGraph) {}
+        virtual void onRender() {}
         virtual void onSuspend() {}
         virtual void onResume() {}
 
@@ -27,6 +27,8 @@ namespace Axiom {
         }
         void pop() { requestLayerAction(nullptr, ActionType::Pop); }
 
+        EngineContext& context() { return *engineContext; }
+
       public:
         enum class ActionType { Transition, Suspend, Pop };
 
@@ -38,5 +40,10 @@ namespace Axiom {
 
       protected:
         std::string debugName;
+
+      private:
+        friend class Application;
+        friend class LayerStack;
+        EngineContext* engineContext = nullptr;
     };
 } // namespace Axiom

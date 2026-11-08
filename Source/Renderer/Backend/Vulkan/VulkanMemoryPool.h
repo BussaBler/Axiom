@@ -2,6 +2,7 @@
 #include "Core/Assert.h"
 #include "VulkanInclude.h"
 
+#include <cstddef>
 #include <list>
 
 namespace Axiom {
@@ -13,6 +14,7 @@ namespace Axiom {
 
     struct Allocation {
         Vk::DeviceMemory memory;
+        std::byte* mappedPtr;
         size_t offset;
         uint32_t memoryTypeIndex;
         std::list<MemoryChunk>::iterator chunkIt;
@@ -20,7 +22,7 @@ namespace Axiom {
 
     class VulkanMemoryPool {
       public:
-        VulkanMemoryPool(Vk::Device logicalDevice, size_t size, uint32_t memoryTypeIndex);
+        VulkanMemoryPool(Vk::Device logicalDevice, size_t size, uint32_t memoryTypeIndex, Vk::MemoryPropertyFlags properties);
         ~VulkanMemoryPool();
 
         Allocation allocate(size_t size, size_t alignment);
@@ -30,6 +32,7 @@ namespace Axiom {
         Vk::Device device = nullptr;
         Vk::DeviceMemory memory = nullptr;
         size_t poolSize = 0;
+        std::byte* memoryMap = nullptr;
         std::list<MemoryChunk> chunks;
     };
 } // namespace Axiom

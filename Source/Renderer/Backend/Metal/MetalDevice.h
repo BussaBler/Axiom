@@ -12,7 +12,7 @@ namespace Axiom {
         ~MetalDevice() override;
 
         std::unique_ptr<SwapChain> createSwapchain(Format imageFormat, uint32_t width, uint32_t height) override;
-        std::unique_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource) override;
+        std::unique_ptr<Shader> createShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv) override;
         std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) override;
         std::unique_ptr<CommandBuffer> createCommandBuffer() override;
         std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo) override;

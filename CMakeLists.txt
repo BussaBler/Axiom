@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(Axiom VERSION 1.0 LANGUAGES CXX)
 
+# shaderc config
 set(SPIRV_CROSS_STATIC ON CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_SHARED OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
@@ -38,15 +39,12 @@ add_subdirectory(
   ${CMAKE_BINARY_DIR}/Vendor/AxModelLoader
 )
 
-file(GLOB_RECURSE ALL_SOURCES "Source/*.cpp" "Source/*.mm")
-file(GLOB_RECURSE ALL_HEADERS "Source/*.h" "Source/*.hpp")
-list(FILTER ALL_SOURCES EXCLUDE REGEX "Source/Platform/.*")
-list(FILTER ALL_SOURCES EXCLUDE REGEX "Source/Renderer/Backend/.*")
-
+# axiom core config
 if (WIN32)
-  file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/Windows/*.cpp")
   set(PLATFORM_DEFINE "AX_PLATFORM_WINDOWS")
-elseif(APPLE)
+  file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/Windows/*.cpp")
+elseif (APPLE)
+  set(PLATFORM_DEFINE "AX_PLATFORM_MACOS")
   file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/MacOS/*.cpp")
   file(GLOB_RECURSE OBJCXX_SOURCES "Source/Platform/MacOS/*.mm")
   set_source_files_properties(${OBJCXX_SOURCES} PROPERTIES
@@ -54,8 +52,6 @@ elseif(APPLE)
     COMPILE_FLAGS "-fobjc-arc"
   )
   list(APPEND PLATFORM_SOURCES ${OBJCXX_SOURCES})
-  set(PLATFORM_DEFINE "AX_PLATFORM_MACOS")
-
   find_library(METAL_FRAMEWORK Metal)
   find_library(FOUNDATION_FRAMEWORK Foundation)
   find_library(QUARTZ_FRAMEWORK QuartzCore)
@@ -66,65 +62,98 @@ elseif(APPLE)
     ${QUARTZ_FRAMEWORK}
     ${APPKIT_FRAMEWORK}
   )
-elseif(UNIX AND NOT APPLE)
-  file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/Linux/*.cpp")
+elseif (UNIX)
   set(PLATFORM_DEFINE "AX_PLATFORM_LINUX")
-endif()
-list(APPEND ALL_SOURCES ${PLATFORM_SOURCES})
-
-if (AX_RENDERER STREQUAL "vulkan")
-  file(GLOB_RECURSE RENDERER_SOURCES "Source/Renderer/Backend/Vulkan/*.cpp")
-elseif (AX_RENDERER STREQUAL "metal")
-  file(GLOB_RECURSE RENDERER_SOURCES "Source/Renderer/Backend/Metal/*.cpp")
-elseif (AX_RENDERER STREQUAL "dx12")
-  file(GLOB_RECURSE RENDERER_SOURCES "Source/Renderer/Backend/DX12/*.cpp")
-endif()
-list(APPEND ALL_SOURCES ${RENDERER_SOURCES})
-
-add_library(Axiom STATIC ${ALL_SOURCES} ${ALL_HEADERS})
-
-
-if (AX_RENDERER STREQUAL "vulkan")
-  find_package(Vulkan REQUIRED)
-  target_link_libraries(Axiom PUBLIC Vulkan::Vulkan)
-  if (APPLE)
-    target_link_libraries(Axiom PUBLIC ${MAC_FRAMEWORKS})
-  endif()
-elseif (AX_RENDERER STREQUAL "metal")
-  if (APPLE)
-    target_link_libraries(Axiom PUBLIC ${MAC_FRAMEWORKS})
-  else()
-    message(FATAL_ERROR "Metal renderer is only supported on Apple platforms")
-  endif()
-elseif (AX_RENDERER STREQUAL "dx12")
-  if (WIN32)
-    target_link_libraries(Axiom PUBLIC d3d12.lib dxgi.lib dxguid.lib)
-  else()
-    message(FATAL_ERROR
-    "DirectX 12 renderer is only supported on Windows platforms")
+  file(GLOB_RECURSE PLATFORM_SOURCES "Source/Platform/Linux/*.cpp")
 endif()
 
-endif()
-target_compile_definitions(Axiom PUBLIC ${PLATFORM_DEFINE})
-target_compile_definitions(Axiom PUBLIC
-AX_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\")
-target_compile_definitions(Axiom PUBLIC
+file(GLOB_RECURSE CORE_SOURCES
+    "Source/Core/*.cpp" "Source/Core/*.h"
+    "Source/Math/*.cpp" "Source/Math/*.h"
+    "Source/Utils/*.cpp" "Source/Utils/*.h"
+)
+list(APPEND CORE_SOURCES ${PLATFORM_SOURCES})
+add_library(AxiomCore STATIC ${CORE_SOURCES})
+
+target_compile_definitions(AxiomCore PUBLIC ${PLATFORM_DEFINE})
+target_compile_definitions(AxiomCore PUBLIC
+  AX_ROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"
+)
+target_compile_definitions(AxiomCore PUBLIC
   $<$<CONFIG:Debug>:AX_DEBUG>
   $<$<CONFIG:Debug>:AX_ENABLE_ASSERTS>
   $<$<NOT:$<CONFIG:Debug>>:AX_RELEASE>
 )
-target_include_directories(
-  Axiom PUBLIC
+target_include_directories(AxiomCore PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>
+  Vendor
+)
+if (APPLE)
+  target_link_libraries(AxiomCore PUBLIC ${MAC_FRAMEWORKS})
+endif()
+target_precompile_headers(AxiomCore PRIVATE Source/axpch.h)
+
+# shader baker config
+add_executable(AxiomShaderBaker
+  ShaderBaker/ShaderBaker.cpp
+  "Source/Renderer/ShaderCompiler.cpp"
+  "Source/Renderer/ShaderIncluder.cpp"
+)
+target_link_libraries(AxiomShaderBaker PRIVATE AxiomCore shaderc)
+target_include_directories(AxiomShaderBaker PRIVATE
+  Vendor/Shaderc/libshaderc/include
+)
+
+set(SHADERS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Packages/Shaders")
+set(GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/Generated")
+set(GENERATED_SHADER_HEADER "${GENERATED_INCLUDE_DIR}/BuiltInShaders.h")
+
+file(MAKE_DIRECTORY ${GENERATED_INCLUDE_DIR})
+file(GLOB BUILTIN_SHADERS "${SHADERS_SRC_DIR}/BuiltIn.*.axs")
+file(GLOB SHADER_INCLUDES  "${SHADERS_SRC_DIR}/Includes/*.axsinc")
+add_custom_command(
+  OUTPUT ${GENERATED_SHADER_HEADER}
+  COMMAND $<TARGET_FILE:AxiomShaderBaker> ${SHADERS_SRC_DIR} ${GENERATED_SHADER_HEADER}
+  DEPENDS AxiomShaderBaker ${BUILTIN_SHADERS} ${SHADER_INCLUDES}
+  COMMENT "Baking Core Shaders via the ShaderBaker"
+)
+
+# axiom engine config
+file(GLOB_RECURSE ENGINE_SOURCES "Source/*.cpp" "Source/*.h" "Source/*.mm")
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX "Source/Core/.*")
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX "Source/Math/.*")
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX "Source/Utils/.*")
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX "Source/Platform/.*")
+list(FILTER ENGINE_SOURCES EXCLUDE REGEX "Source/Renderer/Backend/.*")
+
+if (AX_RENDERER STREQUAL "vulkan")
+  file(GLOB_RECURSE RENDERER_SOURCES
+    "Source/Renderer/Backend/Vulkan/*.cpp" "Source/Renderer/Backend/Vulkan/*.h"
+  )
+elseif (AX_RENDERER STREQUAL "metal")
+  file(GLOB_RECURSE RENDERER_SOURCES
+    "Source/Renderer/Backend/Metal/*.cpp" "Source/Renderer/Backend/Metal/*.h"
+  )
+elseif (AX_RENDERER STREQUAL "dx12")
+  file(GLOB_RECURSE RENDERER_SOURCES
+    "Source/Renderer/Backend/DX12/*.cpp" "Source/Renderer/Backend/DX12/*.h"
+  )
+endif()
+list(APPEND ENGINE_SOURCES ${RENDERER_SOURCES})
+
+add_library(AxiomEngine STATIC ${ENGINE_SOURCES})
+target_sources(AxiomEngine PRIVATE ${GENERATED_SHADER_HEADER})
+target_include_directories(AxiomEngine PUBLIC
+  ${GENERATED_INCLUDE_DIR}
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>
   Vendor/Vulkan/Include
-  Vendor
   Vendor/AxImageLoader/Include
   Vendor/AxModelLoader/Include
   Vendor/SpirvCross
   Vendor/Shaderc/libshaderc/include
 )
-target_link_libraries(
-  Axiom PUBLIC
+target_link_libraries(AxiomEngine PUBLIC
+  AxiomCore
   AxImageLoader
   AxModelLoader
   spirv-cross-core
@@ -133,4 +162,11 @@ target_link_libraries(
   shaderc_combined
 )
 
-target_precompile_headers(Axiom PRIVATE Source/axpch.h)
+if (AX_RENDERER STREQUAL "vulkan")
+  find_package(Vulkan REQUIRED)
+  target_link_libraries(AxiomEngine PUBLIC Vulkan::Vulkan)
+elseif (AX_RENDERER STREQUAL "dx12")
+  target_link_libraries(AxiomEngine PUBLIC d3d12.lib dxgi.lib dxguid.lib)
+endif()
+
+target_precompile_headers(AxiomEngine PRIVATE Source/axpch.h)

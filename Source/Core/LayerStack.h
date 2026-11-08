@@ -1,4 +1,5 @@
 #pragma once
+#include "Core/EngineContext.h"
 #include "Layer.h"
 
 namespace Axiom {
@@ -13,22 +14,27 @@ namespace Axiom {
 
         template <typename T>
             requires std::derived_from<T, Layer>
-        void pushLayer() {
+        void pushLayer(EngineContext* engineContext) {
             layers.emplace(layers.begin() + layerInsertIndex, std::make_unique<T>());
             layerInsertIndex++;
+            layers[layerInsertIndex - 1]->engineContext = engineContext;
             layers[layerInsertIndex - 1]->onAttach();
         }
         template <typename T>
             requires std::derived_from<T, Layer>
-        void pushOverlay() {
+        void pushOverlay(EngineContext* engineContext) {
             layers.emplace_back(std::make_unique<T>());
+            layers.back()->engineContext = engineContext;
             layers.back()->onAttach();
         }
         template <typename T>
             requires std::derived_from<T, Layer>
         void popLayer() {
             auto it = std::find_if(layers.begin(), layers.end(), [](const std::unique_ptr<Layer>& layer) { return isLayerOfType<T>(layer.get()); });
-            it->onDetach();
+            if (it == layers.end()) {
+                return;
+            }
+            (*it)->onDetach();
             layers.erase(it);
             layerInsertIndex--;
         }

@@ -10,15 +10,14 @@
 namespace Axiom {
     class MetalShader : public Shader {
       public:
-        MetalShader(const std::string& vertexSource, const std::string& fragmentSource, MTL::Device* device);
+        MetalShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv, MTL::Device* device);
         ~MetalShader();
 
         inline MTL::Library* getVertexLibrary() const { return vertexLibrary; }
         inline MTL::Library* getFragmentLibrary() const { return fragmentLibrary; }
 
       private:
-        std::expected<std::vector<uint32_t>, std::string> compileGLSLToSPIRV(const std::string& source);
-        std::expected<std::string, std::string> compileSPIRVtoMSL(const std::vector<uint32_t>& spirv);
+        std::expected<std::string, std::string> compileSPIRVtoMSL(std::span<const uint32_t> spirv);
 
       private:
         MTL::Library* vertexLibrary = nullptr;

@@ -3,18 +3,26 @@
 #include "VulkanMemoryPool.h"
 
 namespace Axiom {
-    VulkanMemoryPool::VulkanMemoryPool(Vk::Device logicalDevice, size_t size, uint32_t memoryTypeIndex) : device(logicalDevice), poolSize(size) {
-        AX_CORE_LOG_DEBUG("Creating Vulkan memory pool with size {} bytes and memory type index {}.", size, memoryTypeIndex);
+    VulkanMemoryPool::VulkanMemoryPool(Vk::Device logicalDevice, size_t size, uint32_t memoryTypeIndex, Vk::MemoryPropertyFlags properties)
+        : device(logicalDevice), poolSize(size) {
         Vk::MemoryAllocateInfo allocInfo(size, memoryTypeIndex);
-        Vk::ResultValue<Vk::DeviceMemory> allocResult = device.allocateMemory(allocInfo);
-
+        auto allocResult = device.allocateMemory(allocInfo);
         AX_CORE_ASSERT(allocResult.result == Vk::Result::eSuccess, "Failed to allocate memory for memory pool");
         memory = allocResult.value;
+
+        if (properties & Vk::MemoryPropertyFlagBits::eHostVisible) {
+            auto mapResult = device.mapMemory(memory, 0, Vk::WholeSize);
+            AX_CORE_ASSERT(mapResult.result == Vk::Result::eSuccess, "Failed to map memory pool");
+            memoryMap = static_cast<std::byte*>(mapResult.value);
+        }
 
         chunks.push_back({0, size, true});
     }
 
     VulkanMemoryPool::~VulkanMemoryPool() {
+        if (memoryMap && memory) {
+            device.unmapMemory(memory);
+        }
         if (memory) {
             device.freeMemory(memory);
         }
@@ -30,6 +38,7 @@ namespace Axiom {
                 size_t remainingSize = chunkIt->size - totalSize;
                 Allocation allocation{};
                 allocation.memory = memory;
+                allocation.mappedPtr = memoryMap ? memoryMap + alignedOffset : nullptr;
                 allocation.offset = alignedOffset;
                 allocation.chunkIt = chunkIt;
 
@@ -49,7 +58,7 @@ namespace Axiom {
         }
 
         AX_CORE_LOG_WARN("Memory pool is out of memory. Failed to allocate {} bytes with alignment {}.", size, alignment);
-        return Allocation{nullptr, 0, 0, chunks.end()};
+        return Allocation{nullptr, nullptr, 0, 0, chunks.end()};
     }
 
     void VulkanMemoryPool::free(const Allocation& allocation) {

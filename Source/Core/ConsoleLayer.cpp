@@ -3,19 +3,17 @@
 #include "ConsoleLayer.h"
 
 #include "CommandRegistry.h"
-#include "Renderer/RenderGraph.h"
 #include "UI/UIPanel.h"
 #include "UI/UISlot.h"
 #include "UI/UIText.h"
 #include "UI/UITextInput.h"
 #include "UI/UIVerticalBox.h"
-#include "Window.h"
 
 namespace Axiom {
     void ConsoleLayer::onAttach() {
         AX_CORE_LOG_DEBUG("ConsoleLayer attached");
         mainUiContext = {
-            .renderer = Locator::getUIRenderer(),
+            .renderer = context().uiRenderer,
             .layer = 0,
         };
         uiRoot = std::make_shared<UICanvas>();
@@ -54,7 +52,7 @@ namespace Axiom {
 
     void ConsoleLayer::onUpdate() {
         if (isOpen) {
-            Math::Vec2 winSize = Math::Vec2(Locator::getWindow()->getWidth(), Locator::getWindow()->getHeight());
+            Math::Vec2 winSize = Math::Vec2(context().window->getWidth(), context().window->getHeight());
             Math::Vec2 consolePos = Math::Vec2(0.0f, winSize.y() * (1.0f - CONSOLE_HEIGHT_RATIO));
             Math::Vec2 consoleSize = Math::Vec2(winSize.x(), winSize.y() * CONSOLE_HEIGHT_RATIO);
 
@@ -81,14 +79,14 @@ namespace Axiom {
 
     void ConsoleLayer::onUIRender() {
         if (isOpen) {
-            Math::Rect logicalScreen({0, 0}, {Locator::getWindow()->getWidth(), Locator::getWindow()->getHeight()});
+            Math::Rect logicalScreen({0, 0}, {context().window->getWidth(), context().window->getHeight()});
             mainUiContext.renderer->pushScissorRect(logicalScreen, mainUiContext.layer);
             uiRoot->onRender(mainUiContext, logicalScreen);
             mainUiContext.renderer->popScissorRect(mainUiContext.layer);
         }
     }
 
-    void ConsoleLayer::onRender(RenderGraph& rendeGraph) {
+    void ConsoleLayer::onRender() {
     }
 
     void ConsoleLayer::refreshConsoleHistory() {

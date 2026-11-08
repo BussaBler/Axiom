@@ -1,22 +1,18 @@
 #pragma once
-#include "Assert.h"
 #include "Asset/AssetManager.h"
+#include "Core/EngineContext.h"
 #include "Core/TaskManager.h"
-#include "ECS/Components/ComponentReflection.h"
+#include "ECS/ComponentRegistry.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
-#include "Input.h"
 #include "LayerStack.h"
-#include "Locator.h"
-#include "Log.h"
-#include "Math/AxMath.h"
-#include "Renderer/RenderGraph.h"
 #include "Renderer/RenderHardwareInterface.h"
+#include "Renderer/SceneRenderer.h"
 #include "UI/UIRenderer.h"
-#include "Utils/FileSystem.h"
 #include "Window.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -46,12 +42,12 @@ namespace Axiom {
         template <typename T>
             requires std::derived_from<T, Layer>
         void pushLayer() {
-            layerStack.pushLayer<T>();
+            layerStack.pushLayer<T>(&engineContext);
         }
         template <typename T>
             requires std::derived_from<T, Layer>
         void pushOverlay() {
-            layerStack.pushOverlay<T>();
+            layerStack.pushOverlay<T>(&engineContext);
         }
         template <typename T>
             requires std::derived_from<T, Layer>
@@ -88,13 +84,19 @@ namespace Axiom {
 
       private:
         std::unique_ptr<Window> window;
-        std::unique_ptr<RenderHardwareInterface> renderer;
-        std::unique_ptr<UIRenderer> uiRenderer;
         std::unique_ptr<TaskManager> taskManager;
-        bool running = true;
+        std::unique_ptr<RenderHardwareInterface> rhi;
+        std::unique_ptr<PSOManager> psoManager;
+        std::unique_ptr<AssetManager> assetManager;
+        std::unique_ptr<ComponentRegistry> componentRegistry;
+        std::unique_ptr<UIRenderer> uiRenderer;
+        std::unique_ptr<SceneRenderer> sceneRenderer;
+
+        EngineContext engineContext;
+
         LayerStack layerStack;
         std::vector<LayerAction> layerActionQueue;
-        RenderGraph renderGraph{};
+        bool isRunning = true;
 
       private:
         static Application* instance;

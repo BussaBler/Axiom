@@ -2,13 +2,10 @@
 
 #include "ForwardRenderPipeline.h"
 
-#include "Asset/Asset.h"
-#include "Asset/AssetManager.h"
 #include "Asset/MeshAsset.h"
 #include "Asset/ShaderAsset.h"
 #include "Asset/UUID.h"
 #include "Core/Assert.h"
-#include "Core/Locator.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/Sprite2DComponent.h"
 #include "ECS/Components/TransformComponent.h"
@@ -20,7 +17,6 @@
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderFeature.h"
 #include "Renderer/RenderGraph.h"
-#include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/RenderPipeline.h"
 #include "Renderer/ResourceLayout.h"
@@ -37,7 +33,9 @@
 #include <vector>
 
 namespace Axiom {
-    ForwardRenderPipeline::ForwardRenderPipeline() {
+    ForwardRenderPipeline::ForwardRenderPipeline(RenderHardwareInterface& rhi, AssetManager& assetManager, TextureRegistry& textureRegistry,
+                                                 PSOManager& psoManager)
+        : rhi(rhi), assetManager(assetManager), textureRegistry(textureRegistry), psoManager(psoManager) {
         createGlobalData();
         createOpaquePassData();
         createSkyboxPassData();
@@ -58,8 +56,10 @@ namespace Axiom {
         AX_CORE_ASSERT(globalDataAllocations < MAX_VIEWPORTS, "Exceeded maximum viewports per frame");
 
         uint32_t currentViewportIndex = globalDataAllocations++;
+        currentFrameIndex = rhi.getCurrentFrameIndex();
+
         globalData = {.viewMatrix = context.viewMatrix, .projectionMatrix = context.projectionMatrix, .cameraPosition = context.cameraPosition};
-        globalDataBuffer->setData(&globalData, sizeof(GlobalData), currentViewportIndex * sizeof(GlobalData));
+        globalDataBuffers[currentFrameIndex]->setData(&globalData, sizeof(GlobalData), currentViewportIndex * sizeof(GlobalData));
 
         RGTextureHandle colorBufferHandle = renderGraph.importTexture("ColorBuffer", context.renderTarget);
         RGTextureHandle depthBufferHandle = renderGraph.importTexture("DepthBuffer", context.depthTarget);
@@ -82,9 +82,8 @@ namespace Axiom {
 
             return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
                           const FrameContext& frameCtx) {
-                const auto& resourceData = blackboard.get<GlobalResourceData>();
                 opaquePass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
-                           resourceData.viewportIndex);
+                           passData.viewportIndex);
             };
         });
         injectRenderFeatures(RenderInjectionPoint::AfterOpaque, renderGraph, context);
@@ -101,7 +100,6 @@ namespace Axiom {
 
                 return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
                               const FrameContext& frameCtx) {
-                    const auto& resourceData = blackboard.get<GlobalResourceData>();
                     skyboxPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
                 };
             });
@@ -115,12 +113,12 @@ namespace Axiom {
             passData.renderTarget = resourceData.colorBuffer;
             passData.depthTarget = resourceData.depthBuffer;
             passData.scene = resourceData.scene;
+            passData.viewportIndex = resourceData.viewportIndex;
 
             return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
                           const FrameContext& frameCtx) {
-                const auto& resourceData = blackboard.get<GlobalResourceData>();
                 spritePass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
-                           resourceData.viewportIndex);
+                           passData.viewportIndex);
             };
         });
 
@@ -135,7 +133,6 @@ namespace Axiom {
 
                 return [this](const DefaultPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
                               const FrameContext& frameCtx) {
-                    const auto& resourceData = blackboard.get<GlobalResourceData>();
                     worldGridPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd);
                 };
             });
@@ -152,7 +149,6 @@ namespace Axiom {
 
                 return [this](const GizmosPassData& passData, const PassResources& resources, CommandBuffer* cmd, const Blackboard& blackboard,
                               const FrameContext& frameCtx) {
-                    const auto& resourceData = blackboard.get<GlobalResourceData>();
                     gizmosPass(passData.scene, resources.getTexture(passData.renderTarget), resources.getTexture(passData.depthTarget), cmd,
                                passData.gizmosPosition);
                 };
@@ -168,26 +164,30 @@ namespace Axiom {
 
     void ForwardRenderPipeline::createGlobalData() {
         globalData = {};
-
         std::vector<ResourceLayout::BindingCreateInfo> bindingsCreateInfo(1);
         bindingsCreateInfo[0].binding = Bindings::GlobalDataBinding;
         bindingsCreateInfo[0].type = ResourceType::UniformBuffer;
         bindingsCreateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
         bindingsCreateInfo[0].count = 1;
-        globalDataResourceLayout = Locator::getRHI()->createResourceLayout(bindingsCreateInfo);
-        globalDataResourceSet = Locator::getRHI()->createResourceSet(globalDataResourceLayout.get());
+        globalDataResourceLayout = rhi.createResourceLayout(bindingsCreateInfo);
 
-        Buffer::CreateInfo globalDataBufferCreateInfo = {
-            .size = sizeof(GlobalData) * MAX_VIEWPORTS, .usage = BufferUsage::Uniform, .memoryUsage = MemoryUsage::GPUandCPU};
-        globalDataBuffer = Locator::getRHI()->createBuffer(globalDataBufferCreateInfo);
+        globalDataResourceSets.resize(rhi.MAX_FRAMES_IN_FLIGHT);
+        globalDataBuffers.resize(rhi.MAX_FRAMES_IN_FLIGHT);
+        for (uint32_t i = 0; i < rhi.MAX_FRAMES_IN_FLIGHT; i++) {
+            globalDataResourceSets[i] = rhi.createResourceSet(globalDataResourceLayout.get());
 
-        Buffer* bufferData[] = {globalDataBuffer.get()};
-        std::vector<ResourceSet::Binding> bindingUpdateInfo(1);
-        bindingUpdateInfo[0].binding = Bindings::GlobalDataBinding;
-        bindingUpdateInfo[0].type = ResourceType::UniformBuffer;
-        bindingUpdateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
-        bindingUpdateInfo[0].data = bufferData;
-        globalDataResourceSet->update(bindingUpdateInfo);
+            Buffer::CreateInfo globalDataBufferCreateInfo = {
+                .size = sizeof(GlobalData) * MAX_VIEWPORTS, .usage = BufferUsage::Uniform, .memoryUsage = MemoryUsage::GPUandCPU};
+            globalDataBuffers[i] = rhi.createBuffer(globalDataBufferCreateInfo);
+
+            Buffer* bufferData[] = {globalDataBuffers[i].get()};
+            std::vector<ResourceSet::Binding> bindingUpdateInfo(1);
+            bindingUpdateInfo[0].binding = Bindings::GlobalDataBinding;
+            bindingUpdateInfo[0].type = ResourceType::UniformBuffer;
+            bindingUpdateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
+            bindingUpdateInfo[0].data = bufferData;
+            globalDataResourceSets[i]->update(bindingUpdateInfo);
+        }
     }
 
     void ForwardRenderPipeline::createOpaquePassData() {
@@ -204,20 +204,25 @@ namespace Axiom {
         bindingsCreateInfo[0].type = ResourceType::StorageBuffer;
         bindingsCreateInfo[0].stages = ShaderStage::Vertex;
         bindingsCreateInfo[0].count = 1;
-        instanceResourceLayout = Locator::getRHI()->createResourceLayout(bindingsCreateInfo);
-        instanceResourceSet = Locator::getRHI()->createResourceSet(instanceResourceLayout.get());
+        instanceResourceLayout = rhi.createResourceLayout(bindingsCreateInfo);
 
-        Buffer::CreateInfo instanceSSBOCreateInfo = {
-            .size = sizeof(Math::Mat4) * MAX_INSTANCES_PER_FRAME, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
-        instanceSSBO = Locator::getRHI()->createBuffer(instanceSSBOCreateInfo);
+        instanceResourceSets.resize(rhi.MAX_FRAMES_IN_FLIGHT);
+        instanceSSBOs.resize(rhi.MAX_FRAMES_IN_FLIGHT);
+        for (uint32_t i = 0; i < rhi.MAX_FRAMES_IN_FLIGHT; i++) {
+            instanceResourceSets[i] = rhi.createResourceSet(instanceResourceLayout.get());
 
-        Buffer* bufferData[] = {instanceSSBO.get()};
-        std::vector<ResourceSet::Binding> bindingsUpdateInfo(1);
-        bindingsUpdateInfo[0].binding = 1;
-        bindingsUpdateInfo[0].type = ResourceType::StorageBuffer;
-        bindingsUpdateInfo[0].stages = ShaderStage::Vertex;
-        bindingsUpdateInfo[0].data = bufferData;
-        instanceResourceSet->update(bindingsUpdateInfo);
+            Buffer::CreateInfo instanceSSBOCreateInfo = {
+                .size = sizeof(Math::Mat4) * MAX_INSTANCES_PER_FRAME, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
+            instanceSSBOs[i] = rhi.createBuffer(instanceSSBOCreateInfo);
+
+            Buffer* bufferData[] = {instanceSSBOs[i].get()};
+            std::vector<ResourceSet::Binding> bindingsUpdateInfo(1);
+            bindingsUpdateInfo[0].binding = 1;
+            bindingsUpdateInfo[0].type = ResourceType::StorageBuffer;
+            bindingsUpdateInfo[0].stages = ShaderStage::Vertex;
+            bindingsUpdateInfo[0].data = bufferData;
+            instanceResourceSets[i]->update(bindingsUpdateInfo);
+        }
     }
 
     void ForwardRenderPipeline::createSpritePassData() {
@@ -240,35 +245,33 @@ namespace Axiom {
 
         Buffer::CreateInfo spriteVertexBufferCreateInfo = {
             .size = sizeof(QuadVertex) * quadVertices.size(), .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        spriteVertexBuffer = Locator::getRHI()->createBuffer(spriteVertexBufferCreateInfo);
+        spriteVertexBuffer = rhi.createBuffer(spriteVertexBufferCreateInfo);
 
         Buffer::CreateInfo spriteVBStagingCreateInfo = {
             .size = spriteVertexBufferCreateInfo.size, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        auto spriteVBStaging = Locator::getRHI()->createBuffer(spriteVBStagingCreateInfo);
+        auto spriteVBStaging = rhi.createBuffer(spriteVBStagingCreateInfo);
         spriteVBStaging->setData<QuadVertex>(quadVertices);
 
         Buffer::CreateInfo spriteIndexBufferCreateInfo = {
             .size = sizeof(uint32_t) * quadIndices.size(), .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        spriteIndexBuffer = Locator::getRHI()->createBuffer(spriteIndexBufferCreateInfo);
+        spriteIndexBuffer = rhi.createBuffer(spriteIndexBufferCreateInfo);
 
         Buffer::CreateInfo spriteIBStagingCreateInfo = {
             .size = spriteIndexBufferCreateInfo.size, .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        auto spriteIBStaging = Locator::getRHI()->createBuffer(spriteIBStagingCreateInfo);
+        auto spriteIBStaging = rhi.createBuffer(spriteIBStagingCreateInfo);
         spriteIBStaging->setData<uint32_t>(quadIndices);
 
-        auto cmd = Locator::getRHI()->beginSingleTimeCommands();
+        auto cmd = rhi.beginSingleTimeCommands();
         cmd->copyBuffer(spriteVBStaging.get(), spriteVertexBuffer.get(), spriteVertexBufferCreateInfo.size);
         cmd->copyBuffer(spriteIBStaging.get(), spriteIndexBuffer.get(), spriteIndexBufferCreateInfo.size);
-        Locator::getRHI()->endSingleTimeCommands(cmd.get());
+        rhi.endSingleTimeCommands(cmd.get());
 
         std::vector<ResourceLayout::BindingCreateInfo> bindingsCreateInfo(1);
         bindingsCreateInfo[0].binding = 0;
         bindingsCreateInfo[0].type = ResourceType::StorageBuffer;
         bindingsCreateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
         bindingsCreateInfo[0].count = 1;
-
-        spriteInstanceResourceLayout = Locator::getRHI()->createResourceLayout(bindingsCreateInfo);
-        spriteInstanceResourceSet = Locator::getRHI()->createResourceSet(spriteInstanceResourceLayout.get());
+        spriteInstanceResourceLayout = rhi.createResourceLayout(bindingsCreateInfo);
 
         struct GPUInstanceData {
             Math::Mat4 modelMatrix;
@@ -277,41 +280,46 @@ namespace Axiom {
             float padding[3];
         };
 
-        Buffer::CreateInfo spriteInstanceSSBOCreateInfo = {
-            .size = sizeof(GPUInstanceData) * MAX_SPRITE_INSTANCES_PER_FRAME, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
-        spriteInstanceSSBO = Locator::getRHI()->createBuffer(spriteInstanceSSBOCreateInfo);
+        spriteInstanceResourceSets.resize(rhi.MAX_FRAMES_IN_FLIGHT);
+        spriteInstanceSSBOs.resize(rhi.MAX_FRAMES_IN_FLIGHT);
+        for (uint32_t i = 0; i < rhi.MAX_FRAMES_IN_FLIGHT; i++) {
+            spriteInstanceResourceSets[i] = rhi.createResourceSet(spriteInstanceResourceLayout.get());
 
-        Buffer* bufferData[] = {spriteInstanceSSBO.get()};
-        std::vector<ResourceSet::Binding> bindingsUpdateInfo(1);
-        bindingsUpdateInfo[0].binding = 0;
-        bindingsUpdateInfo[0].type = ResourceType::StorageBuffer;
-        bindingsUpdateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
-        bindingsUpdateInfo[0].data = bufferData;
-        spriteInstanceResourceSet->update(bindingsUpdateInfo);
+            Buffer::CreateInfo spriteInstanceSSBOCreateInfo = {
+                .size = sizeof(GPUInstanceData) * MAX_SPRITE_INSTANCES_PER_FRAME, .usage = BufferUsage::Storage, .memoryUsage = MemoryUsage::GPUandCPU};
+            spriteInstanceSSBOs[i] = rhi.createBuffer(spriteInstanceSSBOCreateInfo);
 
-        UUID spriteShaderHandle = AssetManager::importAsset("BuiltIn.Sprite2D", "axiom://Packages/Shaders/BuiltIn.Sprite2D.axs", AssetType::Shader);
-        std::shared_ptr<ShaderAsset> spriteShader = AssetManager::getAsset<ShaderAsset>(spriteShaderHandle);
+            Buffer* bufferData[] = {spriteInstanceSSBOs[i].get()};
+            std::vector<ResourceSet::Binding> bindingsUpdateInfo(1);
+            bindingsUpdateInfo[0].binding = 0;
+            bindingsUpdateInfo[0].type = ResourceType::StorageBuffer;
+            bindingsUpdateInfo[0].stages = ShaderStage::Vertex | ShaderStage::Fragment;
+            bindingsUpdateInfo[0].data = bufferData;
+            spriteInstanceResourceSets[i]->update(bindingsUpdateInfo);
+        }
+
+        std::shared_ptr<ShaderAsset> spriteShader = assetManager.getBuiltInShader("Sprite2D");
 
         std::vector<VertexBindingDescription> vertexBindings = {{.binding = 0, .stride = sizeof(QuadVertex), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> vertexAttributes = {
             {.location = 0, .binding = 0, .format = Format::R32G32B32Sfloat, .offset = 0},
             {.location = 1, .binding = 0, .format = Format::R32G32Sfloat, .offset = offsetof(QuadVertex, uv)}};
 
-        Pipeline::CreateInfo pipelineCreateInfo = {.shader = spriteShader->getShader(),
-                                                   .vertexBindings = vertexBindings,
-                                                   .vertexAttributes = vertexAttributes,
-                                                   .topology = PrimitiveTopology::TriangleList,
-                                                   .polygonMode = PolygonMode::Fill,
-                                                   .cullMode = CullMode::None,
-                                                   .frontFaceClockwise = true,
-                                                   .enableBlending = true,
-                                                   .enableDepthTest = true,
-                                                   .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
-                                                   .depthAttachmentFormat = Locator::getRHI()->getDepthTextureFormat(),
-                                                   .resourceLayouts = {globalDataResourceLayout.get(), spriteInstanceResourceLayout.get(),
-                                                                       Locator::getRHI()->getTextureRegistry()->getResourceLayout()}};
-        spritePipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
+        Pipeline::CreateInfo pipelineCreateInfo = {
+            .shader = spriteShader->getShader(),
+            .vertexBindings = vertexBindings,
+            .vertexAttributes = vertexAttributes,
+            .topology = PrimitiveTopology::TriangleList,
+            .polygonMode = PolygonMode::Fill,
+            .cullMode = CullMode::None,
+            .frontFaceClockwise = true,
+            .enableBlending = true,
+            .enableDepthTest = true,
+            .enableDepthWrite = false,
+            .colorAttachmentFormats = {rhi.getRenderTargetFormat()},
+            .depthAttachmentFormat = rhi.getDepthTextureFormat(),
+            .resourceLayouts = {globalDataResourceLayout.get(), spriteInstanceResourceLayout.get(), textureRegistry.getResourceLayout()}};
+        spritePipeline = rhi.createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::createSkyboxPassData() {
@@ -329,27 +337,26 @@ namespace Axiom {
 
         Buffer::CreateInfo skyboxVertexBufferCreateInfo = {
             .size = sizeof(Math::Vec3) * skyboxVertices.size(), .usage = BufferUsage::Vertex | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        skyboxVertexBuffer = Locator::getRHI()->createBuffer(skyboxVertexBufferCreateInfo);
+        skyboxVertexBuffer = rhi.createBuffer(skyboxVertexBufferCreateInfo);
         Buffer::CreateInfo skyboxVertexStagingBufferCreateInfo = {
             .size = sizeof(Math::Vec3) * skyboxVertices.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> skyboxVertexStagingBuffer = Locator::getRHI()->createBuffer(skyboxVertexStagingBufferCreateInfo);
+        std::unique_ptr<Buffer> skyboxVertexStagingBuffer = rhi.createBuffer(skyboxVertexStagingBufferCreateInfo);
         skyboxVertexStagingBuffer->setData<Math::Vec3>(skyboxVertices);
 
         Buffer::CreateInfo skyboxIndexBufferCreateInfo = {
             .size = sizeof(uint32_t) * skyboxIndices.size(), .usage = BufferUsage::Index | BufferUsage::TransferDst, .memoryUsage = MemoryUsage::GPUOnly};
-        skyboxIndexBuffer = Locator::getRHI()->createBuffer(skyboxIndexBufferCreateInfo);
+        skyboxIndexBuffer = rhi.createBuffer(skyboxIndexBufferCreateInfo);
         Buffer::CreateInfo skyboxIndexStagingBufferCreateInfo = {
             .size = sizeof(uint32_t) * skyboxIndices.size(), .usage = BufferUsage::TransferSrc, .memoryUsage = MemoryUsage::GPUandCPU};
-        std::unique_ptr<Buffer> skyboxIndexStagingBuffer = Locator::getRHI()->createBuffer(skyboxIndexStagingBufferCreateInfo);
+        std::unique_ptr<Buffer> skyboxIndexStagingBuffer = rhi.createBuffer(skyboxIndexStagingBufferCreateInfo);
         skyboxIndexStagingBuffer->setData<uint32_t>(skyboxIndices);
 
-        auto commandBuffer = Locator::getRHI()->beginSingleTimeCommands();
+        auto commandBuffer = rhi.beginSingleTimeCommands();
         commandBuffer->copyBuffer(skyboxVertexStagingBuffer.get(), skyboxVertexBuffer.get(), skyboxVertexBufferCreateInfo.size);
         commandBuffer->copyBuffer(skyboxIndexStagingBuffer.get(), skyboxIndexBuffer.get(), skyboxIndexBufferCreateInfo.size);
-        Locator::getRHI()->endSingleTimeCommands(commandBuffer.get());
+        rhi.endSingleTimeCommands(commandBuffer.get());
 
-        UUID skyboxShaderHandle = AssetManager::importAsset("BuiltIn.Skybox", "axiom://Packages/Shaders/BuiltIn.Skybox.axs", AssetType::Shader);
-        std::shared_ptr<ShaderAsset> skyboxShader = AssetManager::getAsset<ShaderAsset>(skyboxShaderHandle);
+        std::shared_ptr<ShaderAsset> skyboxShader = assetManager.getBuiltInShader("Skybox");
 
         std::vector<VertexBindingDescription> skyboxVertexBindings = {{.binding = 0, .stride = sizeof(Math::Vec3), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> skyboxVertexAttributes = {
@@ -366,10 +373,10 @@ namespace Axiom {
                                                    .enableBlending = false,
                                                    .enableDepthTest = true,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
-                                                   .depthAttachmentFormat = Locator::getRHI()->getDepthTextureFormat(),
+                                                   .colorAttachmentFormats = {rhi.getRenderTargetFormat()},
+                                                   .depthAttachmentFormat = rhi.getDepthTextureFormat(),
                                                    .resourceLayouts = {globalDataResourceLayout.get()}};
-        skyboxPipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
+        skyboxPipeline = rhi.createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::createWorldGridPassData() {
@@ -381,8 +388,7 @@ namespace Axiom {
         worldGridRenderPass.depthAttachment = depthAttachment;
         worldGridRenderPass.hasDepthAttachment = true;
 
-        UUID worldGridShaderHandle = AssetManager::importAsset("BuiltIn.WorldGrid", "axiom://Packages/Shaders/BuiltIn.WorldGrid.axs", AssetType::Shader);
-        std::shared_ptr<ShaderAsset> worldGridShader = AssetManager::getAsset<ShaderAsset>(worldGridShaderHandle);
+        std::shared_ptr<ShaderAsset> worldGridShader = assetManager.getBuiltInShader("WorldGrid");
 
         Pipeline::CreateInfo pipelineCreateInfo = {.shader = worldGridShader->getShader(),
                                                    .vertexBindings = {},
@@ -394,10 +400,10 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = true,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
-                                                   .depthAttachmentFormat = Locator::getRHI()->getDepthTextureFormat(),
+                                                   .colorAttachmentFormats = {rhi.getRenderTargetFormat()},
+                                                   .depthAttachmentFormat = rhi.getDepthTextureFormat(),
                                                    .resourceLayouts = {globalDataResourceLayout.get()}};
-        worldGridPipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
+        worldGridPipeline = rhi.createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::createGizmosPassData() {
@@ -406,9 +412,8 @@ namespace Axiom {
         gizmosRenderPass.colorAttachments[0] = colorAttachment;
         gizmosRenderPass.colorAttachmentCount = 1;
 
-        UUID gizmosShaderHandle = AssetManager::importAsset("BuiltIn.Gizmos", "axiom://Packages/Shaders/BuiltIn.Gizmos.axs", AssetType::Shader);
-        gizmosMeshHandle = AssetManager::importAsset("BuiltIn.Gizmos.Arrow", "axiom://Packages/Models/Arrow.obj", AssetType::Mesh);
-        std::shared_ptr<ShaderAsset> gizmosShader = AssetManager::getAsset<ShaderAsset>(gizmosShaderHandle);
+        gizmosMeshHandle = assetManager.importAsset("BuiltIn.Gizmos.Arrow", "axiom://Packages/Models/Arrow.obj", AssetType::Mesh);
+        std::shared_ptr<ShaderAsset> gizmosShader = assetManager.getBuiltInShader("Gizmos");
 
         std::vector<VertexBindingDescription> vertexBindings = {{.binding = 0, .stride = sizeof(MeshVertex), .inputRate = VertexInputRate::Vertex}};
         std::vector<VertexAttributeDescription> vertexAttributes = {
@@ -427,10 +432,10 @@ namespace Axiom {
                                                    .enableBlending = true,
                                                    .enableDepthTest = false,
                                                    .enableDepthWrite = false,
-                                                   .colorAttachmentFormats = {Locator::getRHI()->getRenderTargetFormat()},
+                                                   .colorAttachmentFormats = {rhi.getRenderTargetFormat()},
                                                    .depthAttachmentFormat = Format::Undefined,
                                                    .resourceLayouts = {globalDataResourceLayout.get()}};
-        gizmosPipeline = Locator::getRHI()->createPipeline(pipelineCreateInfo);
+        gizmosPipeline = rhi.createPipeline(pipelineCreateInfo);
     }
 
     void ForwardRenderPipeline::opaquePass(Scene* scene, const Texture* renderTarget, const Texture* depthTarget, CommandBuffer* commandBuffer,
@@ -443,8 +448,8 @@ namespace Axiom {
             auto& transform = scene->getEntity(entityId).getComponent<TransformComponent>();
             auto& meshRenderer = scene->getEntity(entityId).getComponent<MeshComponent>();
 
-            std::shared_ptr<MaterialAsset> material = AssetManager::getAsset<MaterialAsset>(meshRenderer.meterialId);
-            std::shared_ptr<MeshAsset> mesh = AssetManager::getAsset<MeshAsset>(meshRenderer.meshId);
+            std::shared_ptr<MaterialAsset> material = assetManager.getAsset<MaterialAsset>(meshRenderer.meterialId);
+            std::shared_ptr<MeshAsset> mesh = assetManager.getAsset<MeshAsset>(meshRenderer.meshId);
 
             if (material && mesh) {
                 drawList.push_back({.model = transform.modelMatrix(), .meshAsset = mesh, .materialAsset = material});
@@ -463,7 +468,7 @@ namespace Axiom {
         totalInstanceCount += allTransforms.size();
         AX_CORE_ASSERT(totalInstanceCount < MAX_INSTANCES_PER_FRAME, "Instance buffer overflow!");
 
-        instanceSSBO->setData(allTransforms.data(), allTransforms.size() * sizeof(Math::Mat4), passInstanceOffset * sizeof(Math::Mat4));
+        instanceSSBOs[currentFrameIndex]->setData(allTransforms.data(), allTransforms.size() * sizeof(Math::Mat4), passInstanceOffset * sizeof(Math::Mat4));
 
         Math::iVec2 renderTargetSize = renderTarget->getSize();
         opaqueRenderPass.colorAttachments[0].texture = renderTarget;
@@ -478,8 +483,8 @@ namespace Axiom {
             commandBuffer->endRendering();
             return;
         }
-        commandBuffer->bindVertexBuffers({AssetManager::getGlobalVertexBuffer()});
-        commandBuffer->bindIndexBuffer(AssetManager::getGlobalIndexBuffer());
+        commandBuffer->bindVertexBuffers({assetManager.getGlobalVertexBuffer()});
+        commandBuffer->bindIndexBuffer(assetManager.getGlobalIndexBuffer());
 
         UUID currentShader = UUID();
         UUID currentMaterial = UUID();
@@ -498,7 +503,7 @@ namespace Axiom {
                 return;
             }
 
-            std::shared_ptr<MeshAsset> activeMesh = AssetManager::getAsset<MeshAsset>(currentMesh);
+            std::shared_ptr<MeshAsset> activeMesh = assetManager.getAsset<MeshAsset>(currentMesh);
 
             PushConstants pc = {.viewportIndex = viewportIndex, .instanceIndex = batchStartOffset};
             commandBuffer->bindPushConstants(&pc, sizeof(PushConstants));
@@ -520,7 +525,7 @@ namespace Axiom {
 
             if (cmd.materialAsset->getShader() != currentShader) {
                 currentShader = cmd.materialAsset->getShader();
-                std::shared_ptr<ShaderAsset> currentShaderAsset = AssetManager::getAsset<ShaderAsset>(currentShader);
+                std::shared_ptr<ShaderAsset> currentShaderAsset = assetManager.getAsset<ShaderAsset>(currentShader);
 
                 std::vector<VertexBindingDescription> meshVertexBindings = {{.binding = 0, .stride = sizeof(MeshVertex), .inputRate = VertexInputRate::Vertex}};
                 std::vector<VertexAttributeDescription> meshVertexAttributes = {
@@ -537,8 +542,8 @@ namespace Axiom {
                 }
                 pipelineCreateInfo.resourceLayouts = {globalDataResourceLayout.get(), instanceResourceLayout.get()};
 
-                commandBuffer->bindPipeline(Locator::getRHI()->getOrCreatePipeline(pipelineCreateInfo));
-                commandBuffer->bindResources({globalDataResourceSet.get(), instanceResourceSet.get()});
+                commandBuffer->bindPipeline(psoManager.getOrCreatePipeline(pipelineCreateInfo));
+                commandBuffer->bindResources({globalDataResourceSets[currentFrameIndex].get(), instanceResourceSets[currentFrameIndex].get()});
             }
 
             if (cmd.materialAsset->getHandle() != currentMaterial) {
@@ -571,7 +576,7 @@ namespace Axiom {
         for (const uint32_t id : view) {
             const auto& [sprite, transform] = scene->getEntity(id).getComponents<Sprite2DComponent, TransformComponent>();
 
-            uint32_t texIdx = Locator::getRHI()->getTextureRegistry()->getOrRegister(sprite.textureId);
+            uint32_t texIdx = textureRegistry.getOrRegister(sprite.textureId);
 
             spriteInstances.push_back({.modelMatrix = transform.modelMatrix(), .color = sprite.color, .textureIndex = texIdx, .padding = {0.0f, 0.0f, 0.0f}});
         }
@@ -582,7 +587,7 @@ namespace Axiom {
 
         AX_CORE_ASSERT(spriteInstances.size() < MAX_SPRITE_INSTANCES_PER_FRAME, "Sprite instance buffer overflow!");
 
-        spriteInstanceSSBO->setData(spriteInstances.data(), spriteInstances.size() * sizeof(SpriteInstance));
+        spriteInstanceSSBOs[currentFrameIndex]->setData(spriteInstances.data(), spriteInstances.size() * sizeof(SpriteInstance));
 
         Math::iVec2 renderTargetSize = renderTarget->getSize();
         spriteRenderPass.width = renderTargetSize.x();
@@ -598,7 +603,8 @@ namespace Axiom {
         commandBuffer->bindVertexBuffers({spriteVertexBuffer.get()});
         commandBuffer->bindIndexBuffer(spriteIndexBuffer.get());
 
-        commandBuffer->bindResources({globalDataResourceSet.get(), spriteInstanceResourceSet.get(), Locator::getRHI()->getTextureRegistry()->getResourceSet()});
+        commandBuffer->bindResources(
+            {globalDataResourceSets[currentFrameIndex].get(), spriteInstanceResourceSets[currentFrameIndex].get(), textureRegistry.getResourceSet()});
 
         struct PushConstants {
             uint32_t viewportIndex;
@@ -623,7 +629,7 @@ namespace Axiom {
         commandBuffer->bindPipeline(skyboxPipeline.get());
         commandBuffer->bindVertexBuffers({skyboxVertexBuffer.get()});
         commandBuffer->bindIndexBuffer(skyboxIndexBuffer.get());
-        commandBuffer->bindResources({globalDataResourceSet.get()});
+        commandBuffer->bindResources({globalDataResourceSets[currentFrameIndex].get()});
         commandBuffer->drawIndexed(36, 1);
         commandBuffer->endRendering();
     }
@@ -639,7 +645,7 @@ namespace Axiom {
         commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
         commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
         commandBuffer->bindPipeline(worldGridPipeline.get());
-        commandBuffer->bindResources({globalDataResourceSet.get()});
+        commandBuffer->bindResources({globalDataResourceSets[currentFrameIndex].get()});
         commandBuffer->draw(6, 1);
         commandBuffer->endRendering();
     }
@@ -660,15 +666,15 @@ namespace Axiom {
         gizmosRenderPass.width = renderTargetSize.x();
         gizmosRenderPass.height = renderTargetSize.y();
 
-        std::shared_ptr<MeshAsset> gizmosMesh = AssetManager::getAsset<MeshAsset>(gizmosMeshHandle);
+        std::shared_ptr<MeshAsset> gizmosMesh = assetManager.getAsset<MeshAsset>(gizmosMeshHandle);
 
         commandBuffer->beginRendering(gizmosRenderPass);
         commandBuffer->bindPipeline(gizmosPipeline.get());
-        commandBuffer->bindVertexBuffers({AssetManager::getGlobalVertexBuffer()});
-        commandBuffer->bindIndexBuffer(AssetManager::getGlobalIndexBuffer());
+        commandBuffer->bindVertexBuffers({assetManager.getGlobalVertexBuffer()});
+        commandBuffer->bindIndexBuffer(assetManager.getGlobalIndexBuffer());
         commandBuffer->setViewport(0.0f, 0.0f, renderTargetSize.x(), renderTargetSize.y());
         commandBuffer->setScissor(0, 0, renderTargetSize.x(), renderTargetSize.y());
-        commandBuffer->bindResources({globalDataResourceSet.get()});
+        commandBuffer->bindResources({globalDataResourceSets[currentFrameIndex].get()});
 
         // Y axis
         pushConstants.model = Math::Mat4::model(gizmoPosition, Math::Vec3::zero(), Math::Vec3(scale));

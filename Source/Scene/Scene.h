@@ -1,4 +1,5 @@
 #pragma once
+#include "ECS/ComponentRegistry.h"
 #include "ECS/ECS.h"
 #include "ECS/Entity.h"
 #include "ECS/PhysicsSystem.h"
@@ -8,7 +9,7 @@ namespace Axiom {
         friend class SceneSerializer;
 
       public:
-        Scene();
+        Scene(ComponentRegistry& componentRegistry);
         ~Scene() = default;
 
         Entity newEntity(const std::string& name = "Entity");
@@ -34,6 +35,8 @@ namespace Axiom {
         }
 
       private:
+        ComponentRegistry& componentRegistry;
+
         std::unique_ptr<ECS> ecs;
         std::unique_ptr<SystemManager> systemManager;
         std::shared_ptr<PhysicsSystem> physicsSystem;

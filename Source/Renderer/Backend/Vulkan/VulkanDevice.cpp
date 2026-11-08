@@ -4,7 +4,11 @@
 
 #include "Core/Assert.h"
 #include "Core/Log.h"
+#include "Renderer/Backend/Vulkan/VulkanCommandBuffer.h"
 #include "Renderer/Backend/Vulkan/VulkanSwapChain.h"
+
+#include <memory>
+#include <utility>
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -125,8 +129,8 @@ namespace Axiom {
         return std::make_unique<VulkanSwapChain>(createInfo);
     }
 
-    std::unique_ptr<Shader> VulkanDevice::createShader(const std::string& vertexSource, const std::string& fragmentSource) {
-        return std::make_unique<VulkanShader>(logicalDevice, vertexSource, fragmentSource);
+    std::unique_ptr<Shader> VulkanDevice::createShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv) {
+        return std::make_unique<VulkanShader>(logicalDevice, vertexSpirv, fragmentSpirv);
     }
 
     std::unique_ptr<Pipeline> VulkanDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {
@@ -173,9 +177,9 @@ namespace Axiom {
     }
 
     std::unique_ptr<CommandBuffer> VulkanDevice::beginSingleTimeCommands() {
-        VulkanCommandBuffer* commandBuffer = new VulkanCommandBuffer(logicalDevice, commandPool);
+        std::unique_ptr<VulkanCommandBuffer> commandBuffer = std::make_unique<VulkanCommandBuffer>(logicalDevice, commandPool);
         commandBuffer->begin();
-        return std::make_unique<VulkanCommandBuffer>(*commandBuffer);
+        return std::move(commandBuffer);
     }
 
     void VulkanDevice::endSingleTimeCommands(CommandBuffer* commandBuffer) {

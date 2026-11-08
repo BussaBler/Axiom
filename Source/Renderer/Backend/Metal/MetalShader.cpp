@@ -4,37 +4,24 @@
 
 #include "Core/Log.h"
 #include "Renderer/Backend/Metal/MetalBindingLayout.h"
-#include "Renderer/ResourceSet.h"
-#include "Renderer/ShaderIncluder.h"
 #include "spirv_cross_error_handling.hpp"
 
 #include <SpirvCross/spirv_msl.hpp>
 #include <cstdint>
 #include <expected>
-#include <memory>
 #include <shaderc/shaderc.hpp>
 #include <shaderc/status.h>
+#include <span>
 #include <string>
 
 namespace Axiom {
-    MetalShader::MetalShader(const std::string& vertexSource, const std::string& fragmentSource, MTL::Device* device) {
-        std::expected<std::vector<uint32_t>, std::string> vertexSPIRV = compileGLSLToSPIRV(vertexSource);
-        if (!vertexSPIRV.has_value()) {
-            AX_CORE_LOG_ERROR("GLSL to SPIR-V Compilation Failed [Vertex]:\n{}", vertexSPIRV.error());
-            return;
-        }
-        std::expected<std::vector<uint32_t>, std::string> fragmentSPIRV = compileGLSLToSPIRV(fragmentSource);
-        if (!fragmentSPIRV.has_value()) {
-            AX_CORE_LOG_ERROR("GLSL to SPIR-V Compilation Failed [Fragment]:\n{}", fragmentSPIRV.error());
-            return;
-        }
-
-        std::expected<std::string, std::string> vertexMSL = compileSPIRVtoMSL(vertexSPIRV.value());
+    MetalShader::MetalShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv, MTL::Device* device) {
+        std::expected<std::string, std::string> vertexMSL = compileSPIRVtoMSL(vertexSpirv);
         if (!vertexMSL.has_value()) {
             AX_CORE_LOG_ERROR("SPIR-V to MSL Translation Failed [Vertex]:\n{}", vertexMSL.error());
             return;
         }
-        std::expected<std::string, std::string> fragmentMSL = compileSPIRVtoMSL(fragmentSPIRV.value());
+        std::expected<std::string, std::string> fragmentMSL = compileSPIRVtoMSL(fragmentSpirv);
         if (!fragmentMSL.has_value()) {
             AX_CORE_LOG_ERROR("SPIR-V to MSL Translation Failed [Fragment]:\n{}", fragmentMSL.error());
             return;
@@ -81,28 +68,9 @@ namespace Axiom {
         }
     }
 
-    std::expected<std::vector<uint32_t>, std::string> MetalShader::compileGLSLToSPIRV(const std::string& source) {
-        shaderc::Compiler compiler = {};
-        shaderc::CompileOptions options = {};
-        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
-        options.SetIncluder(std::make_unique<ShaderIncluder>());
-        options.AddMacroDefinition("SET_GLOBAL_DATA", std::to_string(Bindings::GlobalDataSet));
-        options.AddMacroDefinition("BINDING_GLOBAL_DATA", std::to_string(Bindings::GlobalDataBinding));
-        options.AddMacroDefinition("SET_BINDLESS_TEXTURE", std::to_string(Bindings::BindlessTextureSet));
-        options.AddMacroDefinition("BINDING_BINDLESS_TEXTURE", std::to_string(Bindings::BindlessTextureBinding));
-        options.AddMacroDefinition("BINDING_BINDLESS_TEXTURE_SAMPLERS", std::to_string(Bindings::BindlessTextureSamplersBinding));
-
-        shaderc::CompilationResult compResult =
-            compiler.CompileGlslToSpv(source.c_str(), source.size(), shaderc_shader_kind::shaderc_glsl_infer_from_source, "shader", "main", options);
-        if (compResult.GetCompilationStatus() != shaderc_compilation_status_success) {
-            return std::unexpected(compResult.GetErrorMessage());
-        }
-        return std::vector<uint32_t>(compResult.begin(), compResult.end());
-    }
-
-    std::expected<std::string, std::string> MetalShader::compileSPIRVtoMSL(const std::vector<uint32_t>& spirv) {
+    std::expected<std::string, std::string> MetalShader::compileSPIRVtoMSL(std::span<const uint32_t> spirv) {
         try {
-            spirv_cross::CompilerMSL mslCompiler(spirv);
+            spirv_cross::CompilerMSL mslCompiler(spirv.data(), spirv.size());
             spirv_cross::CompilerMSL::Options mslOptions = {};
             mslOptions.platform = spirv_cross::CompilerMSL::Options::Platform::macOS;
             mslOptions.set_msl_version(3, 0);

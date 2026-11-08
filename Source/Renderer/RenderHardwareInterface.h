@@ -1,45 +1,25 @@
 #pragma once
 #include "Device.h"
-#include "Renderer/ForwardRenderPipeline.h"
 #include "Renderer/Pipeline.h"
-#include "Renderer/RenderPipeline.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <string>
-#include <unordered_map>
-#include <utility>
 
 namespace Axiom {
-    class TextureRegistry;
-
     class RenderHardwareInterface {
       public:
         RenderHardwareInterface(Window* windowPtr);
         ~RenderHardwareInterface();
-
-        void initPipelines();
-        template <typename T, typename... Args> inline T* registerPipeline(const std::string& name, Args&&... args) {
-            registeredPipelines[name] = std::make_unique<T>(std::forward(args)...);
-            return static_cast<T*>(registeredPipelines[name].get());
-        }
-        template <typename T> T* getPipeline(const std::string& name) {
-            auto it = registeredPipelines.find(name);
-            if (it != registeredPipelines.end()) {
-                return static_cast<T*>(it->second.get());
-            }
-            return nullptr;
-        }
 
         void waitIdle();
 
         CommandBuffer* beginFrame();
         void endFrame();
 
-        std::unique_ptr<Shader> createShader(const std::string& vertexSource, const std::string& fragmentSource);
+        std::unique_ptr<Shader> createShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv);
         std::unique_ptr<Pipeline> createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo);
         std::unique_ptr<Buffer> createBuffer(const Buffer::CreateInfo& bufferCreateInfo);
         std::unique_ptr<Texture> createTexture(const Texture::CreateInfo& textureCreateInfo);
@@ -50,8 +30,6 @@ namespace Axiom {
         std::unique_ptr<CommandBuffer> beginSingleTimeCommands();
         void endSingleTimeCommands(CommandBuffer* commandBuffer);
 
-        Pipeline* getOrCreatePipeline(const Pipeline::CreateInfo& pipelineCreateInfo);
-
         inline Texture* getCurrentRenderTarget() { return swapChain->getCurrentTexture(); }
         inline Format getRenderTargetFormat() { return swapChain->getTextureFormat(); }
         inline Texture* getCurrentDepthTexture() { return swapChain->getCurrentDepthTexture(); }
@@ -61,8 +39,6 @@ namespace Axiom {
         inline Sampler* getNearestSampler() { return nearestSampler.get(); }
         inline uint32_t getFrameCount() const { return swapChain->getFrameCount(); }
         inline uint32_t getCurrentFrameIndex() const { return swapChain->getCurrentFrameIndex(); }
-        inline ForwardRenderPipeline* getFRP() { return forwardRP; }
-        inline TextureRegistry* getTextureRegistry() const { return textureRegistry.get(); }
 
         void recreateSwapChain();
 
@@ -82,14 +58,5 @@ namespace Axiom {
         Texture::Barrier depthBarrier;
         std::unique_ptr<Sampler> linearSampler = nullptr;
         std::unique_ptr<Sampler> nearestSampler = nullptr;
-
-        std::unordered_map<Pipeline::CreateInfo, std::unique_ptr<Pipeline>> pipelineCache;
-
-        std::unordered_map<std::string, std::unique_ptr<RenderPipeline>> registeredPipelines;
-        ForwardRenderPipeline* forwardRP = nullptr;
-
-        std::unique_ptr<TextureRegistry> textureRegistry;
-
-        static constexpr std::string FORWARD_PIPELINE_NAME = "Forward";
     };
 } // namespace Axiom

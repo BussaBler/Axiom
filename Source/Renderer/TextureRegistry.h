@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Asset/AssetManager.h"
 #include "Asset/UUID.h"
 #include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/ResourceLayout.h"
@@ -14,7 +15,7 @@
 namespace Axiom {
     class TextureRegistry {
       public:
-        TextureRegistry(RenderHardwareInterface* rhi) : rhi(rhi) {}
+        TextureRegistry(RenderHardwareInterface& rhi, AssetManager& assetManager) : rhi(rhi), assetManager(assetManager) {}
         ~TextureRegistry() = default;
 
         void init();
@@ -30,7 +31,8 @@ namespace Axiom {
         void updateDescriptorSet(uint32_t slot, Texture* texture);
 
       private:
-        RenderHardwareInterface* rhi;
+        RenderHardwareInterface& rhi;
+        AssetManager& assetManager;
 
         std::unique_ptr<ResourceLayout> resourceLayout;
         std::unique_ptr<ResourceSet> resourceSet;

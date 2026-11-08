@@ -157,7 +157,7 @@ namespace Axiom {
             case TextureState::DepthStencilTarget:
                 imageBarriers[i].setOldLayout(Vk::ImageLayout::eDepthStencilAttachmentOptimal);
                 imageBarriers[i].setSrcAccessMask(Vk::AccessFlagBits2::eDepthStencilAttachmentWrite);
-                imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eEarlyFragmentTests);
+                imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eEarlyFragmentTests | Vk::PipelineStageFlagBits2::eLateFragmentTests);
                 break;
             case TextureState::ShaderResource:
                 imageBarriers[i].setOldLayout(Vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -174,6 +174,10 @@ namespace Axiom {
                 imageBarriers[i].setSrcAccessMask(Vk::AccessFlagBits2::eTransferRead);
                 imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eTransfer);
                 break;
+            case TextureState::Present:
+                imageBarriers[i].setOldLayout(Vk::ImageLayout::ePresentSrcKHR);
+                imageBarriers[i].setSrcAccessMask({});
+                imageBarriers[i].setSrcStageMask(Vk::PipelineStageFlagBits2::eColorAttachmentOutput);
             default:
                 break;
             }

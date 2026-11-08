@@ -1,14 +1,14 @@
 {
     "Assets": {
-        "3629371504142647110": {
-            "Type": 5,
-            "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
-            "Name": "Default PBR Shader"
-        },
         "9916347032240535866": {
             "Type": 5,
             "FilePath": "axiom://Packages/Shaders/BuiltIn.Skybox.axs",
             "Name": "BuiltIn.Skybox"
+        },
+        "3629371504142647110": {
+            "Type": 5,
+            "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+            "Name": "Default PBR Shader"
         },
         "16102306717090981489": {
             "Type": 5,
