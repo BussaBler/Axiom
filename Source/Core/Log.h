@@ -44,6 +44,14 @@ namespace Axiom {
             Axiom::Log::getCoreLogger()->warn(__VA_ARGS__);                                                                                                    \
         }                                                                                                                                                      \
     } while (0)
+#define AX_CORE_LOG_WARN_ONCE(...)                                                                                                                             \
+    do {                                                                                                                                                       \
+        static bool wasLogged = false;                                                                                                                         \
+        if (!wasLogged && Axiom::Log::getCoreLogger()->isEnabled(Axiom::Logger::Priority::Warn)) {                                                             \
+            Axiom::Log::getCoreLogger()->warn(__VA_ARGS__);                                                                                                    \
+            wasLogged = true;                                                                                                                                  \
+        }                                                                                                                                                      \
+    } while (0)
 #define AX_CORE_LOG_ERROR_ONCE(...)                                                                                                                            \
     do {                                                                                                                                                       \
         static bool wasLogged = false;                                                                                                                         \

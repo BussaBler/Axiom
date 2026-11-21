@@ -5,8 +5,6 @@
 #include "ECS/Entity.h"
 
 #include <cstdint>
-#include <utility>
-#include <vector>
 
 namespace Axiom {
     ECS::ECS() {
@@ -32,19 +30,5 @@ namespace Axiom {
         entitiesComponentSignature[entity.getId()].reset();
         activeEntityCount--;
         availableEntitiesId.push_back(entity.getId());
-    }
-
-    std::vector<std::pair<uint8_t, void*>> ECS::getAllComponents(uint32_t entityId) {
-        std::vector<std::pair<uint8_t, void*>> components;
-        for (uint32_t i = 0; i < MAX_COMPONENTS; i++) {
-            if (entitiesComponentSignature[entityId].test(i)) {
-                void* data = componentsArray[i]->getComponentData(entityId);
-                if (data) {
-                    components.push_back({i, data});
-                }
-            }
-        }
-
-        return components;
     }
 } // namespace Axiom

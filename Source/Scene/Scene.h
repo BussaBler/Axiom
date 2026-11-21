@@ -1,8 +1,8 @@
 #pragma once
-#include "ECS/ComponentRegistry.h"
 #include "ECS/ECS.h"
 #include "ECS/Entity.h"
 #include "ECS/PhysicsSystem.h"
+#include "ECS/Reflection.h"
 
 namespace Axiom {
     class Scene {
@@ -20,6 +20,8 @@ namespace Axiom {
         template <typename First, typename... Rest> View<First, Rest...> view() { return ecs->view<First, Rest...>(); }
 
         void onUpdate(float deltaTime);
+
+        const ComponentRegistry& getComponentRegistry() const { return componentRegistry; }
 
         // TODO: maybe make register component and system public so the scene doesn't
         // have to keep track of them? Or maybe make a scene builder that handles all of this?

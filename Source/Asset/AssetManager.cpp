@@ -11,6 +11,7 @@
 #include "Core/Log.h"
 #include "Core/TaskManager.h"
 #include "Math/Color.h"
+#include "Math/Vec.h"
 #include "MeshAsset.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/RenderHardwareInterface.h"
@@ -20,11 +21,14 @@
 #include "ShaderAsset.h"
 #include "TextureAsset.h"
 #include "Utils/FileSystem.h"
-#include "Utils/JSONSerializer.h"
+#include "Utils/JSONValue.h"
+#include "Utils/Serializer.h"
 
+#include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <thread>
@@ -79,55 +83,57 @@ namespace Axiom {
     }
 
     void AssetManager::serializeManifest(const std::filesystem::path& manifestPath, const std::string& vfsFilter) {
-        JSONValue manifestRoot;
-        JSONValue manifestAssets;
+        JSONValue root;
+        JSONValue& assets = root["Assets"];
+        assets = JSONValue::Objects{};
 
         for (const auto& [uuid, meta] : registry) {
             if (!meta.filePath.generic_string().starts_with(vfsFilter)) {
                 continue;
             }
 
-            JSONValue asset;
-
-            JSONValue nameNode;
-            nameNode.setString(meta.name);
-            JSONValue filePathNode;
-            filePathNode.setString(meta.filePath.generic_string());
-            JSONValue typeNode;
-            typeNode.setInt(static_cast<int>(meta.type));
-
-            asset.setChild("Name", nameNode);
-            asset.setChild("FilePath", filePathNode);
-            asset.setChild("Type", typeNode);
-
-            manifestAssets.setChild(std::to_string(uuid), asset);
+            JSONValue& asset = assets[std::to_string(uuid)];
+            asset["Name"] = meta.name;
+            asset["FilePath"] = meta.filePath.generic_string();
+            asset["Type"] = static_cast<int>(meta.type);
         }
 
-        manifestRoot.setChild("Assets", manifestAssets);
-        FileSystem::writeFile(manifestPath, JSONSerializer::serialize(manifestRoot));
+        FileSystem::writeFile(manifestPath, Serializer::serializeJSON(root));
     }
 
     void AssetManager::deserializeManifest(const std::filesystem::path& manifestPath) {
-        std::string manifestJsonString = FileSystem::readFileStr(manifestPath);
-        if (!manifestJsonString.empty()) {
-            JSONValue root = JSONSerializer::deserialize(manifestJsonString);
-            if (root.getType() == JSONValueType::Object && root.hasChild("Assets")) {
-                const JSONValue& assetsNode = root.getChild("Assets");
-                const auto& children = assetsNode.getChildren();
+        auto parsed = Serializer::deserializeJSON(FileSystem::readFileStr(manifestPath));
+        if (!parsed) {
+            AX_CORE_LOG_ERROR("Manifest {} is invalid: {}", manifestPath.generic_string(), parsed.error());
+            return;
+        }
 
-                for (const auto& [uuidStr, node] : children) {
-                    uint64_t uuidValue = std::stoull(uuidStr);
-                    const auto& assetData = node.getChildren();
-                    std::string name = assetData.at("Name").getString();
-                    std::string rawPath = assetData.at("FilePath").getString();
-                    AssetType type = static_cast<AssetType>(assetData.at("Type").getInt());
-                    std::string cacheString = std::filesystem::path(rawPath).generic_string();
+        const JSONValue* assets = parsed->find("Assets");
+        if (!assets || !assets->is<JSONValue::Objects>()) {
+            return;
+        }
 
-                    AssetMetadata metaData = {.name = name, .type = type, .filePath = std::filesystem::path(cacheString)};
-                    registry[UUID(uuidValue)] = metaData;
-                    assetHandles[cacheString] = UUID(uuidValue);
-                }
+        for (const auto& [uuidText, asset] : assets->get<JSONValue::Objects>()) {
+            uint64_t uuidValue = 0;
+            auto [ptr, ec] = std::from_chars(uuidText.data(), uuidText.data() + uuidText.size(), uuidValue);
+            if (ec != std::errc()) {
+                AX_CORE_LOG_WARN("Skipping manifest entry with invalid UUID '{}'", uuidText);
+                continue;
             }
+
+            const JSONValue* name = asset.find("Name");
+            const JSONValue* path = asset.find("FilePath");
+            const JSONValue* type = asset.find("Type");
+            if (!name || !path || !type) {
+                AX_CORE_LOG_WARN("Skipping incomplete manifest entry {}", uuidText);
+                continue;
+            }
+
+            registry[UUID(uuidValue)] = AssetMetadata{
+                .name = name->get<std::string>(),
+                .type = static_cast<AssetType>(type->get<int64_t>()),
+                .filePath = path->get<std::string>(),
+            };
         }
     }
 
@@ -481,66 +487,55 @@ namespace Axiom {
         materialAsset->setState(AssetState::Loading);
         loadedAssets[uuid] = materialAsset;
 
-        std::thread([this, path, materialAsset]() {
-            std::string fileContent = FileSystem::readFileStr(path);
-            if (fileContent.empty()) {
-                AX_CORE_LOG_ERROR("Failed to read material file: {}", path.generic_string());
-                materialAsset->setState(AssetState::Failed);
-                return;
+        std::string fileContent = FileSystem::readFileStr(path);
+        if (fileContent.empty()) {
+            AX_CORE_LOG_ERROR("Failed to read material file {}", path.generic_string());
+        }
+
+        auto jsonRoot = Serializer::deserializeJSON(fileContent);
+        if (!jsonRoot) {
+            AX_CORE_LOG_ERROR("Invalid material file {}: {}", path.generic_string(), jsonRoot.error());
+            materialAsset->setState(AssetState::Failed);
+            return loadedAssets[uuid];
+        }
+
+        taskManager.submitToMain([materialAsset, root = std::move(*jsonRoot)]() {
+            if (const auto& v = root["Name"].text()) {
+                materialAsset->setName(*v);
+            }
+            if (const auto& v = root["Shader"].uuid()) {
+                materialAsset->setShader(*v);
             }
 
-            JSONValue root = JSONSerializer::deserialize(fileContent);
-            if (root.getType() != JSONValueType::Object) {
-                AX_CORE_LOG_ERROR("Invalid material file format: {}", path.generic_string());
-                materialAsset->setState(AssetState::Failed);
-                return;
+            if (const auto& c = root["AlbedoColor"].floats<4>()) {
+                materialAsset->setAlbedoColor(Color((*c)[0], (*c)[1], (*c)[2], (*c)[3]));
+            }
+            if (const auto& v = root["Metallic"].number()) {
+                materialAsset->setMetallic(static_cast<float>(*v));
+            }
+            if (const auto& v = root["Roughness"].number()) {
+                materialAsset->setRoughness(static_cast<float>(*v));
+            }
+            if (const auto& v = root["Emission"].number()) {
+                materialAsset->setEmission(static_cast<float>(*v));
             }
 
-            taskManager.submitToMain([materialAsset, path, root = std::move(root)]() {
-                if (root.hasChild("Name")) {
-                    materialAsset->setName(root.getChild("Name").getString());
-                }
-                if (root.hasChild("Shader")) {
-                    materialAsset->setShader(UUID(std::stoull(root.getChild("Shader").getString())));
-                }
+            if (const auto& uv = root["UVTilling"].floats<2>()) {
+                materialAsset->setUvTiling(Math::Vec2((*uv)[0], (*uv)[1]));
+            }
 
-                if (root.hasChild("AlbedoColor")) {
-                    const auto& colorArray = root.getChild("AlbedoColor").getArrayElements();
-                    if (colorArray.size() >= 4) {
-                        materialAsset->setAlbedoColor(
-                            Color(colorArray[0].getFloat(), colorArray[1].getFloat(), colorArray[2].getFloat(), colorArray[3].getFloat()));
-                    }
-                }
+            if (const auto& v = root["AlbedoMap"].uuid()) {
+                materialAsset->setAlbedoMap(*v);
+            }
+            if (const auto& v = root["NormalMap"].uuid()) {
+                materialAsset->setNormalMap(*v);
+            }
+            if (const auto& v = root["MetallicRoughnessMap"].uuid()) {
+                materialAsset->setMetallicRoughnessMap(*v);
+            }
 
-                if (root.hasChild("Metallic")) {
-                    materialAsset->setMetallic(root.getChild("Metallic").getFloat());
-                }
-                if (root.hasChild("Roughness")) {
-                    materialAsset->setRoughness(root.getChild("Roughness").getFloat());
-                }
-                if (root.hasChild("Emission")) {
-                    materialAsset->setEmission(root.getChild("Emission").getFloat());
-                }
-
-                if (root.hasChild("UVTiling")) {
-                    const auto& uvArray = root.getChild("UVTiling").getArrayElements();
-                    if (uvArray.size() >= 2)
-                        materialAsset->setUvTiling(Math::Vec2(uvArray[0].getFloat(), uvArray[1].getFloat()));
-                }
-
-                if (root.hasChild("AlbedoMap")) {
-                    materialAsset->setAlbedoMap(UUID(std::stoull(root.getChild("AlbedoMap").getString())));
-                }
-                if (root.hasChild("NormalMap")) {
-                    materialAsset->setNormalMap(UUID(std::stoull(root.getChild("NormalMap").getString())));
-                }
-                if (root.hasChild("MetallicRoughnessMap")) {
-                    materialAsset->setMetallicRoughnessMap(UUID(std::stoull(root.getChild("MetallicRoughnessMap").getString())));
-                }
-
-                materialAsset->setState(AssetState::Loaded);
-            });
-        }).detach();
+            materialAsset->setState(AssetState::Loaded);
+        });
 
         return loadedAssets[uuid];
     }

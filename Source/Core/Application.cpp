@@ -5,8 +5,6 @@
 #include "Asset/AssetManager.h"
 #include "Core/Input.h"
 #include "Core/TaskManager.h"
-#include "ECS/ComponentRegistry.h"
-#include "ECS/Components/ComponentReflection.h"
 #include "Profiler.h"
 #include "Renderer/PSOManager.h"
 #include "Renderer/SceneRenderer.h"
@@ -42,8 +40,7 @@ namespace Axiom {
         assetManager = std::make_unique<AssetManager>(*rhi, *taskManager);
 
         componentRegistry = std::make_unique<ComponentRegistry>();
-        componentRegistry->registerDefaultComponents();
-        ComponentReflection::init();
+        componentRegistry->registerReflectedComponents();
 
         uiRenderer = std::make_unique<UIRenderer>(*rhi, *window, *assetManager, *taskManager);
         sceneRenderer = std::make_unique<SceneRenderer>(*rhi, *psoManager, *assetManager);

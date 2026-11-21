@@ -11,7 +11,6 @@
 #include "Core/Log.h"
 #include "Core/Profiler.h"
 #include "ECS/Components/CameraComponent.h"
-#include "ECS/Components/ComponentReflection.h"
 #include "ECS/Components/DirectionalLightComponent.h"
 #include "ECS/Components/MeshComponent.h"
 #include "ECS/Components/Sprite2DComponent.h"

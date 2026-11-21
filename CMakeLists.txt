@@ -103,11 +103,9 @@ target_link_libraries(AxiomShaderBaker PRIVATE AxiomCore shaderc)
 target_include_directories(AxiomShaderBaker PRIVATE
   Vendor/Shaderc/libshaderc/include
 )
-
 set(SHADERS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Packages/Shaders")
 set(GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/Generated")
 set(GENERATED_SHADER_HEADER "${GENERATED_INCLUDE_DIR}/BuiltInShaders.h")
-
 file(MAKE_DIRECTORY ${GENERATED_INCLUDE_DIR})
 file(GLOB BUILTIN_SHADERS "${SHADERS_SRC_DIR}/BuiltIn.*.axs")
 file(GLOB SHADER_INCLUDES  "${SHADERS_SRC_DIR}/Includes/*.axsinc")
@@ -115,7 +113,19 @@ add_custom_command(
   OUTPUT ${GENERATED_SHADER_HEADER}
   COMMAND $<TARGET_FILE:AxiomShaderBaker> ${SHADERS_SRC_DIR} ${GENERATED_SHADER_HEADER}
   DEPENDS AxiomShaderBaker ${BUILTIN_SHADERS} ${SHADER_INCLUDES}
-  COMMENT "Baking Core Shaders via the ShaderBaker"
+  COMMENT "Baking Core Shaders"
+)
+
+# header tool config
+add_executable(AxiomHeaderTool HeaderTool/HeaderTool.cpp)
+set(COMPONENTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source/ECS/Components")
+set(GENERATED_REFLECTION "${GENERATED_INCLUDE_DIR}/ReflectedComponents.cpp")
+file(GLOB COMPONENT_HEADERS CONFIGURE_DEPENDS "${COMPONENTS_DIR}/*.h")
+add_custom_command(
+  OUTPUT ${GENERATED_REFLECTION}
+  COMMAND $<TARGET_FILE:AxiomHeaderTool> ${COMPONENTS_DIR} ${GENERATED_REFLECTION} ECS/Components
+  DEPENDS AxiomHeaderTool ${COMPONENT_HEADERS}
+  COMMENT "Generating component reflection"
 )
 
 # axiom engine config
@@ -143,6 +153,7 @@ list(APPEND ENGINE_SOURCES ${RENDERER_SOURCES})
 
 add_library(AxiomEngine STATIC ${ENGINE_SOURCES})
 target_sources(AxiomEngine PRIVATE ${GENERATED_SHADER_HEADER})
+target_sources(AxiomEngine PRIVATE ${GENERATED_REFLECTION})
 target_include_directories(AxiomEngine PUBLIC
   ${GENERATED_INCLUDE_DIR}
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source>

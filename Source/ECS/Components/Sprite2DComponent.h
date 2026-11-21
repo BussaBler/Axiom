@@ -7,8 +7,8 @@
 namespace Axiom {
     struct AX_COMPONENT() Sprite2DComponent {
         AX_PROPERTY(AssetType::Texture) UUID textureId = 0;
-        AX_PROPERTY() SamplerAddressMode addressMode = SamplerAddressMode::Repeat;
-        AX_PROPERTY() SamplerFilterMode filterMode = SamplerFilterMode::Linear;
+        AX_PROPERTY(Options("Repeat", "MirroredRepeat", "ClampToEdge", "ClampToBorder")) SamplerAddressMode addressMode = SamplerAddressMode::Repeat;
+        AX_PROPERTY(Options("Linear", "Nearest")) SamplerFilterMode filterMode = SamplerFilterMode::Linear;
         AX_PROPERTY() Color color = Color::white();
     };
 } // namespace Axiom

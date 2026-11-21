@@ -3,7 +3,6 @@
 #include "Asset/AssetManager.h"
 #include "Core/TaskManager.h"
 #include "Core/Window.h"
-#include "ECS/ComponentRegistry.h"
 #include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/SceneRenderer.h"
 #include "UI/UIRenderer.h"

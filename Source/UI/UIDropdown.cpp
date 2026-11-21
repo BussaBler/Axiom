@@ -4,6 +4,7 @@
 
 #include "Event/KeyCodes.h"
 #include "Event/MouseEvent.h"
+#include "Math/AxMath.h"
 
 namespace Axiom {
     Math::Vec2 UIDropdown::getDesiredSize(const UIContext& context) {
@@ -48,6 +49,7 @@ namespace Axiom {
             Math::Vec2 listPos = arrangedPosition + Math::Vec2(0.0f, arrangedSize.y());
             Math::Vec2 listSize(arrangedSize.x(), listHeight);
 
+            context.renderer->pushScissorRect(Math::Rect(listPos, listSize), popupLayer);
             context.renderer->addBasicQuad(listPos, listSize, context.theme->panelBackgroundColor, 0.0f, popupLayer);
 
             for (size_t i = 0; i < options.size(); i++) {
@@ -61,6 +63,7 @@ namespace Axiom {
                 Math::Vec2 itemTextPos = itemPos + Math::Vec2(10.0f, mainTextYOffset);
                 context.renderer->addText(options[i], itemTextPos, context.theme->fontSize, context.theme->textPrimary, popupLayer);
             }
+            context.renderer->popScissorRect(popupLayer);
         }
     }
 

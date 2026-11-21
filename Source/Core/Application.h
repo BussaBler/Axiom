@@ -2,7 +2,6 @@
 #include "Asset/AssetManager.h"
 #include "Core/EngineContext.h"
 #include "Core/TaskManager.h"
-#include "ECS/ComponentRegistry.h"
 #include "Event/ApplicationEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"

@@ -2,19 +2,19 @@
 
 #include "Scene.h"
 
-#include "ECS/ComponentRegistry.h"
 #include "ECS/Components/PhysicsComponent.h"
 #include "ECS/Components/TagComponent.h"
 #include "ECS/Components/TransformComponent.h"
 #include "ECS/ECS.h"
+#include "ECS/Reflection.h"
 
 namespace Axiom {
     Scene::Scene(ComponentRegistry& componentRegistry) : componentRegistry(componentRegistry) {
         ecs = std::make_unique<ECS>();
         systemManager = std::make_unique<SystemManager>();
 
-        for (const auto& registerFn : componentRegistry.getRegisterFunctions()) {
-            registerFn(ecs.get());
+        for (const auto& type : componentRegistry.all()) {
+            type->registerStorage(*ecs);
         }
 
         physicsSystem = registerSystem<PhysicsSystem, TransformComponent, PhysicsComponent>();

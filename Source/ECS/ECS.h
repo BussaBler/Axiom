@@ -23,7 +23,6 @@ namespace Axiom {
         virtual ~IComponentArray() = default;
 
         virtual void onEntityDelete(uint32_t entityId) = 0;
-        virtual void* getComponentData(uint32_t entityId) = 0;
     };
 
     template <typename T> class ComponentArray : public IComponentArray {
@@ -35,12 +34,6 @@ namespace Axiom {
             if (sparseEntityToIndex[entityId] != std::numeric_limits<size_t>::max()) {
                 removeData(entityId);
             }
-        }
-        void* getComponentData(uint32_t entityId) override {
-            if (sparseEntityToIndex[entityId] != std::numeric_limits<size_t>::max()) {
-                return &componentArray[sparseEntityToIndex[entityId]];
-            }
-            return nullptr;
         }
 
         void insertData(uint32_t entityId, T component) {
@@ -126,10 +119,6 @@ namespace Axiom {
             AX_CORE_ASSERT(componentId < componentsArray.size(), "Component out of bounds for this ECS");
             return entitiesComponentSignature[entityId].test(componentId);
         }
-        bool hasComponent(uint32_t entityId, uint8_t componentId) {
-            AX_CORE_ASSERT(componentId < componentsArray.size(), "Component out of bounds for this ECS");
-            return entitiesComponentSignature[entityId].test(componentId);
-        }
         template <typename T> T& getComponent(uint32_t entityId) {
             uint8_t componentId = getComponentId<T>();
             AX_CORE_ASSERT(componentId < componentsArray.size(), "Component out of bounds for this ECS");
@@ -152,25 +141,6 @@ namespace Axiom {
         template <typename... Components> std::tuple<const Components&...> getComponents(uint32_t entityId) const {
             return std::tie(getComponent<Components>(entityId)...);
         }
-        template <typename T> void* getComponentData(uint32_t entityId) {
-            uint8_t componentId = getComponentId<T>();
-            AX_CORE_ASSERT(componentId < componentsArray.size(), "Component out of bounds for this ECS");
-            AX_CORE_ASSERT(componentsArray[componentId], "Trying to get data for an unregistered component");
-
-            if (hasComponent<T>(entityId)) {
-                return componentsArray[componentId]->getComponentData(entityId);
-            }
-            return nullptr;
-        }
-        void* getComponentData(uint32_t entityId, uint8_t componentId) {
-            AX_CORE_ASSERT(componentId < componentsArray.size(), "Component out of bounds for this ECS");
-            AX_CORE_ASSERT(componentsArray[componentId], "Trying to get data for an unregistered component");
-
-            if (hasComponent(entityId, componentId)) {
-                return componentsArray[componentId]->getComponentData(entityId);
-            }
-            return nullptr;
-        }
         template <typename T> ComponentArray<T>* getComponentArray() {
             uint8_t componentId = getComponentId<T>();
             AX_CORE_ASSERT(componentsArray[componentId], "Fetching unregistered component array");
@@ -178,7 +148,6 @@ namespace Axiom {
         }
         const std::bitset<32>& getComponentSignature(uint32_t entityId) const { return entitiesComponentSignature[entityId]; }
 
-        std::vector<std::pair<uint8_t, void*>> getAllComponents(uint32_t entityId);
         template <typename First, typename... Rest> View<First, Rest...> view();
 
       private:
