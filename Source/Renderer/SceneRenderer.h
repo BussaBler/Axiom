@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Asset/AssetManager.h"
-#include "Renderer/CommandBuffer.h"
 #include "Renderer/ForwardRenderPipeline.h"
 #include "Renderer/PSOManager.h"
 #include "Renderer/RenderGraph.h"
@@ -10,27 +9,25 @@
 #include "Renderer/TextureRegistry.h"
 
 #include <memory>
+#include <vector>
 
 namespace Axiom {
     class SceneRenderer {
       public:
-        SceneRenderer(RenderHardwareInterface& rhi, PSOManager& psoManager, AssetManager& assetManager);
+        SceneRenderer(RenderHardwareInterface& rhi, PSOManager& psoManager, AssetManager& assetManager, TextureRegistry& textureRegistry);
         ~SceneRenderer() = default;
 
-        void beginFrame() const;
-        void execute(CommandBuffer* commandBuffer) const;
-
-        void renderSceneView(const RenderContext& view);
-
-        RenderGraph& getRenderGraph() { return *renderGraph; }
+        void beginFrame();
+        void submitView(const RenderContext& view);
+        void addToRenderGraph(RenderGraph& renderGraph);
 
       private:
         RenderHardwareInterface& rhi;
         AssetManager& assetManager;
-
-        std::unique_ptr<TextureRegistry> textureRegistry;
-        std::unique_ptr<RenderGraph> renderGraph;
+        TextureRegistry& textureRegistry;
 
         std::unique_ptr<ForwardRenderPipeline> frp;
+
+        std::vector<RenderContext> views;
     };
 } // namespace Axiom

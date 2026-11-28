@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Event/MouseEvent.h"
 #include "Math/Vec.h"
 #include "UI/UIElement.h"
 
@@ -11,10 +12,12 @@ namespace Axiom {
         UICheckbox() = default;
         ~UICheckbox() = default;
 
-        Math::Vec2 getDesiredSize(const UIContext& context) override;
+        Math::Vec2 measure(const UIContext& context) override;
 
         void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
-        bool onEvent(Event& event) override;
+
+        bool onMouseDown(const MouseButtonPressedEvent& event) override;
+        bool onMouseUp(const MouseButtonReleasedEvent& event) override;
 
         inline UICheckbox& setNormalColor(Color color) {
             overrideNormalColor = color;

@@ -2,7 +2,6 @@
 
 #include "UICollapsableGroup.h"
 
-#include "Event/Event.h"
 #include "Event/KeyCodes.h"
 #include "Event/MouseEvent.h"
 #include "Math/Color.h"
@@ -15,27 +14,25 @@
 #include <string>
 
 namespace Axiom {
-    Math::Vec2 UICollapsableGroup::getDesiredSize(const UIContext& context) {
-        cachedHeaderHeight = context.theme->fontSize * 1.8f;
+    namespace {
+        constexpr float HEADER_CONTENT_GAP = 4.0f;
+    }
+
+    Math::Vec2 UICollapsableGroup::measure(const UIContext& context) {
+        cachedHeaderHeight = context.theme->headerRowHeight;
         desiredSize = Math::Vec2(0.0f, cachedHeaderHeight);
 
         std::string displayTitle = (isOpen ? "v " : "> ") + title;
         float textWidth = context.renderer->calculateTextWidth(displayTitle, context.theme->fontSize);
         desiredSize.x() = textWidth + 20.0f;
 
-        if (isOpen) {
+        if (isOpen && !slots.empty()) {
+            desiredSize.y() += HEADER_CONTENT_GAP;
             for (const auto& slot : slots) {
-                Math::Vec2 childSize = slot.content->getDesiredSize(context);
-
-                if (slot.fixedSize.x() > 0) {
-                    childSize.x() = slot.fixedSize.x();
-                }
-                if (slot.fixedSize.y() > 0) {
-                    childSize.y() = slot.fixedSize.y();
-                }
-
-                desiredSize.x() = std::max(desiredSize.x(), childSize.x());
-                desiredSize.y() += childSize.y();
+                slot.content->measure(context);
+                const Math::Vec2 outer = slot.getOuterDesiredSize();
+                desiredSize.x() = std::max(desiredSize.x(), outer.x());
+                desiredSize.y() += outer.y();
             }
         }
 
@@ -47,97 +44,55 @@ namespace Axiom {
         UIElement::arrange(context, position, size);
 
         if (isOpen && !slots.empty()) {
-            float currentY = arrangedPosition.y() + cachedHeaderHeight + padding.top;
-            float startX = arrangedPosition.x() + padding.left;
-            float availableWidth = arrangedSize.x() - padding.left - padding.right;
-
+            const Math::Rect content = getContentRect();
+            float y = content.y() + cachedHeaderHeight + HEADER_CONTENT_GAP;
             for (auto& slot : slots) {
-                currentY += slot.margin.top;
+                const float stripHeight = slot.getOuterDesiredSize().y();
+                const Math::Rect strip(Math::Vec2(content.x(), y), Math::Vec2(content.width(), stripHeight));
 
-                Math::Vec2 childDesired = slot.content->getDesiredSize(context);
-                if (slot.fixedSize.x() > 0) {
-                    childDesired.x() = slot.fixedSize.x();
-                }
-                if (slot.fixedSize.y() > 0) {
-                    childDesired.y() = slot.fixedSize.y();
-                }
-
-                float finalX = startX;
-                float finalWidth = availableWidth;
-
-                switch (slot.horizontalAlignment) {
-                case UIAlignment::Fill:
-                    finalWidth = availableWidth - slot.margin.left - slot.margin.right;
-                    finalX = startX + slot.margin.left;
-                    break;
-                case UIAlignment::Start:
-                    finalWidth = childDesired.x();
-                    finalX = startX + slot.margin.left;
-                    break;
-                case UIAlignment::Center:
-                    finalWidth = childDesired.x();
-                    finalX = startX + (availableWidth / 2.0f) - (childDesired.x() / 2.0f);
-                    break;
-                case UIAlignment::End:
-                    finalWidth = childDesired.x();
-                    finalX = startX + availableWidth - childDesired.x() - slot.margin.right;
-                    break;
-                }
-                slot.content->arrange(context, Math::Vec2(finalX, currentY), Math::Vec2(finalWidth, childDesired.y()));
-                currentY += childDesired.y() + slot.margin.bottom;
+                const Math::Rect rect = slot.alignInArea(strip);
+                slot.content->arrange(context, rect.getPos(), rect.getSize());
+                y += stripHeight;
             }
         }
     }
 
     void UICollapsableGroup::onRender(const UIContext& context, const Math::Rect& scissorRect) {
         Math::Vec2 headerSize(arrangedSize.x(), cachedHeaderHeight);
-        Color headerColor = isActive ? context.theme->controlActiveColor : (isHovered ? context.theme->controlHoverColor : context.theme->panelBackgroundColor);
+        Color headerColor = isActive ? context.theme->controlActiveColor : (isHovered ? context.theme->controlHoverColor : context.theme->headerBackgroundColor);
         context.renderer->addBasicQuad(arrangedPosition, headerSize, headerColor, context.theme->borderRadius, context.layer);
 
         std::string displayTitle = (isOpen ? "v " : "> ") + title;
-        float textHeight = context.renderer->calculateTextHeight(context.theme->fontSize);
-        float textYOffset = (cachedHeaderHeight - textHeight) * 0.5f;
-        Math::Vec2 textPos = arrangedPosition + Math::Vec2(10.0f, textYOffset);
-        context.renderer->addText(displayTitle, textPos, context.theme->fontSize, context.theme->textPrimary);
+        const float textYOffset = context.renderer->getCenteredTextOffset(cachedHeaderHeight, context.theme->fontSize);
+        Math::Vec2 textPos = arrangedPosition + Math::Vec2(context.theme->panelPadding.left, textYOffset);
+        context.renderer->addText(displayTitle, textPos, context.theme->fontSize, context.theme->textPrimary, context.layer);
 
         if (isOpen) {
             UIContainer::onRender(context, scissorRect);
         }
     }
 
-    bool UICollapsableGroup::onEvent(Event& event) {
-        if (event.isHandled()) {
-            return true;
+    bool UICollapsableGroup::onMouseDown(const MouseButtonPressedEvent& event) {
+        const bool inHeader = event.getMouseY() <= arrangedPosition.y() + cachedHeaderHeight;
+        if (event.getMouseButton() != KeyCode::LeftButton || !inHeader) {
+            return false;
         }
 
-        if (isOpen) {
-            for (auto it = slots.rbegin(); it != slots.rend(); it++) {
-                if (it->content->onEvent(event)) {
-                    return true;
-                }
-            }
+        isActive = true;
+        return true;
+    }
+
+    bool UICollapsableGroup::onMouseUp(const MouseButtonReleasedEvent& event) {
+        if (!isActive) {
+            return false;
         }
 
-        EventDispatcher dispatcher(event);
-        dispatcher.dispatch<MouseButtonPressedEvent>([this](const MouseButtonPressedEvent& e) {
-            if (isHovered && e.getMouseButton() == KeyCode::LeftButton) {
-                isActive = true;
-                return true;
-            }
-            return false;
-        });
-        dispatcher.dispatch<MouseButtonReleasedEvent>([this](const MouseButtonReleasedEvent& e) {
-            if (isActive && e.getMouseButton() == KeyCode::LeftButton) {
-                isActive = false;
-                if (isHovered) {
-                    isOpen = !isOpen;
-                    invalidateLayout();
-                }
-                return true;
-            }
-            return false;
-        });
-
-        return UIElement::onEvent(event);
+        isActive = false;
+        const bool inHeader = event.getMouseY() <= arrangedPosition.y() + cachedHeaderHeight;
+        if (isHovered && inHeader) {
+            isOpen = !isOpen;
+            invalidateLayout();
+        }
+        return true;
     }
 } // namespace Axiom

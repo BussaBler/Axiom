@@ -2,10 +2,8 @@
 
 #include "UITextInput.h"
 
-#include "Event/Event.h"
 #include "Event/KeyCodes.h"
-#include "Event/KeyEvent.h"
-#include "Event/MouseEvent.h"
+#include "UI/UICanvas.h"
 #include "UI/UIElement.h"
 
 #include <algorithm>
@@ -13,7 +11,7 @@
 
 namespace Axiom {
 
-    Math::Vec2 UITextInput::getDesiredSize(const UIContext& context) {
+    Math::Vec2 UITextInput::measure(const UIContext& context) {
         std::string displayText;
         if (currentState == TextInputState::Typing) {
             displayText = typingBuffer + "|";
@@ -23,11 +21,9 @@ namespace Axiom {
 
         float textWidth = context.renderer->calculateTextWidth(displayText, context.theme->fontSize);
 
-        float baseHeight = context.theme->fontSize * 1.8f;
-        float minWidth = 100.0f;
-
-        desiredSize.x() = std::max(minWidth, textWidth + (10.0f));
-        desiredSize.y() = baseHeight;
+        const float minWidth = 100.0f;
+        desiredSize.x() = std::max(minWidth, textWidth + context.theme->panelPadding.left + context.theme->panelPadding.right);
+        desiredSize.y() = context.theme->defaultRowHeight;
 
         return desiredSize;
     }
@@ -46,78 +42,49 @@ namespace Axiom {
             displayText = valueGetter ? valueGetter() : "";
         }
 
-        float textHeight = context.renderer->calculateTextHeight(context.theme->fontSize);
-        float textYOffset = (arrangedSize.y() - textHeight) * 0.5f;
-
-        Math::Vec2 textPos = arrangedPosition + Math::Vec2(5.0f, textYOffset);
+        const float textYOffset = context.renderer->getCenteredTextOffset(arrangedSize.y(), context.theme->fontSize);
+        Math::Vec2 textPos = arrangedPosition + Math::Vec2(context.theme->panelPadding.left, textYOffset);
 
         context.renderer->addText(displayText, textPos, context.theme->fontSize, context.theme->textPrimary, context.layer);
     }
 
-    bool UITextInput::onEvent(Event& event) {
-        if (event.isHandled()) {
+    bool UITextInput::onMouseDown(const MouseButtonPressedEvent& event) {
+        return event.getMouseButton() == KeyCode::LeftButton;
+    }
+
+    bool UITextInput::onKeyDown(const KeyPressedEvent& event) {
+        switch (event.getKeyCode()) {
+        case KeyCode::Backspace:
+            if (!typingBuffer.empty()) {
+                typingBuffer.pop_back();
+            }
             return true;
+        case KeyCode::Return:
+            getParentCanvas()->clearFocus();
+            return true;
+        case KeyCode::Escape:
+            typingBuffer = valueGetter ? valueGetter() : "";
+            getParentCanvas()->clearFocus();
+            return true;
+        default:
+            return false;
         }
+    }
 
-        EventDispatcher dispatcher(event);
+    bool UITextInput::onTextInput(const KeyTypedEvent& event) {
+        typingBuffer += event.getKeyChar();
+        return true;
+    }
 
-        dispatcher.dispatch<MouseButtonPressedEvent>([this](const MouseButtonPressedEvent& e) {
-            if (e.getMouseButton() == KeyCode::LeftButton) {
-                if (isHovered) {
-                    isActive = true;
-                    return true;
-                }
-            }
-            return false;
-        });
-
-        dispatcher.dispatch<MouseButtonReleasedEvent>([this](const MouseButtonReleasedEvent& e) {
-            if (isActive && e.getMouseButton() == KeyCode::LeftButton) {
-                isActive = false;
-                if (isHovered) {
-                    currentState = TextInputState::Typing;
-                    typingBuffer = valueGetter ? valueGetter() : "";
-                    invalidateLayout();
-                }
-                return true;
-            }
-            return false;
-        });
-
-        dispatcher.dispatch<KeyPressedEvent>([this](const KeyPressedEvent& e) {
-            if (currentState == TextInputState::Typing) {
-                if (e.getKeyCode() == KeyCode::Return) {
-                    commitTyping();
-                    return true;
-                } else if (e.getKeyCode() == KeyCode::Escape) {
-                    currentState = TextInputState::Normal;
-                    typingBuffer.clear();
-                    invalidateLayout();
-                    return true;
-                } else if (e.getKeyCode() == KeyCode::Backspace) {
-                    if (!typingBuffer.empty()) {
-                        typingBuffer.pop_back();
-                        invalidateLayout();
-                    }
-                    return true;
-                }
-            }
-            return false;
-        });
-
-        dispatcher.dispatch<KeyTypedEvent>([this](const KeyTypedEvent& e) {
-            if (currentState == TextInputState::Typing) {
-                char typedChar = e.getKeyChar();
-                if (std::isprint(typedChar)) {
-                    typingBuffer.push_back(typedChar);
-                    invalidateLayout();
-                }
-                return true;
-            }
-            return false;
-        });
-
-        return UIElement::onEvent(event);
+    void UITextInput::onFocusChanged(bool focused) {
+        UIElement::onFocusChanged(focused);
+        if (focused) {
+            typingBuffer = valueGetter ? valueGetter() : "";
+            currentState = TextInputState::Typing;
+            invalidateLayout();
+        } else {
+            commitTyping();
+        }
     }
 
     void UITextInput::commitTyping() {

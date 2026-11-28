@@ -13,9 +13,10 @@ namespace Axiom {
         UIDropdown() = default;
         ~UIDropdown() = default;
 
-        Math::Vec2 getDesiredSize(const UIContext& context) override;
+        Math::Vec2 measure(const UIContext& context) override;
         void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
-        bool onEvent(Event& event) override;
+        bool onMouseDown(const MouseButtonPressedEvent& event) override;
+        bool onMouseUp(const MouseButtonReleasedEvent& event) override;
 
         inline UIDropdown& setOptions(const std::vector<std::string>& newOptions) {
             options = newOptions;

@@ -1,5 +1,6 @@
 #pragma once
 #include "MetalUtils.h"
+#include "Renderer/ResourceLayout.h"
 #include "Renderer/Shader.h"
 
 #include <cstdint>
@@ -10,17 +11,17 @@
 namespace Axiom {
     class MetalShader : public Shader {
       public:
-        MetalShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv, MTL::Device* device);
-        ~MetalShader();
+        MetalShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv);
+        ~MetalShader() = default;
 
-        inline MTL::Library* getVertexLibrary() const { return vertexLibrary; }
-        inline MTL::Library* getFragmentLibrary() const { return fragmentLibrary; }
+        static std::expected<std::string, std::string> translateSPIRVtoMSL(std::span<const uint32_t> spirv, std::span<const ResourceLayout* const> setLayouts);
+
+        const std::vector<uint32_t>& getVertexSpirv() const { return vertexSpirv; }
+        const std::vector<uint32_t>& getFragmentSpirv() const { return fragmentSpirv; }
 
       private:
-        std::expected<std::string, std::string> compileSPIRVtoMSL(std::span<const uint32_t> spirv);
-
       private:
-        MTL::Library* vertexLibrary = nullptr;
-        MTL::Library* fragmentLibrary = nullptr;
+        std::vector<uint32_t> vertexSpirv;
+        std::vector<uint32_t> fragmentSpirv;
     };
 } // namespace Axiom

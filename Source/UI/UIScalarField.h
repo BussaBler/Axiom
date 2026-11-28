@@ -1,14 +1,12 @@
 #pragma once
 
-#include "Event/Event.h"
 #include "Event/KeyCodes.h"
-#include "Event/KeyEvent.h"
-#include "Event/MouseEvent.h"
 #include "Math/Color.h"
 #include "Math/Vec.h"
 #include "UI/UIElement.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <format>
 #include <functional>
@@ -28,8 +26,8 @@ namespace Axiom {
         UIScalarField() = default;
         ~UIScalarField() = default;
 
-        Math::Vec2 getDesiredSize(const UIContext& context) override {
-            desiredSize = Math::Vec2(60.0f, 20.0f);
+        Math::Vec2 measure(const UIContext& context) override {
+            desiredSize = Math::Vec2(60.0f, context.theme->defaultRowHeight);
             return desiredSize;
         }
 
@@ -49,98 +47,95 @@ namespace Axiom {
             }
 
             float textWidth = context.renderer->calculateTextWidth(displayText, context.theme->fontSize);
-            float textHeight = context.renderer->calculateTextHeight(context.theme->fontSize);
-            Math::Vec2 textPos = arrangedPosition + (arrangedSize - Math::Vec2(textWidth, textHeight)) / 2.0f;
+            Math::Vec2 textPos = arrangedPosition + Math::Vec2((arrangedSize.x() - textWidth) / 2.0f,
+                                                               context.renderer->getCenteredTextOffset(arrangedSize.y(), context.theme->fontSize));
 
-            context.renderer->addText(displayText, textPos, context.theme->fontSize, context.theme->textPrimary);
+            context.renderer->addText(displayText, textPos, context.theme->fontSize, context.theme->textPrimary, context.layer);
         }
-        bool onEvent(Event& event) override {
-            if (event.isHandled()) {
-                return true;
+
+        bool onMouseDown(const MouseButtonPressedEvent& event) override {
+            if (event.getMouseButton() != KeyCode::LeftButton || currentState == ScalarFieldState::Typing) {
+                return currentState == ScalarFieldState::Typing;
             }
 
-            EventDispatcher dispatcher(event);
-            dispatcher.dispatch<MouseButtonPressedEvent>([this](const MouseButtonPressedEvent& e) {
-                if (e.getMouseButton() == KeyCode::LeftButton) {
-                    if (isHovered) {
-                        isActive = true;
-                        isDragging = false;
-                        lastMousePosX = e.getMouseX();
-                        return true;
-                    }
-                }
-                return false;
-            });
-            dispatcher.dispatch<MouseButtonReleasedEvent>([this](const MouseButtonReleasedEvent& e) {
-                if (isActive && e.getMouseButton() == KeyCode::LeftButton) {
-                    isActive = false;
-                    if (isHovered && !isDragging) {
-                        currentState = ScalarFieldState::Typing;
-                        if (valueGetter) {
-                            if constexpr (std::is_floating_point_v<T>) {
-                                typingBuffer = std::format("{:.2f}", valueGetter());
-                            } else {
-                                typingBuffer = std::to_string(valueGetter());
-                            }
-                        }
-                    }
-                    isDragging = false;
-                    return true;
-                }
-                return false;
-            });
-            dispatcher.dispatch<MouseMovedEvent>([this](const MouseMovedEvent& e) {
-                if (isActive && currentState != ScalarFieldState::Typing) {
-                    float deltaX = e.getMouseX() - lastMousePosX;
-                    if (std::abs(deltaX) > 0.0f) {
-                        isDragging = true;
-                        if (valueGetter && valueSetter) {
-                            T newValue = std::clamp(valueGetter() + static_cast<T>(deltaX * dragSpeed), minLimit, maxLimit);
-                            valueSetter(newValue);
-                        }
-                    }
-                    lastMousePosX = e.getMouseX();
-                    return true;
-                }
-                return false;
-            });
-            dispatcher.dispatch<KeyPressedEvent>([this](const KeyPressedEvent& event) {
-                if (currentState == ScalarFieldState::Typing) {
-                    if (event.getKeyCode() == KeyCode::Return) {
-                        commitTyping();
-                        return true;
-                    } else if (event.getKeyCode() == KeyCode::Escape) {
-                        currentState = ScalarFieldState::Normal;
-                        typingBuffer.clear();
-                        return true;
-                    } else if (event.getKeyCode() == KeyCode::Backspace) {
-                        if (!typingBuffer.empty()) {
-                            typingBuffer.pop_back();
-                        }
-                        return true;
-                    }
-                }
-                return false;
-            });
-            dispatcher.dispatch<KeyTypedEvent>([this](const KeyTypedEvent& event) {
-                if (currentState == ScalarFieldState::Typing) {
-                    char typedChar = event.getKeyChar();
-                    if (std::isdigit(typedChar)) {
-                        typingBuffer += typedChar;
-                    } else if (typedChar == '-' && typingBuffer.empty()) {
-                        typingBuffer += typedChar;
-                    } else if constexpr (std::is_floating_point_v<T>) {
-                        if (typedChar == '.' && typingBuffer.find('.') == std::string::npos) {
-                            typingBuffer += typedChar;
-                        }
-                    }
-                    return true;
-                }
-                return false;
-            });
-
-            return UIElement::onEvent(event);
+            isActive = true;
+            isDragging = false;
+            lastMousePosX = event.getMouseX();
+            return true;
         }
+
+        bool onMouseUp(const MouseButtonReleasedEvent& event) override {
+            if (!isActive) {
+                return false;
+            }
+
+            isActive = false;
+            if (isHovered && !isDragging) {
+                currentState = ScalarFieldState::Typing;
+                if (valueGetter) {
+                    if constexpr (std::is_floating_point_v<T>) {
+                        typingBuffer = std::format("{:.2f}", valueGetter());
+                    } else {
+                        typingBuffer = std::to_string(valueGetter());
+                    }
+                }
+            }
+            isDragging = false;
+            return true;
+        }
+
+        bool onMouseMove(const MouseMovedEvent& event) override {
+            if (!isActive) {
+                return false;
+            }
+
+            const float deltaX = event.getMouseX() - lastMousePosX;
+            if (std::abs(deltaX) > 1e-6) {
+                isDragging = true;
+                if (valueGetter && valueSetter) {
+                    valueSetter(std::clamp(valueGetter() + static_cast<T>(deltaX * dragSpeed), minLimit, maxLimit));
+                }
+            }
+            lastMousePosX = event.getMouseX();
+            return true;
+        }
+
+        bool onKeyDown(const KeyPressedEvent& event) override {
+            if (currentState != ScalarFieldState::Typing) {
+                return false;
+            }
+
+            switch (event.getKeyCode()) {
+            case KeyCode::Return:
+                commitTyping();
+                return true;
+            case KeyCode::Escape:
+                currentState = ScalarFieldState::Normal;
+                typingBuffer.clear();
+                return true;
+            case KeyCode::Backspace:
+                if (!typingBuffer.empty()) {
+                    typingBuffer.pop_back();
+                }
+                return true;
+            default:
+                return true;
+            }
+        }
+
+        bool onTextInput(const KeyTypedEvent& event) override {
+            if (currentState != ScalarFieldState::Typing) {
+                return false;
+            }
+
+            const char c = event.getKeyChar();
+            if (std::isdigit(static_cast<unsigned char>(c)) || c == '.' || c == '-') {
+                typingBuffer += c;
+            }
+            return true;
+        }
+
+        bool isFocusable() const override { return true; }
 
         UIScalarField<T>& setDragSpeed(float speed) {
             dragSpeed = speed;

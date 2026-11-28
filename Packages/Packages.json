@@ -1,5 +1,150 @@
 {
   "Assets": {
+    "7659281989709456331": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "4067512261038897942": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "13689507778184384423": {
+      "Name": "BuiltIn.UIFont.Shader",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.Font.axs",
+      "Type": 5
+    },
+    "11441089301498169679": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "9198082952795934133": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "5563698960615070661": {
+      "Name": "BuiltIn.UIImage.Shader",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.Image.axs",
+      "Type": 5
+    },
+    "1288381866843089589": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "7166845705093184464": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "15010702767340928188": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "11988348082340063531": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "12193918681212097043": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "10801915436558958101": {
+      "Name": "BuiltIn.Sprite2D",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.Sprite2D.axs",
+      "Type": 5
+    },
+    "10227025473243959726": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "17315596043544388918": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "4090968564570566690": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "4501258096867024866": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "1847314121533227652": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "13869480901505410071": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "18185080618503326747": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "4448749860260747591": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "5971731469828998518": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "9916347032240535866": {
+      "Name": "BuiltIn.Skybox",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.Skybox.axs",
+      "Type": 5
+    },
+    "8937867795262197197": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "15276594965017181996": {
+      "Name": "BuiltIn.Gizmos",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.Gizmos.axs",
+      "Type": 5
+    },
+    "3629371504142647110": {
+      "Name": "Default PBR Shader",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "8173657025303940297": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "14861093145106977318": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "5568095830398234761": {
+      "Name": "BuiltIn.WorldGrid",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.WorldGrid.axs",
+      "Type": 5
+    },
+    "6534007810960291098": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
     "9869737063709238768": {
       "Name": "BuiltIn.Gizmos.Arrow",
       "FilePath": "axiom://Packages/Models/Arrow.obj",
@@ -10,17 +155,7 @@
       "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
       "Type": 5
     },
-    "12058747973876503701": {
-      "Name": "BuiltIn.Gizmos.Arrow",
-      "FilePath": "axiom://Packages/Models/Arrow.obj",
-      "Type": 2
-    },
-    "10801915436558958101": {
-      "Name": "BuiltIn.Sprite2D",
-      "FilePath": "axiom://Packages/Shaders/BuiltIn.Sprite2D.axs",
-      "Type": 5
-    },
-    "6061582527187930011": {
+    "5911253003982097409": {
       "Name": "BuiltIn.DefaultPBR",
       "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
       "Type": 5
@@ -30,57 +165,82 @@
       "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
       "Type": 5
     },
-    "5563698960615070661": {
-      "Name": "BuiltIn.UIImage.Shader",
-      "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.Image.axs",
-      "Type": 5
-    },
-    "3629371504142647110": {
-      "Name": "Default PBR Shader",
-      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
-      "Type": 5
-    },
-    "9916347032240535866": {
-      "Name": "BuiltIn.Skybox",
-      "FilePath": "axiom://Packages/Shaders/BuiltIn.Skybox.axs",
-      "Type": 5
-    },
-    "5568095830398234761": {
-      "Name": "BuiltIn.WorldGrid",
-      "FilePath": "axiom://Packages/Shaders/BuiltIn.WorldGrid.axs",
-      "Type": 5
-    },
-    "13869480901505410071": {
+    "6061582527187930011": {
       "Name": "BuiltIn.DefaultPBR",
       "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
       "Type": 5
+    },
+    "13769495534524504626": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "15160143815685701363": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "12145546048816749316": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "11252236054082066575": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "6561744718565930014": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "2502252053934670219": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "12058747973876503701": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "10249505829936516189": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "17509890723724827635": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "17659738848457293002": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
+      "Type": 5
+    },
+    "5728465786189238492": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
+    },
+    "8688083909046794489": {
+      "Name": "BuiltIn.Gizmos.Arrow",
+      "FilePath": "axiom://Packages/Models/Arrow.obj",
+      "Type": 2
     },
     "16102306717090981489": {
       "Name": "BuiltIn.UI.Shader",
       "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.axs",
       "Type": 5
     },
-    "15276594965017181996": {
-      "Name": "BuiltIn.Gizmos",
-      "FilePath": "axiom://Packages/Shaders/BuiltIn.Gizmos.axs",
+    "16744710104490645524": {
+      "Name": "BuiltIn.DefaultPBR",
+      "FilePath": "axiom://Packages/Shaders/BuiltIn.DefaultPBR.axs",
       "Type": 5
     },
     "10012854900930957389": {
-      "Name": "BuiltIn.Gizmos.Arrow",
-      "FilePath": "axiom://Packages/Models/Arrow.obj",
-      "Type": 2
-    },
-    "13689507778184384423": {
-      "Name": "BuiltIn.UIFont.Shader",
-      "FilePath": "axiom://Packages/Shaders/BuiltIn.UI.Font.axs",
-      "Type": 5
-    },
-    "11988348082340063531": {
-      "Name": "BuiltIn.Gizmos.Arrow",
-      "FilePath": "axiom://Packages/Models/Arrow.obj",
-      "Type": 2
-    },
-    "6534007810960291098": {
       "Name": "BuiltIn.Gizmos.Arrow",
       "FilePath": "axiom://Packages/Models/Arrow.obj",
       "Type": 2

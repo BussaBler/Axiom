@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Event/Event.h"
+#include "Math/AxMath.h"
 #include "Math/Vec.h"
 #include "UI/UIElement.h"
 #include "UI/UISlot.h"
@@ -45,10 +45,22 @@ namespace Axiom {
 
         inline const std::vector<UISlot>& getSlots() const { return slots; }
 
-        virtual void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) override {
+        virtual Math::Vec2 measure(const UIContext& context) override {
+            desiredSize = Math::Vec2::zero();
+            for (auto& slot : slots) {
+                slot.content->measure(context);
+                const Math::Vec2 outer = slot.getOuterDesiredSize();
+                desiredSize = Math::Vec2(std::max(desiredSize.x(), outer.x()), std::max(desiredSize.y(), outer.y()));
+            }
+            desiredSize += Math::Vec2(padding.left + padding.right, padding.top + padding.bottom);
+            return desiredSize;
+        }
+        void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) override {
             UIElement::arrange(context, position, size);
-            for (const auto& slot : slots) {
-                slot.content->arrange(context, position, size);
+            const Math::Rect area = getContentRect();
+            for (auto& slot : slots) {
+                const Math::Rect rect = slot.alignInArea(area);
+                slot.content->arrange(context, rect.getPos(), rect.getSize());
             }
         }
 
@@ -57,18 +69,23 @@ namespace Axiom {
                 slot.content->onRender(context, scissorRect);
             }
         }
-        virtual bool onEvent(Event& event) override {
-            if (event.isHandled()) {
-                return true;
-            }
 
-            for (auto it = slots.rbegin(); it != slots.rend(); it++) {
-                if (it->content->onEvent(event)) {
-                    return true;
+        UIElement* hitTest(Math::Vec2 point) override {
+            if (!containsPoint(point)) {
+                return nullptr;
+            }
+            for (auto it = slots.begin(); it != slots.end(); it++) {
+                if (UIElement* hit = it->content->hitTest(point)) {
+                    return hit;
                 }
             }
+            return this;
+        }
 
-            return UIElement::onEvent(event);
+      protected:
+        Math::Rect getContentRect() const {
+            return Math::Rect(arrangedPosition + Math::Vec2(padding.left, padding.top),
+                              arrangedSize - Math::Vec2(padding.left + padding.right, padding.top + padding.bottom));
         }
 
       protected:

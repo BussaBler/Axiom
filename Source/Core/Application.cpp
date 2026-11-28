@@ -7,7 +7,10 @@
 #include "Core/TaskManager.h"
 #include "Profiler.h"
 #include "Renderer/PSOManager.h"
+#include "Renderer/RenderGraph.h"
 #include "Renderer/SceneRenderer.h"
+#include "Renderer/Texture.h"
+#include "Renderer/TextureRegistry.h"
 #include "Utils/FileSystem.h"
 
 #include <memory>
@@ -38,12 +41,16 @@ namespace Axiom {
         psoManager = std::make_unique<PSOManager>(*rhi);
 
         assetManager = std::make_unique<AssetManager>(*rhi, *taskManager);
+        textureRegistry = std::make_unique<TextureRegistry>(*rhi, *assetManager);
+        textureRegistry->init();
+        textureRegistry->setFallbackTexture(assetManager->getDefaultTexture()->getTexture());
 
         componentRegistry = std::make_unique<ComponentRegistry>();
         componentRegistry->registerReflectedComponents();
 
-        uiRenderer = std::make_unique<UIRenderer>(*rhi, *window, *assetManager, *taskManager);
-        sceneRenderer = std::make_unique<SceneRenderer>(*rhi, *psoManager, *assetManager);
+        frameGraph = std::make_unique<RenderGraph>(*rhi);
+        uiRenderer = std::make_unique<UIRenderer>(*rhi, *window, *assetManager, *textureRegistry);
+        sceneRenderer = std::make_unique<SceneRenderer>(*rhi, *psoManager, *assetManager, *textureRegistry);
 
         engineContext = {window.get(), taskManager.get(), rhi.get(), assetManager.get(), componentRegistry.get(), uiRenderer.get(), sceneRenderer.get()};
     }
@@ -161,27 +168,29 @@ namespace Axiom {
         while (isRunning) {
             Profiler::beginFrame();
             window->beginFrame();
+            uiRenderer->beginFrame();
+            sceneRenderer->beginFrame();
+
             for (const auto& layer : layerStack) {
                 layer->onUpdate();
             }
 
             taskManager->executeTasks();
-
-            uiRenderer->beginFrame();
             for (const auto& layer : layerStack) {
-                // TODO: add a delta time input parameter
                 layer->onUIRender();
+                layer->onRender();
             }
 
             CommandBuffer* commandBuffer = rhi->beginFrame();
             if (commandBuffer) {
-                sceneRenderer->beginFrame();
-                for (const auto& layer : layerStack) {
-                    layer->onRender();
-                }
-                // TODO: add the delta time
-                sceneRenderer->execute(commandBuffer);
-                uiRenderer->onRender(commandBuffer, rhi->getCurrentRenderTarget());
+                Texture* swapchainTarget = rhi->getCurrentRenderTarget();
+                textureRegistry->beginFrame();
+
+                frameGraph->begin();
+                sceneRenderer->addToRenderGraph(*frameGraph);
+                uiRenderer->addToRenderGraph(*frameGraph, swapchainTarget);
+                frameGraph->execute(commandBuffer, {.frameIndex = rhi->getCurrentFrameIndex()}, swapchainTarget);
+
                 rhi->endFrame();
             }
 

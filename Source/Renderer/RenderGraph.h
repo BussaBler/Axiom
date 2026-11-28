@@ -121,7 +121,7 @@ namespace Axiom {
             passes.push_back(std::move(passNode));
         }
 
-        void execute(CommandBuffer* commandBuffer, const FrameContext& frameContext);
+        void execute(CommandBuffer* commandBuffer, const FrameContext& frameContext, Texture* presentTarget = nullptr);
 
         RGTextureHandle importTexture(const std::string& name, Texture* texture);
 

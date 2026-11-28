@@ -3,6 +3,7 @@
 #include "Math/Color.h"
 #include "Math/Vec.h"
 #include "UI/UIElement.h"
+#include "UI/UISlot.h"
 
 #include <functional>
 #include <optional>
@@ -15,10 +16,12 @@ namespace Axiom {
         UIButton() = default;
         ~UIButton() = default;
 
-        Math::Vec2 getDesiredSize(const UIContext& context) override;
+        Math::Vec2 measure(const UIContext& context) override;
 
         void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
-        bool onEvent(Event& event) override;
+
+        bool onMouseDown(const MouseButtonPressedEvent& event) override;
+        bool onMouseUp(const MouseButtonReleasedEvent& event) override;
 
         UIButton& setText(const std::string& newText) {
             text = newText;
@@ -34,6 +37,14 @@ namespace Axiom {
         }
         UIButton& setActiveColor(Color color) {
             overrideActiveColor = color;
+            return *this;
+        }
+        UIButton& setTextColor(Color color) {
+            overrideTextColor = color;
+            return *this;
+        }
+        UIButton& setTextAlignment(UIAlignment alignment) {
+            textAlignment = alignment;
             return *this;
         }
         UIButton& setFontSize(float size) {
@@ -52,7 +63,9 @@ namespace Axiom {
         std::optional<Color> overrideNormalColor;
         std::optional<Color> overrideHoverColor;
         std::optional<Color> overrideActiveColor;
+        std::optional<Color> overrideTextColor;
         std::optional<float> overrideFontSize;
+        UIAlignment textAlignment = UIAlignment::Center;
 
         bool isActive = false;
 

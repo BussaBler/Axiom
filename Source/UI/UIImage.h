@@ -17,7 +17,13 @@ namespace Axiom {
             return *this;
         }
 
+        UIImage& setPreserveAspect(bool preserve) {
+            preserveAspect = preserve;
+            return *this;
+        }
+
       private:
           std::shared_ptr<Texture> imageTexture = nullptr;
+          bool preserveAspect = false;
     };
 }

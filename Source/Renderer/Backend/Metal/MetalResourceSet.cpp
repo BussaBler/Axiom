@@ -16,15 +16,14 @@
 #include <cstdint>
 
 namespace Axiom {
-    MetalResourceSet::MetalResourceSet(const ResourceLayout* layout, MTL::Device* device) {
-        const MetalResourceLayout* mtlLayout = static_cast<const MetalResourceLayout*>(layout);
+    MetalResourceSet::MetalResourceSet(const ResourceLayout* layout, MTL::Device* device) : resourceLayout(static_cast<const MetalResourceLayout*>(layout)) {
         std::vector<NS::Object*> vertexDescriptors;
         std::vector<NS::Object*> fragmentDescriptors;
 
-        for (const auto& binding : mtlLayout->getBindingsCreateInfo()) {
+        for (const auto& binding : resourceLayout->getBindingsCreateInfo()) {
             MTL::ArgumentDescriptor* argDescriptor = MTL::ArgumentDescriptor::argumentDescriptor();
 
-            argDescriptor->setIndex(binding.binding);
+            argDescriptor->setIndex(resourceLayout->getFirstIndex(binding.binding));
             argDescriptor->setArrayLength(binding.count);
 
             switch (binding.type) {
@@ -57,8 +56,6 @@ namespace Axiom {
             if ((binding.stages & ShaderStage::Fragment) != ShaderStage::None) {
                 fragmentDescriptors.push_back(argDescriptor);
             }
-
-            maxResourcesPerBinding[binding.binding] = binding.count;
         }
 
         NS::UInteger totalEncodedLength = 0;
@@ -105,11 +102,6 @@ namespace Axiom {
     }
 
     void MetalResourceSet::update(const std::vector<Binding>& bindings) {
-        residentBuffers.clear();
-        residentTextures.clear();
-        uint32_t vertexArgumentBindingOffset = 0;
-        uint32_t fragmentArgumentBindingOffset = 0;
-
         for (const auto& binding : bindings) {
             switch (binding.type) {
             case ResourceType::UniformBuffer:
@@ -117,44 +109,46 @@ namespace Axiom {
                 std::vector<MTL::Buffer*> buffersToSet;
                 std::vector<NS::UInteger> bufferOffsets;
 
+                uint32_t resourceIndex = 0;
                 for (auto* buffer : std::get<std::span<Buffer*>>(binding.data)) {
                     MetalBuffer* metalBuffer = static_cast<MetalBuffer*>(buffer);
                     buffersToSet.push_back(metalBuffer->getHandle());
-                    residentBuffers.push_back(metalBuffer->getHandle());
+                    resourceAtIndex[binding.binding + binding.dataOffset + resourceIndex] = metalBuffer->getHandle();
+                    resourceIndex++;
                     bufferOffsets.push_back(0); // TODO: support buffer offsets
                 }
 
                 if ((binding.stages & ShaderStage::Vertex) != ShaderStage::None) {
-                    vertexArgumentEncoder->setBuffers(buffersToSet.data(), bufferOffsets.data(),
-                                                      NS::Range::Make(binding.binding + binding.dataOffset + vertexArgumentBindingOffset, buffersToSet.size()));
-                    vertexArgumentBindingOffset += maxResourcesPerBinding[binding.binding] - 1;
+                    vertexArgumentEncoder->setBuffers(
+                        buffersToSet.data(), bufferOffsets.data(),
+                        NS::Range::Make(resourceLayout->getFirstIndex(binding.binding) + binding.dataOffset, buffersToSet.size()));
                 }
                 if ((binding.stages & ShaderStage::Fragment) != ShaderStage::None) {
                     fragmentArgumentEncoder->setBuffers(
                         buffersToSet.data(), bufferOffsets.data(),
-                        NS::Range::Make(binding.binding + binding.dataOffset + fragmentArgumentBindingOffset, buffersToSet.size()));
-                    fragmentArgumentBindingOffset += maxResourcesPerBinding[binding.binding] - 1;
+                        NS::Range::Make(resourceLayout->getFirstIndex(binding.binding) + binding.dataOffset, buffersToSet.size()));
                 }
                 break;
             }
             case ResourceType::Texture2D:
             case ResourceType::Texture3D: {
                 std::vector<MTL::Texture*> texturesToSet;
+
+                uint32_t resourceIndex = 0;
                 for (Texture* texture : std::get<std::span<Texture*>>(binding.data)) {
                     MetalTexture* metalTexture = static_cast<MetalTexture*>(texture);
                     texturesToSet.push_back(metalTexture->getHandle());
-                    residentTextures.push_back(metalTexture->getHandle());
+                    resourceAtIndex[binding.binding + binding.dataOffset + resourceIndex] = metalTexture->getHandle();
+                    resourceIndex++;
                 }
 
                 if ((binding.stages & ShaderStage::Vertex) != ShaderStage::None) {
                     vertexArgumentEncoder->setTextures(
-                        texturesToSet.data(), NS::Range::Make(binding.binding + binding.dataOffset + vertexArgumentBindingOffset, texturesToSet.size()));
-                    vertexArgumentBindingOffset += maxResourcesPerBinding[binding.binding] - 1;
+                        texturesToSet.data(), NS::Range::Make(resourceLayout->getFirstIndex(binding.binding) + binding.dataOffset, texturesToSet.size()));
                 }
                 if ((binding.stages & ShaderStage::Fragment) != ShaderStage::None) {
                     fragmentArgumentEncoder->setTextures(
-                        texturesToSet.data(), NS::Range::Make(binding.binding + binding.dataOffset + fragmentArgumentBindingOffset, texturesToSet.size()));
-                    fragmentArgumentBindingOffset += maxResourcesPerBinding[binding.binding] - 1;
+                        texturesToSet.data(), NS::Range::Make(resourceLayout->getFirstIndex(binding.binding) + binding.dataOffset, texturesToSet.size()));
                 }
                 break;
             }
@@ -167,13 +161,11 @@ namespace Axiom {
 
                 if ((binding.stages & ShaderStage::Vertex) != ShaderStage::None) {
                     vertexArgumentEncoder->setSamplerStates(
-                        samplersToSet.data(), NS::Range::Make(binding.binding + binding.dataOffset + vertexArgumentBindingOffset, samplersToSet.size()));
-                    vertexArgumentBindingOffset += maxResourcesPerBinding[binding.binding] - 1;
+                        samplersToSet.data(), NS::Range::Make(resourceLayout->getFirstIndex(binding.binding) + binding.dataOffset, samplersToSet.size()));
                 }
                 if ((binding.stages & ShaderStage::Fragment) != ShaderStage::None) {
                     fragmentArgumentEncoder->setSamplerStates(
-                        samplersToSet.data(), NS::Range::Make(binding.binding + binding.dataOffset + fragmentArgumentBindingOffset, samplersToSet.size()));
-                    fragmentArgumentBindingOffset += maxResourcesPerBinding[binding.binding] - 1;
+                        samplersToSet.data(), NS::Range::Make(resourceLayout->getFirstIndex(binding.binding) + binding.dataOffset, samplersToSet.size()));
                 }
                 break;
             }
@@ -182,5 +174,6 @@ namespace Axiom {
                 break;
             }
         }
+        isResidencyDirty = true;
     }
 } // namespace Axiom

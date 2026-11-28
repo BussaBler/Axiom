@@ -12,7 +12,7 @@ namespace Axiom {
         UIText(const std::string& text) : text(text) {}
         ~UIText() = default;
 
-        Math::Vec2 getDesiredSize(const UIContext& context) override;
+        Math::Vec2 measure(const UIContext& context) override;
 
         void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
 

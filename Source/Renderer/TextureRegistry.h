@@ -11,6 +11,7 @@
 #include <memory>
 #include <queue>
 #include <unordered_map>
+#include <vector>
 
 namespace Axiom {
     class TextureRegistry {
@@ -24,11 +25,13 @@ namespace Axiom {
         uint32_t getOrRegister(UUID textureId);
         void unregister(UUID textureId);
 
+        std::vector<uint32_t> reserveSlots(uint32_t count);
+        void setSlot(uint32_t slot, Texture* texture);
+
+        void beginFrame();
+
         ResourceLayout* getResourceLayout() const { return resourceLayout.get(); }
         ResourceSet* getResourceSet() const { return resourceSet.get(); }
-
-      private:
-        void updateDescriptorSet(uint32_t slot, Texture* texture);
 
       private:
         RenderHardwareInterface& rhi;
@@ -42,5 +45,13 @@ namespace Axiom {
         std::unordered_map<UUID, uint32_t> uuidToSlot;
         std::unordered_map<uint32_t, UUID> slotToUuid;
         std::queue<uint32_t> freeSlots;
+
+        struct PendingRelease {
+            uint32_t slot;
+            uint64_t releaseFrame;
+        };
+        std::vector<PendingRelease> pendingReleases;
+        uint64_t frameCounter = 0;
+        Texture* fallbackTexture = nullptr;
     };
 } // namespace Axiom

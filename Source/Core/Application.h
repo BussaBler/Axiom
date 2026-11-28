@@ -8,6 +8,7 @@
 #include "LayerStack.h"
 #include "Renderer/RenderHardwareInterface.h"
 #include "Renderer/SceneRenderer.h"
+#include "Renderer/TextureRegistry.h"
 #include "UI/UIRenderer.h"
 #include "Window.h"
 
@@ -87,7 +88,9 @@ namespace Axiom {
         std::unique_ptr<RenderHardwareInterface> rhi;
         std::unique_ptr<PSOManager> psoManager;
         std::unique_ptr<AssetManager> assetManager;
+        std::unique_ptr<TextureRegistry> textureRegistry;
         std::unique_ptr<ComponentRegistry> componentRegistry;
+        std::unique_ptr<RenderGraph> frameGraph;
         std::unique_ptr<UIRenderer> uiRenderer;
         std::unique_ptr<SceneRenderer> sceneRenderer;
 

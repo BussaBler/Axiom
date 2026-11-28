@@ -66,7 +66,7 @@ namespace Axiom {
     }
 
     std::unique_ptr<Shader> MetalDevice::createShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv) {
-        return std::make_unique<MetalShader>(vertexSpirv, fragmentSpirv, metalDevice);
+        return std::make_unique<MetalShader>(vertexSpirv, fragmentSpirv);
     }
 
     std::unique_ptr<Pipeline> MetalDevice::createPipeline(const Pipeline::CreateInfo& pipelineCreateInfo) {

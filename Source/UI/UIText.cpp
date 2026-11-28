@@ -3,7 +3,7 @@
 #include "UIText.h"
 
 namespace Axiom {
-    Math::Vec2 UIText::getDesiredSize(const UIContext& context) {
+    Math::Vec2 UIText::measure(const UIContext& context) {
         textSize.x() = context.renderer->calculateTextWidth(text, context.theme->fontSize);
         textSize.y() = context.renderer->calculateTextHeight(context.theme->fontSize);
         desiredSize = textSize;
@@ -16,6 +16,8 @@ namespace Axiom {
             return;
         }
 
-        context.renderer->addText(text, arrangedPosition, context.theme->fontSize, textColor.value_or(context.theme->textPrimary));
+        const float yOffset = context.renderer->getCenteredTextOffset(arrangedSize.y(), context.theme->fontSize);
+        context.renderer->addText(text, arrangedPosition + Math::Vec2(0.0f, yOffset), context.theme->fontSize,
+                                  textColor.value_or(context.theme->textPrimary), context.layer);
     }
 } // namespace Axiom

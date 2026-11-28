@@ -3,14 +3,51 @@
 #include "MetalPipeline.h"
 
 #include "Core/Assert.h"
+#include "Core/Log.h"
 #include "Metal/Metal.hpp"
 #include "MetalShader.h"
 
 namespace Axiom {
     MetalPipeline::MetalPipeline(const CreateInfo& createInfo, MTL::Device* device) : device(device) {
         MetalShader* metalShader = static_cast<MetalShader*>(createInfo.shader);
-        MTL::Library* vertexLibrary = metalShader->getVertexLibrary();
-        MTL::Library* fragmentLibrary = metalShader->getFragmentLibrary();
+        auto vertexMsl = MetalShader::translateSPIRVtoMSL(metalShader->getVertexSpirv(), createInfo.resourceLayouts);
+        auto fragmentMsl = MetalShader::translateSPIRVtoMSL(metalShader->getFragmentSpirv(), createInfo.resourceLayouts);
+
+        if (!vertexMsl) {
+            AX_CORE_LOG_ERROR("Failed to translate vertex SPIRV to MSL: {}", vertexMsl.error());
+            return;
+        }
+        if (!fragmentMsl) {
+            AX_CORE_LOG_ERROR("Failed to translate fragment SPIRV to MSL: {}", fragmentMsl.error());
+            return;
+        }
+
+        NS::String* vertexMslStr = NS::String::alloc()->init(vertexMsl.value().c_str(), NS::StringEncoding::UTF8StringEncoding);
+        NS::String* fragmentMslStr = NS::String::alloc()->init(fragmentMsl.value().c_str(), NS::StringEncoding::UTF8StringEncoding);
+        MTL::CompileOptions* compileOptions = MTL::CompileOptions::alloc()->init();
+        NS::Error* libError = nullptr;
+
+        vertexLibrary = device->newLibrary(vertexMslStr, compileOptions, &libError);
+        if (libError != nullptr) {
+            AX_CORE_LOG_ERROR("Metal Backend Compilation Failed [Vertex]:\n{}", libError->localizedDescription()->utf8String());
+            compileOptions->release();
+            vertexMslStr->release();
+            fragmentMslStr->release();
+            return;
+        }
+
+        fragmentLibrary = device->newLibrary(fragmentMslStr, compileOptions, &libError);
+        if (libError != nullptr) {
+            AX_CORE_LOG_ERROR("Metal Backend Compilation Failed [Fragment]:\n{}", libError->localizedDescription()->utf8String());
+            compileOptions->release();
+            vertexMslStr->release();
+            fragmentMslStr->release();
+            return;
+        }
+
+        compileOptions->release();
+        vertexMslStr->release();
+        fragmentMslStr->release();
 
         MTL::Function* vertexFunction = vertexLibrary->newFunction(NS::String::string("main0", NS::UTF8StringEncoding));
         AX_CORE_ASSERT(vertexFunction, "Failed to create vertex function");
@@ -93,6 +130,12 @@ namespace Axiom {
     }
 
     MetalPipeline::~MetalPipeline() {
+        if (vertexLibrary) {
+            vertexLibrary->release();
+        }
+        if (fragmentLibrary) {
+            fragmentLibrary->release();
+        }
         if (pipelineState) {
             depthStencilState->release();
             pipelineState->release();

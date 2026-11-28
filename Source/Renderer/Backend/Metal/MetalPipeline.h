@@ -17,6 +17,8 @@ namespace Axiom {
 
       private:
         MTL::Device* device;
+        MTL::Library* vertexLibrary;
+        MTL::Library* fragmentLibrary;
         MTL::RenderPipelineState* pipelineState;
         MTL::Winding faceWinding;
         MTL::CullMode cullMode;

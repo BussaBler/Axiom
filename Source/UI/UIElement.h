@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Event/Event.h"
+#include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
 #include "Math/AxMath.h"
 #include "Math/Color.h"
@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 
 namespace Axiom {
@@ -38,7 +39,7 @@ namespace Axiom {
         float defaultRowHeight = 24.0f;
         float headerRowHeight = 28.0f;
 
-        float fontSize = 14.0f;
+        float fontSize = 13.0f; // pixels
         Math::Vec4 borderRadius = Math::Vec4(4.0f);
 
         static const UITheme& getDefault() {
@@ -55,36 +56,33 @@ namespace Axiom {
 
     class UICanvas;
 
-    class UIElement {
+    class UIElement : public std::enable_shared_from_this<UIElement> {
       public:
         UIElement() = default;
         virtual ~UIElement() = default;
 
-        virtual Math::Vec2 getDesiredSize(const UIContext& context) { return desiredSize; };
+        virtual Math::Vec2 measure(const UIContext& context) { return desiredSize; };
         virtual void arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
             arrangedPosition = position;
             arrangedSize = size;
         }
 
         virtual void onRender(const UIContext& context, const Math::Rect& scissorRect) {}
-        virtual bool onEvent(Event& event) {
-            if (event.isHandled()) {
-                return true;
-            }
 
-            EventDispatcher dispatcher(event);
-            dispatcher.dispatch<MouseMovedEvent>([this](const MouseMovedEvent& e) {
-                float mouseX = e.getMouseX();
-                float mouseY = e.getMouseY();
+        virtual bool onMouseDown(const MouseButtonPressedEvent& event) { return false; }
+        virtual bool onMouseUp(const MouseButtonReleasedEvent& event) { return false; }
+        virtual bool onMouseMove(const MouseMovedEvent& event) { return false; }
+        virtual bool onScroll(const MouseScrolledEvent& event) { return false; }
+        virtual bool onKeyDown(const KeyPressedEvent& event) { return false; }
+        virtual bool onTextInput(const KeyTypedEvent& event) { return false; }
 
-                isHovered = (mouseX >= arrangedPosition.x() && mouseX <= arrangedPosition.x() + arrangedSize.x() && mouseY >= arrangedPosition.y() &&
-                             mouseY <= arrangedPosition.y() + arrangedSize.y());
+        virtual bool isFocusable() const { return false; }
+        virtual void onHoverChanged(bool hovered) { isHovered = hovered; }
+        virtual void onFocusChanged(bool focused) { isFocused = focused; }
 
-                return false;
-            });
+        bool containsPoint(Math::Vec2 point) const;
 
-            return false;
-        }
+        virtual UIElement* hitTest(Math::Vec2 point) { return containsPoint(point) ? this : nullptr; }
 
         virtual void invalidateLayout() {
             if (parent) {
@@ -118,5 +116,6 @@ namespace Axiom {
         Math::Vec2 desiredSize = Math::Vec2::zero();
 
         bool isHovered = false;
+        bool isFocused = false;
     };
 } // namespace Axiom

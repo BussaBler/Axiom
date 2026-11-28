@@ -154,12 +154,6 @@ namespace Axiom {
                 };
             });
         }
-
-        renderGraph.addPass<DefaultPassData>("Prepare Present Pass", [](PassBuilder& builder, DefaultPassData& passData, Blackboard& blackboard) {
-            const auto& resourceData = blackboard.get<GlobalResourceData>();
-            builder.readTexture(resourceData.colorBuffer, TextureState::Present);
-            return [](const auto&...) {};
-        });
     }
 
     void ForwardRenderPipeline::createGlobalData() {

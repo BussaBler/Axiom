@@ -52,6 +52,11 @@ namespace Axiom {
     }
 
     RGTextureHandle PassBuilder::importTexture(const std::string& name, Texture* texture) {
+        for (uint32_t i = 0; i < renderGraph->virtualResources.size(); i++) {
+            if (renderGraph->virtualResources[i].isExternal && renderGraph->virtualResources[i].texture == texture) {
+                return RGTextureHandle{.id = i};
+            }
+        }
         return renderGraph->importTexture(name, texture);
     }
 
@@ -86,7 +91,7 @@ namespace Axiom {
         return hash;
     }
 
-    void RenderGraph::execute(CommandBuffer* commandBuffer, const FrameContext& frameCtx) {
+    void RenderGraph::execute(CommandBuffer* commandBuffer, const FrameContext& frameCtx, Texture* presentTarget) {
         std::unordered_map<uint64_t, std::vector<Texture*>> freeList;
 
         for (const auto& uniqueTex : texturesCache) {
@@ -161,9 +166,29 @@ namespace Axiom {
                 }
             }
         }
+
+        if (presentTarget) {
+            const RGTextureHandle handle = importTexture("Present Target", presentTarget);
+            VirtualResource& resource = virtualResources[handle.id];
+            if (resource.currentState != TextureState::Present) {
+                commandBuffer->pipelineBarrier({{.texture = resource.texture,
+                                                 .oldState = resource.currentState,
+                                                 .newState = TextureState::Present,
+                                                 .aspect = resource.createInfo.aspect}});
+                resource.currentState = TextureState::Present;
+            }
+        }
     }
 
     RGTextureHandle RenderGraph::importTexture(const std::string& name, Texture* texture) {
+        // The same texture imported twice in one frame (e.g. by the FRP and the UI) must share one
+        // virtual resource, otherwise each copy tracks its own (stale) state and barriers go wrong.
+        for (uint32_t i = 0; i < virtualResources.size(); i++) {
+            if (virtualResources[i].isExternal && virtualResources[i].texture == texture) {
+                return RGTextureHandle{.id = i};
+            }
+        }
+
         RGTextureHandle handle = {.id = static_cast<uint32_t>(virtualResources.size())};
 
         RenderGraph::VirtualResource virtualResource = {

@@ -14,10 +14,16 @@ namespace Axiom {
         UITextInput() = default;
         ~UITextInput() = default;
 
-        Math::Vec2 getDesiredSize(const UIContext& context) override;
+        Math::Vec2 measure(const UIContext& context) override;
 
         void onRender(const UIContext& context, const Math::Rect& scissorRect) override;
-        bool onEvent(Event& event) override;
+
+        bool onMouseDown(const MouseButtonPressedEvent& event) override;
+        bool onKeyDown(const KeyPressedEvent& event) override;
+        bool onTextInput(const KeyTypedEvent& event) override;
+
+        void onFocusChanged(bool focused) override;
+        bool isFocusable() const override { return true; }
 
         UITextInput& setValueSetter(std::function<void(const std::string&)> setter) {
             valueSetter = std::move(setter);

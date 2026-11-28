@@ -5,69 +5,41 @@
 #include "Math/Vec.h"
 
 namespace Axiom {
-    Math::Vec2 UIVerticalBox::getDesiredSize(const UIContext& context) {
+    Math::Vec2 UIVerticalBox::measure(const UIContext& context) {
         desiredSize = Math::Vec2::zero();
-
-        for (const auto& slot : slots) {
-            Math::Vec2 slotSize = slot.content->getDesiredSize(context);
-
-            if (slot.fixedSize.x() > 0) {
-                slotSize.x() = slot.fixedSize.x();
-            }
-            if (slot.fixedSize.y() > 0) {
-                slotSize.y() = slot.fixedSize.y();
-            }
-
-            slotSize += Math::Vec2(slot.margin.left + slot.margin.right, slot.margin.top + slot.margin.bottom);
-            desiredSize = Math::Vec2(std::max(desiredSize.x(), slotSize.x()), desiredSize.y() + slotSize.y());
+        for (auto& slot : slots) {
+            slot.content->measure(context);
+            const Math::Vec2 outer = slot.getOuterDesiredSize();
+            desiredSize.x() = std::max(desiredSize.x(), outer.x());
+            desiredSize.y() += outer.y();
         }
-
         desiredSize += Math::Vec2(padding.left + padding.right, padding.top + padding.bottom);
         return desiredSize;
     }
 
     void UIVerticalBox::arrange(const UIContext& context, const Math::Vec2& position, const Math::Vec2& size) {
         UIElement::arrange(context, position, size);
+        const Math::Rect content = getContentRect();
 
-        float currentY = arrangedPosition.y() + padding.top;
-        float startX = arrangedPosition.x() + padding.left;
-        float availableWidth = arrangedSize.x() - padding.left - padding.right;
+        float fixedHeight = 0.0f;
+        float totalFill = 0.0f;
+        for (const auto& slot : slots) {
+            if (slot.fill > 0.0f) {
+                totalFill += slot.fill;
+            } else {
+                fixedHeight += slot.getOuterDesiredSize().y();
+            }
+        }
+        const float remaining = std::max(0.0f, content.height() - fixedHeight);
 
+        float y = content.y();
         for (auto& slot : slots) {
-            currentY += slot.margin.top;
+            const float stripHeight = slot.fill > 0.0f ? remaining * (slot.fill / totalFill) : slot.getOuterDesiredSize().y();
+            const Math::Rect strip(Math::Vec2(content.x(), y), Math::Vec2(content.width(), stripHeight));
 
-            Math::Vec2 slotDesiredSize = slot.content->getDesiredSize(context);
-            if (slot.fixedSize.x() > 0) {
-                slotDesiredSize.x() = slot.fixedSize.x();
-            }
-            if (slot.fixedSize.y() > 0) {
-                slotDesiredSize.y() = slot.fixedSize.y();
-            }
-
-            float finalX = startX;
-            float finalWidth = availableWidth;
-
-            switch (slot.horizontalAlignment) {
-            case UIAlignment::Fill:
-                finalWidth = availableWidth - slot.margin.left - slot.margin.right;
-                finalX = startX + slot.margin.left;
-                break;
-            case UIAlignment::Start:
-                finalWidth = slotDesiredSize.x();
-                finalX = startX + slot.margin.left;
-                break;
-            case UIAlignment::Center:
-                finalWidth = slotDesiredSize.x();
-                finalX = startX + (availableWidth - slotDesiredSize.x()) / 2.0f;
-                break;
-            case UIAlignment::End:
-                finalWidth = slotDesiredSize.x();
-                finalX = startX + availableWidth - slotDesiredSize.x() - slot.margin.right;
-                break;
-            }
-
-            slot.content->arrange(context, Math::Vec2(finalX, currentY), Math::Vec2(finalWidth, slotDesiredSize.y()));
-            currentY += slotDesiredSize.y() + slot.margin.bottom;
+            const Math::Rect rect = slot.alignInArea(strip);
+            slot.content->arrange(context, rect.getPos(), rect.getSize());
+            y += stripHeight;
         }
     }
 } // namespace Axiom

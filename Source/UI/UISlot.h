@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Math/AxMath.h"
 #include "Math/Vec.h"
 #include "UI/UIEdgeInsets.h"
 #include "UI/UIElement.h"
@@ -36,6 +37,15 @@ namespace Axiom {
             return *this;
         }
 
+        UISlot& setFill(float weight) {
+            fill = weight;
+            return *this;
+        }
+
+        Math::Vec2 getContentSize() const;
+        Math::Vec2 getOuterDesiredSize() const;
+        Math::Rect alignInArea(const Math::Rect& area) const;
+
       public:
         std::shared_ptr<UIElement> content;
 
@@ -43,5 +53,6 @@ namespace Axiom {
         UIAlignment horizontalAlignment = UIAlignment::Fill;
         UIAlignment verticalAlignment = UIAlignment::Fill;
         Math::Vec2 fixedSize = Math::Vec2(-1.0f);
+        float fill = 0.0f;
     };
 } // namespace Axiom

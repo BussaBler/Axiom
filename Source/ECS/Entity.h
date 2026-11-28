@@ -23,7 +23,7 @@ namespace Axiom {
         inline uint32_t getId() const { return id; }
 
         operator bool() const { return ecs != nullptr; }
-        bool operator==(const Entity& other) const { return id == other.id; }
+        bool operator==(const Entity& other) const { return id == other.id && ecs == other.ecs; }
 
       private:
         uint32_t id;

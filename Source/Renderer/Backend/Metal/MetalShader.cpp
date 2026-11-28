@@ -2,8 +2,8 @@
 
 #include "MetalShader.h"
 
-#include "Core/Log.h"
 #include "Renderer/Backend/Metal/MetalBindingLayout.h"
+#include "Renderer/Backend/Metal/MetalResourceLayout.h"
 #include "spirv_cross_error_handling.hpp"
 
 #include <SpirvCross/spirv_msl.hpp>
@@ -15,60 +15,12 @@
 #include <string>
 
 namespace Axiom {
-    MetalShader::MetalShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv, MTL::Device* device) {
-        std::expected<std::string, std::string> vertexMSL = compileSPIRVtoMSL(vertexSpirv);
-        if (!vertexMSL.has_value()) {
-            AX_CORE_LOG_ERROR("SPIR-V to MSL Translation Failed [Vertex]:\n{}", vertexMSL.error());
-            return;
-        }
-        std::expected<std::string, std::string> fragmentMSL = compileSPIRVtoMSL(fragmentSpirv);
-        if (!fragmentMSL.has_value()) {
-            AX_CORE_LOG_ERROR("SPIR-V to MSL Translation Failed [Fragment]:\n{}", fragmentMSL.error());
-            return;
-        }
-
-        NS::String* vertexMSLStr = NS::String::alloc()->init(vertexMSL.value().c_str(), NS::StringEncoding::UTF8StringEncoding);
-        NS::String* fragmentMSLStr = NS::String::alloc()->init(fragmentMSL.value().c_str(), NS::StringEncoding::UTF8StringEncoding);
-        MTL::CompileOptions* compileOptions = MTL::CompileOptions::alloc()->init();
-        NS::Error* error = nullptr;
-
-        vertexLibrary = device->newLibrary(vertexMSLStr, compileOptions, &error);
-        if (error != nullptr) {
-            AX_CORE_LOG_ERROR("Metal Backend Compilation Failed [Vertex]:\n{}", error->localizedDescription()->utf8String());
-            compileOptions->release();
-            vertexMSLStr->release();
-            fragmentMSLStr->release();
-            return;
-        }
-
-        fragmentLibrary = device->newLibrary(fragmentMSLStr, compileOptions, &error);
-        if (error != nullptr) {
-            AX_CORE_LOG_ERROR("Metal Backend Compilation Failed [Fragment]:\n{}", error->localizedDescription()->utf8String());
-            compileOptions->release();
-            vertexMSLStr->release();
-            fragmentMSLStr->release();
-            return;
-        }
-
-        compileOptions->release();
-        vertexMSLStr->release();
-        fragmentMSLStr->release();
-
-        m_isCompiled = true;
+    MetalShader::MetalShader(std::span<const uint32_t> vertexSpirv, std::span<const uint32_t> fragmentSpirv)
+        : vertexSpirv(vertexSpirv.begin(), vertexSpirv.end()), fragmentSpirv(fragmentSpirv.begin(), fragmentSpirv.end()) {
     }
 
-    MetalShader::~MetalShader() {
-        if (vertexLibrary) {
-            vertexLibrary->release();
-            vertexLibrary = nullptr;
-        }
-        if (fragmentLibrary) {
-            fragmentLibrary->release();
-            fragmentLibrary = nullptr;
-        }
-    }
-
-    std::expected<std::string, std::string> MetalShader::compileSPIRVtoMSL(std::span<const uint32_t> spirv) {
+    std::expected<std::string, std::string> MetalShader::translateSPIRVtoMSL(std::span<const uint32_t> spirv,
+                                                                             std::span<const ResourceLayout* const> setLayouts) {
         try {
             spirv_cross::CompilerMSL mslCompiler(spirv.data(), spirv.size());
             spirv_cross::CompilerMSL::Options mslOptions = {};
@@ -112,9 +64,12 @@ namespace Axiom {
                     resourceBinding.stage = executionModel;
                     resourceBinding.desc_set = set;
                     resourceBinding.binding = binding;
-                    resourceBinding.msl_buffer = binding;
-                    resourceBinding.msl_texture = binding;
-                    resourceBinding.msl_sampler = binding;
+                    const auto* layout = static_cast<const MetalResourceLayout*>(setLayouts[set]);
+                    const uint32_t index = layout->getFirstIndex(binding);
+                    resourceBinding.msl_buffer = index;
+                    resourceBinding.msl_texture = index;
+                    resourceBinding.msl_sampler = index;
+                    resourceBinding.count = layout->getCount(binding);
 
                     mslCompiler.add_msl_resource_binding(resourceBinding);
                 }

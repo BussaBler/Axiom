@@ -83,16 +83,9 @@ namespace Axiom {
             renderEncoder->setVertexBuffer(argBuffer, 0, firstSet + i + AX_METAL_DESC_SET_START_INDEX);
             renderEncoder->setFragmentBuffer(argBuffer, metalResourceSet->getFragmentArgumentBufferOffset(), firstSet + i + AX_METAL_DESC_SET_START_INDEX);
 
-            const auto& textures = metalResourceSet->getResidentTextures();
-            if (!textures.empty()) {
-                renderEncoder->useResources(reinterpret_cast<const MTL::Resource* const*>(textures.data()), textures.size(), MTL::ResourceUsageRead,
-                                            MTL::RenderStageVertex | MTL::RenderStageFragment);
-            }
-
-            const auto& buffers = metalResourceSet->getResidentBuffers();
-            if (!buffers.empty()) {
-                renderEncoder->useResources(reinterpret_cast<const MTL::Resource* const*>(buffers.data()), buffers.size(), MTL::ResourceUsageRead,
-                                            MTL::RenderStageVertex | MTL::RenderStageFragment);
+            const auto& resources = metalResourceSet->getResidentResources();
+            if (!resources.empty()) {
+                renderEncoder->useResources(resources.data(), resources.size(), MTL::ResourceUsageRead, MTL::RenderStageVertex | MTL::RenderStageFragment);
             }
         }
     }

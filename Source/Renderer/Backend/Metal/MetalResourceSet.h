@@ -1,8 +1,11 @@
 #pragma once
 #include "MetalUtils.h"
+#include "Renderer/Backend/Metal/MetalResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 
+#include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 namespace Axiom {
     class MetalResourceSet : public ResourceSet {
@@ -14,18 +17,26 @@ namespace Axiom {
 
         MTL::Buffer* getArgumentBuffer() const { return argumentBuffer; }
         NS::UInteger getFragmentArgumentBufferOffset() const { return fragmentArgumentBufferOffset; }
-        std::vector<MTL::Buffer*>& getResidentBuffers() { return residentBuffers; }
-        std::vector<MTL::Texture*>& getResidentTextures() { return residentTextures; }
+        const std::vector<MTL::Resource*>& getResidentResources() {
+            if (isResidencyDirty) {
+                residentResources.clear();
+                for (const auto& [index, resource] : resourceAtIndex) {
+                    residentResources.push_back(resource);
+                }
+                isResidencyDirty = false;
+            }
+            return residentResources;
+        }
 
       private:
+        const MetalResourceLayout* resourceLayout;
         MTL::ArgumentEncoder* vertexArgumentEncoder = nullptr;
         MTL::ArgumentEncoder* fragmentArgumentEncoder = nullptr;
         MTL::Buffer* argumentBuffer = nullptr;
         NS::UInteger fragmentArgumentBufferOffset = 0;
 
-        std::vector<MTL::Buffer*> residentBuffers;
-        std::vector<MTL::Texture*> residentTextures;
-
-        std::unordered_map<uint32_t, uint32_t> maxResourcesPerBinding;
+        std::unordered_map<uint32_t, MTL::Resource*> resourceAtIndex;
+        std::vector<MTL::Resource*> residentResources;
+        bool isResidencyDirty = false;
     };
 } // namespace Axiom

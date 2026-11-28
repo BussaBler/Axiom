@@ -2,11 +2,16 @@
 
 #include "Asset/TextureAsset.h"
 #include "Asset/UUID.h"
+#include "Core/Assert.h"
 #include "Core/Log.h"
 #include "RenderHardwareInterface.h"
 #include "Renderer/ResourceLayout.h"
 #include "Renderer/ResourceSet.h"
 #include "Renderer/Texture.h"
+
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace Axiom {
     void TextureRegistry::init() {
@@ -32,7 +37,8 @@ namespace Axiom {
     }
 
     void TextureRegistry::setFallbackTexture(Texture* texture) {
-        updateDescriptorSet(FALLBACK_SLOT, texture);
+        fallbackTexture = texture;
+        setSlot(FALLBACK_SLOT, texture);
     }
 
     uint32_t TextureRegistry::getOrRegister(UUID textureId) {
@@ -58,7 +64,7 @@ namespace Axiom {
         uint32_t availableSlot = freeSlots.front();
         freeSlots.pop();
 
-        updateDescriptorSet(availableSlot, asset->getTexture());
+        setSlot(availableSlot, asset->getTexture());
 
         uuidToSlot[textureId] = availableSlot;
         slotToUuid[availableSlot] = textureId;
@@ -74,13 +80,44 @@ namespace Axiom {
         }
 
         uint32_t slotToFree = it->second;
-        freeSlots.push(slotToFree);
+        pendingReleases.push_back({slotToFree, frameCounter});
 
         slotToUuid.erase(slotToFree);
         uuidToSlot.erase(it);
     }
 
-    void TextureRegistry::updateDescriptorSet(uint32_t index, Texture* texture) {
+    std::vector<uint32_t> TextureRegistry::reserveSlots(uint32_t count) {
+        AX_CORE_ASSERT(freeSlots.size() >= count, "Not enough avaible slots to reserve");
+
+        std::vector<uint32_t> slots;
+        slots.reserve(count);
+        for (uint32_t i = 0; i < count; i++) {
+            const uint32_t slot = freeSlots.front();
+            freeSlots.pop();
+            if (fallbackTexture) {
+                setSlot(slot, fallbackTexture);
+            }
+            slots.push_back(slot);
+        }
+
+        return slots;
+    }
+
+    void TextureRegistry::beginFrame() {
+        frameCounter++;
+        auto isExpired = [this](const PendingRelease& release) { return frameCounter - release.releaseFrame > RenderHardwareInterface::MAX_FRAMES_IN_FLIGHT; };
+        for (const PendingRelease& release : pendingReleases) {
+            if (isExpired(release)) {
+                if (fallbackTexture) {
+                    setSlot(release.slot, fallbackTexture);
+                }
+                freeSlots.push(release.slot);
+            }
+        }
+        std::erase_if(pendingReleases, isExpired);
+    }
+
+    void TextureRegistry::setSlot(uint32_t index, Texture* texture) {
         Texture* textureData[] = {texture};
         ResourceSet::Binding bindingUpdateInfo = {.binding = Bindings::BindlessTextureBinding,
                                                   .type = ResourceType::Texture2D,
